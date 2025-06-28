@@ -110,32 +110,46 @@ export default function RegisterPage() {
   async function onSubmit(data: FormData) {
     setLoading(true)
     try {
+      console.log('Iniciando processo de cadastro...', { username: data.username, email: data.email })
+      
       // Verifica unicidade do nome de usuário
+      console.log('Verificando unicidade do username...')
       const q = query(collection(db, 'users'), where('username', '==', data.username))
       const snap = await getDocs(q)
       if (!snap.empty) {
+        console.log('Username já existe')
         setError('username', { message: 'Nome de usuário já existe' })
         setLoading(false)
         return
       }
+      
       // Verifica unicidade do e-mail
+      console.log('Verificando unicidade do email...')
       const q2 = query(collection(db, 'users'), where('email', '==', data.email))
       const snap2 = await getDocs(q2)
       if (!snap2.empty) {
+        console.log('Email já existe')
         setError('email', { message: 'E-mail já cadastrado' })
         setLoading(false)
         return
       }
+      
       // Cria usuário no Firebase Auth
+      console.log('Criando usuário no Firebase Auth...')
       if (!auth) {
+        console.error('Auth não disponível')
         toast.error('Serviço de autenticação indisponível. Tente novamente mais tarde.');
         setLoading(false);
         return;
       }
+      
       const userCredential = await createUserWithEmailAndPassword(auth as any, data.email, data.password)
       const user = userCredential.user
+      console.log('Usuário criado no Auth:', user.uid)
+      
       // Salva dados adicionais no Firestore
-      await setDoc(doc(db, 'users', user.uid), {
+      console.log('Salvando dados no Firestore...')
+      const userData = {
         username: data.username,
         birthdate: data.birthdate,
         email: data.email,
@@ -145,11 +159,28 @@ export default function RegisterPage() {
         createdAt: new Date().toISOString(),
         status: 'active',
         premium: false,
-      })
+      }
+      console.log('Dados do usuário:', userData)
+      
+      await setDoc(doc(db, 'users', user.uid), userData)
+      console.log('Dados salvos com sucesso no Firestore')
+      
       toast.success('Cadastro realizado com sucesso!')
       router.push('/profile/edit')
     } catch (err: any) {
-      toast.error(err.message || 'Erro ao cadastrar')
+      console.error('Erro durante o cadastro:', err)
+      console.error('Código do erro:', err.code)
+      console.error('Mensagem do erro:', err.message)
+      
+      if (err.code === 'permission-denied') {
+        toast.error('Erro de permissão. Verifique se você está logado corretamente.')
+      } else if (err.code === 'auth/email-already-in-use') {
+        toast.error('Este e-mail já está sendo usado por outra conta.')
+      } else if (err.code === 'auth/weak-password') {
+        toast.error('A senha é muito fraca. Use uma senha mais forte.')
+      } else {
+        toast.error(err.message || 'Erro ao cadastrar. Tente novamente.')
+      }
     } finally {
       setLoading(false)
     }
