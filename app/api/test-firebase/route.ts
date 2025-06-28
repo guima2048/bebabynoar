@@ -4,18 +4,12 @@ import { collection, addDoc, getDocs, query, orderBy, serverTimestamp } from 'fi
 
 export async function GET(req: NextRequest) {
   try {
-    console.log('Testando conexão com Firebase...')
-    
     // Teste 1: Verificar se conseguimos conectar
-    console.log('Firebase config:', {
-      projectId: db.app.options.projectId,
-      databaseId: db.app.options.databaseId
-    })
+    const projectId = db.app.options.projectId
     
     // Teste 2: Tentar ler dados
     const q = query(collection(db, 'blog'), orderBy('createdAt', 'desc'))
     const snapshot = await getDocs(q)
-    console.log('Leitura bem-sucedida, documentos encontrados:', snapshot.docs.length)
     
     // Teste 3: Tentar escrever dados
     const testData = {
@@ -26,25 +20,20 @@ export async function GET(req: NextRequest) {
       updatedAt: serverTimestamp()
     }
     
-    console.log('Tentando escrever dados de teste...')
     const docRef = await addDoc(collection(db, 'blog'), testData)
-    console.log('Escrita bem-sucedida, ID:', docRef.id)
     
     // Limpar o documento de teste
-    console.log('Limpando documento de teste...')
     // Note: Não vamos deletar aqui para não interferir com outros testes
     
     return NextResponse.json({
       success: true,
       message: 'Firebase está funcionando corretamente',
+      projectId,
       readCount: snapshot.docs.length,
       writeId: docRef.id
     })
     
   } catch (error) {
-    console.error('Erro no teste do Firebase:', error)
-    console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace')
-    
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : 'Erro desconhecido',
