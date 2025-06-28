@@ -17,7 +17,7 @@ const firebaseConfig = {
 // Initialize Firebase only if no apps exist
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0]
 
-// Initialize Firebase services
+// Initialize Firebase services - sempre disponível
 export const db = getFirestore(app)
 export const storage = getStorage(app)
 
