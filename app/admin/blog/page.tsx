@@ -33,31 +33,21 @@ export default function AdminBlogPage() {
 
   const fetchPosts = async () => {
     try {
-      // Simular dados de posts
-      const mockPosts: BlogPost[] = [
-        {
-          id: '1',
-          title: 'Como ter sucesso em relacionamentos sugar',
-          slug: 'como-ter-sucesso-em-relacionamentos-sugar',
-          content: 'Conteúdo completo do post...',
-          excerpt: 'Dicas essenciais para construir relacionamentos sugar saudáveis e duradouros.',
-          status: 'published',
-          publishedAt: '2024-01-15T10:30:00Z',
-          createdAt: '2024-01-15T10:30:00Z',
-          updatedAt: '2024-01-15T10:30:00Z'
-        },
-        {
-          id: '2',
-          title: 'Segurança na plataforma Bebaby',
-          slug: 'seguranca-na-plataforma-bebaby',
-          content: 'Conteúdo completo do post...',
-          excerpt: 'Conheça as medidas de segurança implementadas para proteger nossos usuários.',
-          status: 'draft',
-          createdAt: '2024-01-14T15:45:00Z',
-          updatedAt: '2024-01-14T15:45:00Z'
-        }
-      ]
-      setPosts(mockPosts)
+      console.log('Iniciando busca de posts...')
+      const response = await fetch('/api/blog')
+      console.log('Response status:', response.status)
+      console.log('Response ok:', response.ok)
+      
+      if (response.ok) {
+        const posts = await response.json()
+        console.log('Posts recebidos da API:', posts)
+        setPosts(posts)
+      } else {
+        const errorText = await response.text()
+        console.error('Erro ao buscar posts:', response.statusText)
+        console.error('Erro detalhado:', errorText)
+        toast.error('Erro ao carregar posts')
+      }
     } catch (error) {
       console.error('Erro ao buscar posts:', error)
       toast.error('Erro ao carregar posts')

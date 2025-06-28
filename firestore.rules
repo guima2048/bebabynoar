@@ -7,10 +7,7 @@ service cloud.firestore {
     // and delete all data in your Firestore database. It is useful for getting
     // started, but it is configured to expire after 30 days because it
     // leaves your app open to attackers. At that time, all client
-    // requests to your Firestore database will be denied.
-    //
-    // Make sure to write security rules for your app before that time, or else
-    // all client requests to your Firestore database will be denied until you Update
+    // requests to your Firestore database will be denied until you Update
     // your rules
     match /{document=**} {
       allow read, write: if request.time < timestamp.date(2025, 7, 25);
@@ -50,6 +47,12 @@ service cloud.firestore {
         && (request.query.filters == null || 
             (request.query.filters[0].fieldPath in ['username', 'email'] 
              && request.query.filters[0].op in ['==']));
+    }
+    
+    // Regras específicas para blog - PERMITIR TODAS AS OPERAÇÕES TEMPORARIAMENTE
+    match /blog/{postId} {
+      // Permitir leitura e escrita para todos (temporariamente para debug)
+      allow read, write: if true;
     }
     
     // Regras para outros documentos (fotos, mensagens, etc.)

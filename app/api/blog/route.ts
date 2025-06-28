@@ -4,6 +4,17 @@ import { collection, addDoc, updateDoc, doc, deleteDoc, serverTimestamp, getDocs
 
 export async function GET(req: NextRequest) {
   try {
+    console.log('Testando conexão com Firebase no Vercel...')
+    console.log('Firebase config:', {
+      projectId: db.app.options.projectId,
+      databaseId: db.app.options.databaseId,
+      authDomain: db.app.options.authDomain
+    })
+    
+    // Teste simples para verificar se o Firebase está funcionando
+    const testQuery = query(collection(db, 'blog'), orderBy('createdAt', 'desc'))
+    console.log('Query criada, tentando executar...')
+    
     const { searchParams } = new URL(req.url)
     const status = searchParams.get('status')
     
@@ -13,15 +24,20 @@ export async function GET(req: NextRequest) {
       q = query(q, where('status', '==', status))
     }
     
+    console.log('Executando query...')
     const snapshot = await getDocs(q)
+    console.log('Query executada com sucesso, documentos encontrados:', snapshot.docs.length)
+    
     const posts = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }))
     
+    console.log('Posts processados:', posts.length)
     return NextResponse.json(posts)
   } catch (error) {
-    console.error('Erro ao buscar posts:', error)
+    console.error('Erro detalhado ao buscar posts:', error)
+    console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace')
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
@@ -31,9 +47,13 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    console.log('Iniciando criação de post...')
     const { title, content, excerpt, status } = await req.json()
     
+    console.log('Dados recebidos:', { title, content: content?.substring(0, 100) + '...', excerpt, status })
+    
     if (!title || !content) {
+      console.log('Dados obrigatórios faltando:', { title: !!title, content: !!content })
       return NextResponse.json({ error: 'Título e conteúdo são obrigatórios' }, { status: 400 })
     }
 
@@ -47,6 +67,8 @@ export async function POST(req: NextRequest) {
       .replace(/-+/g, '-')
       .trim()
 
+    console.log('Slug gerado:', slug)
+
     const postData = {
       title,
       slug,
@@ -58,7 +80,11 @@ export async function POST(req: NextRequest) {
       publishedAt: status === 'published' ? serverTimestamp() : null,
     }
 
+    console.log('Dados do post preparados:', postData)
+
+    console.log('Tentando salvar no Firestore...')
     const docRef = await addDoc(collection(db, 'blog'), postData)
+    console.log('Post salvo com sucesso, ID:', docRef.id)
     
     return NextResponse.json({
       id: docRef.id,
@@ -66,7 +92,8 @@ export async function POST(req: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Erro ao criar post:', error)
+    console.error('Erro detalhado ao criar post:', error)
+    console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace')
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
