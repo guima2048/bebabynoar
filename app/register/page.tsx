@@ -67,7 +67,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false)
   const [cidades, setCidades] = useState<string[]>([])
   const [loadingCidades, setLoadingCidades] = useState(false)
-  const { register, handleSubmit, formState: { errors }, setError, watch } = useForm<FormData>({
+  const { register, handleSubmit, formState: { errors }, setError, watch, setValue } = useForm<FormData>({
     resolver: zodResolver(schema),
   })
   const router = useRouter()
@@ -79,10 +79,12 @@ export default function RegisterPage() {
   const carregarCidades = async (siglaEstado: string) => {
     if (!siglaEstado) {
       setCidades([])
+      setValue('city', '') // Reset do campo cidade
       return
     }
 
     setLoadingCidades(true)
+    setValue('city', '') // Reset do campo cidade quando estado muda
     try {
       const estadoData = await import(`./data/${siglaEstado}.json`)
       setCidades(estadoData.cidades)
@@ -101,8 +103,9 @@ export default function RegisterPage() {
       carregarCidades(selectedState)
     } else {
       setCidades([])
+      setValue('city', '')
     }
-  }, [selectedState])
+  }, [selectedState, setValue])
 
   async function onSubmit(data: FormData) {
     setLoading(true)
@@ -184,7 +187,10 @@ export default function RegisterPage() {
         <div className="flex gap-2">
           <div className="flex-1">
             <label className="block mb-1 font-medium">Estado</label>
-            <select className="input-field" {...register('state')}>
+            <select 
+              className="input-field w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+              {...register('state')}
+            >
               <option value="">Selecione o estado</option>
               {estados.map((estado) => (
                 <option key={estado.sigla} value={estado.sigla}>{estado.nome}</option>
@@ -194,7 +200,15 @@ export default function RegisterPage() {
           </div>
           <div className="flex-1">
             <label className="block mb-1 font-medium">Cidade</label>
-            <select className="input-field" {...register('city')} disabled={!selectedState || loadingCidades}>
+            <select 
+              className={`input-field w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                !selectedState || loadingCidades 
+                  ? 'border-gray-200 bg-gray-50 text-gray-500' 
+                  : 'border-gray-300'
+              }`}
+              {...register('city')} 
+              disabled={!selectedState || loadingCidades}
+            >
               <option value="">
                 {loadingCidades ? 'Carregando...' : selectedState ? 'Selecione a cidade' : 'Selecione um estado primeiro'}
               </option>
