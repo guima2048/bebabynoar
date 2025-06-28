@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -12,6 +12,36 @@ import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { differenceInYears, parseISO } from 'date-fns'
 
+const estados = [
+  { sigla: 'AC', nome: 'Acre' },
+  { sigla: 'AL', nome: 'Alagoas' },
+  { sigla: 'AP', nome: 'Amapá' },
+  { sigla: 'AM', nome: 'Amazonas' },
+  { sigla: 'BA', nome: 'Bahia' },
+  { sigla: 'CE', nome: 'Ceará' },
+  { sigla: 'DF', nome: 'Distrito Federal' },
+  { sigla: 'ES', nome: 'Espírito Santo' },
+  { sigla: 'GO', nome: 'Goiás' },
+  { sigla: 'MA', nome: 'Maranhão' },
+  { sigla: 'MT', nome: 'Mato Grosso' },
+  { sigla: 'MS', nome: 'Mato Grosso do Sul' },
+  { sigla: 'MG', nome: 'Minas Gerais' },
+  { sigla: 'PA', nome: 'Pará' },
+  { sigla: 'PB', nome: 'Paraíba' },
+  { sigla: 'PR', nome: 'Paraná' },
+  { sigla: 'PE', nome: 'Pernambuco' },
+  { sigla: 'PI', nome: 'Piauí' },
+  { sigla: 'RJ', nome: 'Rio de Janeiro' },
+  { sigla: 'RN', nome: 'Rio Grande do Norte' },
+  { sigla: 'RS', nome: 'Rio Grande do Sul' },
+  { sigla: 'RO', nome: 'Rondônia' },
+  { sigla: 'RR', nome: 'Roraima' },
+  { sigla: 'SC', nome: 'Santa Catarina' },
+  { sigla: 'SP', nome: 'São Paulo' },
+  { sigla: 'SE', nome: 'Sergipe' },
+  { sigla: 'TO', nome: 'Tocantins' },
+]
+
 const schema = z.object({
   username: z.string().min(3, 'Mínimo 3 caracteres').max(20).regex(/^[a-zA-Z0-9_]+$/, 'Apenas letras, números e _').toLowerCase(),
   birthdate: z.string().refine((date) => {
@@ -22,7 +52,7 @@ const schema = z.object({
   email: z.string().email('E-mail inválido'),
   emailConfirm: z.string(),
   password: z.string().min(8, 'Mínimo 8 caracteres').regex(/[A-Z]/, '1 maiúscula').regex(/[a-z]/, '1 minúscula').regex(/[0-9]/, '1 número').regex(/[^A-Za-z0-9]/, '1 caractere especial'),
-  state: z.string().min(2, 'Informe o estado'),
+  state: z.string().refine((val) => estados.some(e => e.sigla === val), { message: 'Selecione um estado válido' }),
   city: z.string().min(2, 'Informe a cidade'),
   userType: z.enum(['sugar_baby', 'sugar_daddy'], { required_error: 'Selecione o tipo de usuário' }),
   terms: z.literal(true, { errorMap: () => ({ message: 'Você deve aceitar os termos' }) }),
@@ -35,10 +65,44 @@ type FormData = z.infer<typeof schema>
 
 export default function RegisterPage() {
   const [loading, setLoading] = useState(false)
-  const { register, handleSubmit, formState: { errors }, setError } = useForm<FormData>({
+  const [cidades, setCidades] = useState<string[]>([])
+  const [loadingCidades, setLoadingCidades] = useState(false)
+  const { register, handleSubmit, formState: { errors }, setError, watch } = useForm<FormData>({
     resolver: zodResolver(schema),
   })
   const router = useRouter()
+  
+  // Observa mudanças no campo estado
+  const selectedState = watch('state')
+
+  // Função para carregar cidades do estado selecionado
+  const carregarCidades = async (siglaEstado: string) => {
+    if (!siglaEstado) {
+      setCidades([])
+      return
+    }
+
+    setLoadingCidades(true)
+    try {
+      const estadoData = await import(`./data/${siglaEstado}.json`)
+      setCidades(estadoData.cidades)
+    } catch (error) {
+      console.error('Erro ao carregar cidades:', error)
+      setCidades([])
+      toast.error('Erro ao carregar cidades do estado selecionado')
+    } finally {
+      setLoadingCidades(false)
+    }
+  }
+
+  // Efeito para carregar cidades quando o estado muda
+  useEffect(() => {
+    if (selectedState) {
+      carregarCidades(selectedState)
+    } else {
+      setCidades([])
+    }
+  }, [selectedState])
 
   async function onSubmit(data: FormData) {
     setLoading(true)
@@ -120,12 +184,24 @@ export default function RegisterPage() {
         <div className="flex gap-2">
           <div className="flex-1">
             <label className="block mb-1 font-medium">Estado</label>
-            <input type="text" className="input-field" {...register('state')} />
+            <select className="input-field" {...register('state')}>
+              <option value="">Selecione o estado</option>
+              {estados.map((estado) => (
+                <option key={estado.sigla} value={estado.sigla}>{estado.nome}</option>
+              ))}
+            </select>
             {errors.state && <span className="text-red-500 text-sm">{errors.state.message}</span>}
           </div>
           <div className="flex-1">
             <label className="block mb-1 font-medium">Cidade</label>
-            <input type="text" className="input-field" {...register('city')} />
+            <select className="input-field" {...register('city')} disabled={!selectedState || loadingCidades}>
+              <option value="">
+                {loadingCidades ? 'Carregando...' : selectedState ? 'Selecione a cidade' : 'Selecione um estado primeiro'}
+              </option>
+              {cidades.map((cidade) => (
+                <option key={cidade} value={cidade}>{cidade}</option>
+              ))}
+            </select>
             {errors.city && <span className="text-red-500 text-sm">{errors.city.message}</span>}
           </div>
         </div>
