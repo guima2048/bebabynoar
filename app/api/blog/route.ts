@@ -62,6 +62,8 @@ export async function POST(req: NextRequest) {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       publishedAt: status === 'published' ? serverTimestamp() : null,
+      readTime: Math.ceil(content.split(/\s+/).length / 200),
+      author: 'Admin',
     }
 
     console.log('Dados do post preparados:', postData)
@@ -108,7 +110,7 @@ export async function PUT(req: NextRequest) {
       status,
       readTime,
       updatedAt: serverTimestamp(),
-      ...(status === 'published' && { publishedAt: publishedAt || new Date().toISOString() })
+      ...(status === 'published' ? { publishedAt: serverTimestamp() } : {}),
     }
 
     await updateDoc(doc(db, 'blog', id), updateData)
