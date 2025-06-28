@@ -38,10 +38,16 @@ async function getBlogPosts(): Promise<BlogPost[]> {
 }
 
 function parseFirestoreDate(date: any): Date {
-  if (!date) return new Date(0)
-  if (typeof date === 'string' || typeof date === 'number') return new Date(date)
-  if (typeof date === 'object' && 'seconds' in date) return new Date(date.seconds * 1000)
-  return new Date(0)
+  if (!date) {
+    return new Date(0);
+  }
+  if (typeof date === 'string' || typeof date === 'number') {
+    return new Date(date);
+  }
+  if (typeof date === 'object' && 'seconds' in date) {
+    return new Date(date.seconds * 1000);
+  }
+  return new Date(0);
 }
 
 export default async function BlogPage() {
