@@ -69,7 +69,7 @@ export default function AdminDashboardPage() {
   const statCards = [
     {
       title: 'Total de Usuários',
-      value: stats.totalUsers.toLocaleString(),
+      value: typeof stats.totalUsers === 'number' ? stats.totalUsers.toLocaleString() : '0',
       icon: Users,
       color: 'bg-blue-500',
       href: '/admin/users',
@@ -78,25 +78,25 @@ export default function AdminDashboardPage() {
     },
     {
       title: 'Usuários Ativos',
-      value: stats.activeUsers.toLocaleString(),
+      value: typeof stats.activeUsers === 'number' ? stats.activeUsers.toLocaleString() : '0',
       icon: UserCheck,
       color: 'bg-green-500',
       href: '/admin/users',
-      trend: `${Math.round((stats.activeUsers / stats.totalUsers) * 100)}% do total`,
+      trend: (typeof stats.activeUsers === 'number' && typeof stats.totalUsers === 'number' && stats.totalUsers > 0) ? `${Math.round((stats.activeUsers / stats.totalUsers) * 100)}% do total` : '0% do total',
       trendColor: 'text-blue-600'
     },
     {
       title: 'Usuários Premium',
-      value: stats.premiumUsers.toLocaleString(),
+      value: typeof stats.premiumUsers === 'number' ? stats.premiumUsers.toLocaleString() : '0',
       icon: Crown,
       color: 'bg-yellow-500',
       href: '/admin/users',
-      trend: `${Math.round((stats.premiumUsers / stats.totalUsers) * 100)}% do total`,
+      trend: (typeof stats.premiumUsers === 'number' && typeof stats.totalUsers === 'number' && stats.totalUsers > 0) ? `${Math.round((stats.premiumUsers / stats.totalUsers) * 100)}% do total` : '0% do total',
       trendColor: 'text-yellow-600'
     },
     {
       title: 'Online Agora',
-      value: stats.onlineUsers.toLocaleString(),
+      value: typeof stats.onlineUsers === 'number' ? stats.onlineUsers.toLocaleString() : '0',
       icon: Eye,
       color: 'bg-green-600',
       href: '/admin/users',
@@ -105,25 +105,25 @@ export default function AdminDashboardPage() {
     },
     {
       title: 'Denúncias Pendentes',
-      value: stats.pendingReports.toLocaleString(),
+      value: typeof stats.pendingReports === 'number' ? stats.pendingReports.toLocaleString() : '0',
       icon: AlertTriangle,
       color: 'bg-red-500',
       href: '/admin/reports',
-      trend: stats.pendingReports > 0 ? 'Precisa atenção' : 'Tudo em ordem',
-      trendColor: stats.pendingReports > 0 ? 'text-red-600' : 'text-green-600'
+      trend: typeof stats.pendingReports === 'number' && stats.pendingReports > 0 ? 'Precisa atenção' : 'Tudo em ordem',
+      trendColor: typeof stats.pendingReports === 'number' && stats.pendingReports > 0 ? 'text-red-600' : 'text-green-600'
     },
     {
       title: 'Conteúdo Pendente',
-      value: stats.pendingContent.toLocaleString(),
+      value: typeof stats.pendingContent === 'number' ? stats.pendingContent.toLocaleString() : '0',
       icon: Clock,
       color: 'bg-orange-500',
       href: '/admin/pending-content',
-      trend: stats.pendingContent > 0 ? 'Aguardando moderação' : 'Nada pendente',
-      trendColor: stats.pendingContent > 0 ? 'text-orange-600' : 'text-green-600'
+      trend: typeof stats.pendingContent === 'number' && stats.pendingContent > 0 ? 'Aguardando moderação' : 'Nada pendente',
+      trendColor: typeof stats.pendingContent === 'number' && stats.pendingContent > 0 ? 'text-orange-600' : 'text-green-600'
     },
     {
       title: 'Conversas Ativas',
-      value: stats.activeConversations.toLocaleString(),
+      value: typeof stats.activeConversations === 'number' ? stats.activeConversations.toLocaleString() : '0',
       icon: MessageCircle,
       color: 'bg-purple-500',
       href: '/admin/users',
@@ -132,7 +132,7 @@ export default function AdminDashboardPage() {
     },
     {
       title: 'Posts do Blog',
-      value: stats.totalBlogPosts.toLocaleString(),
+      value: typeof stats.totalBlogPosts === 'number' ? stats.totalBlogPosts.toLocaleString() : '0',
       icon: FileText,
       color: 'bg-indigo-500',
       href: '/admin/blog',
@@ -151,7 +151,7 @@ export default function AdminDashboardPage() {
               Visão geral da plataforma Bebaby App
               {stats.lastUpdated && (
                 <span className="text-sm text-gray-500 ml-2">
-                  • Última atualização: {new Date(stats.lastUpdated).toLocaleString('pt-BR')}
+                  • Última atualização: {stats.lastUpdated ? new Date(stats.lastUpdated).toLocaleString('pt-BR') : 'N/A'}
                 </span>
               )}
             </p>
