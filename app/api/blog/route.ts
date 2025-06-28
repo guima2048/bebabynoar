@@ -11,10 +11,6 @@ export async function GET(req: NextRequest) {
       authDomain: db.app.options.authDomain
     })
     
-    // Teste simples para verificar se o Firebase está funcionando
-    const testQuery = query(collection(db, 'blog'), orderBy('createdAt', 'desc'))
-    console.log('Query criada, tentando executar...')
-    
     const { searchParams } = new URL(req.url)
     const status = searchParams.get('status')
     
@@ -34,6 +30,36 @@ export async function GET(req: NextRequest) {
     }))
     
     console.log('Posts processados:', posts.length)
+    
+    // Se não há posts, retornar dados de teste para verificar se a API está funcionando
+    if (posts.length === 0) {
+      console.log('Nenhum post encontrado, retornando dados de teste...')
+      const testPosts = [
+        {
+          id: 'test-1',
+          title: 'Teste de Conexão - Post 1',
+          slug: 'teste-de-conexao-post-1',
+          content: 'Este é um post de teste para verificar se a API está funcionando.',
+          excerpt: 'Post de teste para verificar conectividade.',
+          status: 'published',
+          publishedAt: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        },
+        {
+          id: 'test-2',
+          title: 'Teste de Conexão - Post 2',
+          slug: 'teste-de-conexao-post-2',
+          content: 'Segundo post de teste para verificar se a API está funcionando.',
+          excerpt: 'Segundo post de teste para verificar conectividade.',
+          status: 'draft',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }
+      ]
+      return NextResponse.json(testPosts)
+    }
+    
     return NextResponse.json(posts)
   } catch (error) {
     console.error('Erro detalhado ao buscar posts:', error)
