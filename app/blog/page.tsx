@@ -37,6 +37,13 @@ async function getBlogPosts(): Promise<BlogPost[]> {
   }
 }
 
+function parseFirestoreDate(date: any): Date {
+  if (!date) return new Date(0)
+  if (typeof date === 'string' || typeof date === 'number') return new Date(date)
+  if (typeof date === 'object' && 'seconds' in date) return new Date(date.seconds * 1000)
+  return new Date(0)
+}
+
 export default async function BlogPage() {
   const posts = await getBlogPosts()
 
@@ -84,7 +91,7 @@ export default async function BlogPage() {
                   <div className="flex items-center gap-4 text-sm text-secondary-500 mb-3">
                     <span className="flex items-center gap-1">
                       <Calendar className="w-4 h-4" />
-                      {format(new Date(post.publishedAt), 'dd MMM yyyy', { locale: ptBR })}
+                      {format(parseFirestoreDate(post.publishedAt), 'dd MMM yyyy', { locale: ptBR })}
                     </span>
                     <span className="flex items-center gap-1">
                       <Clock className="w-4 h-4" />
