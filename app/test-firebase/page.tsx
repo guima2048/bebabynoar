@@ -20,7 +20,6 @@ export default function TestFirebasePage() {
       // Teste 1: Verificar configuração
       const config = {
         projectId: db.app.options.projectId,
-        databaseId: db.app.options.databaseId,
         authDomain: db.app.options.authDomain
       }
       console.log('Firebase config:', config)
