@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const status = searchParams.get('status')
     
-    let q = query(collection(db, 'blog'), orderBy('createdAt', 'desc'))
+    const q = query(collection(db, 'blog'), orderBy('createdAt', 'desc'))
     
     // Buscar todos os posts (published e scheduled)
     const snapshot = await getDocs(q)
@@ -20,7 +20,9 @@ export async function GET(req: NextRequest) {
     // Se status for published, incluir agendados cuja data já passou
     if (status === 'published') {
       posts = posts.filter((post: any) => {
-        if (post.status === 'published') return true;
+        if (post.status === 'published') {
+          return true;
+        }
         if (post.status === 'scheduled' && post.scheduledFor && post.scheduledFor.seconds) {
           return (post.scheduledFor.seconds * 1000) <= now;
         }
