@@ -9,8 +9,9 @@ interface BlogPost {
   slug: string
   content: string
   excerpt: string
-  status: 'draft' | 'published'
+  status: 'draft' | 'published' | 'scheduled'
   publishedAt?: string
+  scheduledFor?: string
   createdAt: string
   updatedAt: string
 }
@@ -24,7 +25,8 @@ export default function AdminBlogPage() {
     title: '',
     content: '',
     excerpt: '',
-    status: 'draft' as 'draft' | 'published'
+    status: 'draft' as 'draft' | 'published' | 'scheduled',
+    scheduledFor: ''
   })
 
   useEffect(() => {
@@ -57,16 +59,27 @@ export default function AdminBlogPage() {
       return
     }
 
+    if (formData.status === 'scheduled' && !formData.scheduledFor) {
+      toast.error('Selecione uma data para agendamento')
+      return
+    }
+
     try {
+      const postData: any = {
+        title: formData.title,
+        content: formData.content,
+        excerpt: formData.excerpt,
+        status: formData.status
+      }
+
+      if (formData.status === 'scheduled' && formData.scheduledFor) {
+        postData.scheduledFor = new Date(formData.scheduledFor).toISOString()
+      }
+
       const response = await fetch('/api/blog', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: formData.title,
-          content: formData.content,
-          excerpt: formData.excerpt,
-          status: formData.status
-        })
+        body: JSON.stringify(postData)
       })
 
       if (response.ok) {
@@ -92,16 +105,27 @@ export default function AdminBlogPage() {
       return
     }
 
+    if (formData.status === 'scheduled' && !formData.scheduledFor) {
+      toast.error('Selecione uma data para agendamento')
+      return
+    }
+
     try {
+      const postData: any = {
+        title: formData.title,
+        content: formData.content,
+        excerpt: formData.excerpt,
+        status: formData.status
+      }
+
+      if (formData.status === 'scheduled' && formData.scheduledFor) {
+        postData.scheduledFor = new Date(formData.scheduledFor).toISOString()
+      }
+
       const response = await fetch(`/api/blog/${editingPost.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: formData.title,
-          content: formData.content,
-          excerpt: formData.excerpt,
-          status: formData.status
-        })
+        body: JSON.stringify(postData)
       })
 
       if (response.ok) {
@@ -148,7 +172,8 @@ export default function AdminBlogPage() {
       title: post.title,
       content: post.content,
       excerpt: post.excerpt,
-      status: post.status
+      status: post.status,
+      scheduledFor: post.scheduledFor ? new Date(post.scheduledFor).toISOString().slice(0, 16) : ''
     })
     setShowForm(true)
   }
@@ -158,7 +183,8 @@ export default function AdminBlogPage() {
       title: '',
       content: '',
       excerpt: '',
-      status: 'draft'
+      status: 'draft',
+      scheduledFor: ''
     })
   }
 
@@ -166,6 +192,41 @@ export default function AdminBlogPage() {
     setShowForm(false)
     setEditingPost(null)
     resetForm()
+  }
+
+  const formatDate = (dateString: string) => {
+    try {
+      return new Date(dateString).toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    } catch {
+      return 'Data inválida'
+    }
+  }
+
+  const getStatusBadge = (post: BlogPost) => {
+    switch (post.status) {
+      case 'published':
+        return <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Publicado</span>
+      case 'scheduled':
+        return <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Agendado</span>
+      default:
+        return <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Rascunho</span>
+    }
+  }
+
+  const getDateDisplay = (post: BlogPost) => {
+    if (post.status === 'scheduled' && post.scheduledFor) {
+      return `Agendado para: ${formatDate(post.scheduledFor)}`
+    }
+    if (post.status === 'published' && post.publishedAt) {
+      return `Publicado em: ${formatDate(post.publishedAt)}`
+    }
+    return `Atualizado em: ${formatDate(post.updatedAt)}`
   }
 
   if (loading) {
@@ -220,14 +281,30 @@ export default function AdminBlogPage() {
                 </label>
                 <select
                   value={formData.status}
-                  onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as 'draft' | 'published' }))}
+                  onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as 'draft' | 'published' | 'scheduled' }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
                 >
                   <option value="draft">Rascunho</option>
                   <option value="published">Publicado</option>
+                  <option value="scheduled">Agendado</option>
                 </select>
               </div>
             </div>
+
+            {formData.status === 'scheduled' && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Data e Hora do Agendamento *
+                </label>
+                <input
+                  type="datetime-local"
+                  value={formData.scheduledFor}
+                  onChange={(e) => setFormData(prev => ({ ...prev, scheduledFor: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  required={formData.status === 'scheduled'}
+                />
+              </div>
+            )}
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -306,16 +383,10 @@ export default function AdminBlogPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                      post.status === 'published' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {post.status === 'published' ? 'Publicado' : 'Rascunho'}
-                    </span>
+                    {getStatusBadge(post)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {new Date(post.updatedAt).toLocaleDateString('pt-BR')}
+                    {getDateDisplay(post)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex gap-2">

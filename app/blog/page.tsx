@@ -50,6 +50,16 @@ function parseFirestoreDate(date: any): Date {
   return new Date(0);
 }
 
+function getPostDate(post: any): string {
+  if (post.status === 'scheduled' && post.scheduledFor) {
+    return `Agendado para ${format(parseFirestoreDate(post.scheduledFor), 'dd MMM yyyy HH:mm', { locale: ptBR })}`;
+  }
+  if (post.publishedAt) {
+    return format(parseFirestoreDate(post.publishedAt), 'dd MMM yyyy', { locale: ptBR });
+  }
+  return format(parseFirestoreDate(post.createdAt), 'dd MMM yyyy', { locale: ptBR });
+}
+
 export default async function BlogPage() {
   const posts = await getBlogPosts()
 
@@ -97,7 +107,7 @@ export default async function BlogPage() {
                   <div className="flex items-center gap-4 text-sm text-secondary-500 mb-3">
                     <span className="flex items-center gap-1">
                       <Calendar className="w-4 h-4" />
-                      {format(parseFirestoreDate(post.publishedAt), 'dd MMM yyyy', { locale: ptBR })}
+                      {getPostDate(post)}
                     </span>
                     <span className="flex items-center gap-1">
                       <Clock className="w-4 h-4" />
