@@ -20,34 +20,6 @@ export async function GET(req: NextRequest) {
       ...doc.data()
     }))
     
-    // Se não há posts, retornar dados de teste para verificar se a API está funcionando
-    if (posts.length === 0) {
-      const testPosts = [
-        {
-          id: 'test-1',
-          title: 'Teste de Conexão - Post 1',
-          slug: 'teste-de-conexao-post-1',
-          content: 'Este é um post de teste para verificar se a API está funcionando.',
-          excerpt: 'Post de teste para verificar conectividade.',
-          status: 'published',
-          publishedAt: new Date().toISOString(),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        },
-        {
-          id: 'test-2',
-          title: 'Teste de Conexão - Post 2',
-          slug: 'teste-de-conexao-post-2',
-          content: 'Segundo post de teste para verificar se a API está funcionando.',
-          excerpt: 'Segundo post de teste para verificar conectividade.',
-          status: 'draft',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        }
-      ]
-      return NextResponse.json(testPosts)
-    }
-    
     return NextResponse.json(posts)
   } catch (error) {
     return NextResponse.json(
