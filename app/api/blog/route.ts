@@ -9,17 +9,27 @@ export async function GET(req: NextRequest) {
     
     let q = query(collection(db, 'blog'), orderBy('createdAt', 'desc'))
     
-    if (status && status !== 'all') {
-      q = query(q, where('status', '==', status))
-    }
-    
+    // Buscar todos os posts (published e scheduled)
     const snapshot = await getDocs(q)
-    
-    const posts = snapshot.docs.map(doc => ({
+    const now = Date.now();
+    let posts = snapshot.docs.map((doc: any) => ({
       id: doc.id,
       ...doc.data()
     }))
-    
+
+    // Se status for published, incluir agendados cuja data já passou
+    if (status === 'published') {
+      posts = posts.filter((post: any) => {
+        if (post.status === 'published') return true;
+        if (post.status === 'scheduled' && post.scheduledFor && post.scheduledFor.seconds) {
+          return (post.scheduledFor.seconds * 1000) <= now;
+        }
+        return false;
+      });
+    } else if (status && status !== 'all') {
+      posts = posts.filter((post: any) => post.status === status);
+    }
+
     return NextResponse.json(posts)
   } catch (error) {
     return NextResponse.json(
@@ -31,29 +41,18 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    console.log('Iniciando criação de post...')
-    const { title, content, excerpt, status } = await req.json()
-    
-    console.log('Dados recebidos:', { title, content: content?.substring(0, 100) + '...', excerpt, status })
-    
+    const { title, content, excerpt, status, scheduledFor } = await req.json()
     if (!title || !content) {
-      console.log('Dados obrigatórios faltando:', { title: !!title, content: !!content })
       return NextResponse.json({ error: 'Título e conteúdo são obrigatórios' }, { status: 400 })
     }
-
-    // Gerar slug a partir do título
     const slug = title
       .toLowerCase()
       .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-z0-9\s-]/g, '')
       .replace(/\s+/g, '-')
       .replace(/-+/g, '-')
       .trim()
-
-    console.log('Slug gerado:', slug)
-
-    const postData = {
+    const postData: any = {
       title,
       slug,
       content,
@@ -61,45 +60,30 @@ export async function POST(req: NextRequest) {
       status: status || 'draft',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-      publishedAt: status === 'published' ? serverTimestamp() : null,
       readTime: Math.ceil(content.split(/\s+/).length / 200),
       author: 'Admin',
     }
-
-    console.log('Dados do post preparados:', postData)
-
-    console.log('Tentando salvar no Firestore...')
+    if (status === 'published') {
+      postData.publishedAt = serverTimestamp();
+    } else if (status === 'scheduled' && scheduledFor) {
+      postData.scheduledFor = scheduledFor;
+    }
     const docRef = await addDoc(collection(db, 'blog'), postData)
-    console.log('Post salvo com sucesso, ID:', docRef.id)
-    
-    return NextResponse.json({
-      id: docRef.id,
-      ...postData
-    })
-
+    return NextResponse.json({ id: docRef.id, ...postData })
   } catch (error) {
-    console.error('Erro detalhado ao criar post:', error)
-    console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace')
-    return NextResponse.json(
-      { error: 'Erro interno do servidor' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
   }
 }
 
 export async function PUT(req: NextRequest) {
   try {
-    const { id, title, content, excerpt, slug, featuredImage, metaTitle, metaDescription, status, publishedAt } = await req.json()
-    
+    const { id, title, content, excerpt, slug, featuredImage, metaTitle, metaDescription, status, publishedAt, scheduledFor } = await req.json()
     if (!id || !title || !content || !slug) {
       return NextResponse.json({ error: 'ID, título, conteúdo e slug são obrigatórios' }, { status: 400 })
     }
-
-    // Calcula tempo de leitura
     const wordCount = content.split(/\s+/).length
     const readTime = Math.ceil(wordCount / 200)
-
-    const updateData = {
+    const updateData: any = {
       title,
       content,
       excerpt: excerpt || content.substring(0, 160) + '...',
@@ -110,17 +94,17 @@ export async function PUT(req: NextRequest) {
       status,
       readTime,
       updatedAt: serverTimestamp(),
-      ...(status === 'published' ? { publishedAt: serverTimestamp() } : {}),
     }
-
+    if (status === 'published') {
+      updateData.publishedAt = serverTimestamp();
+      updateData.scheduledFor = null;
+    } else if (status === 'scheduled' && scheduledFor) {
+      updateData.scheduledFor = scheduledFor;
+      updateData.publishedAt = null;
+    }
     await updateDoc(doc(db, 'blog', id), updateData)
-    
-    return NextResponse.json({ 
-      success: true,
-      message: 'Post atualizado com sucesso!'
-    })
+    return NextResponse.json({ success: true, message: 'Post atualizado com sucesso!' })
   } catch (err) {
-    console.error('Erro ao atualizar post:', err)
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }
