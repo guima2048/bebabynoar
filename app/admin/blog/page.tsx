@@ -16,6 +16,31 @@ interface BlogPost {
   updatedAt: string
 }
 
+// Função utilitária para tratar datas do Firestore
+function parseFirestoreDate(date: any): Date | null {
+  if (!date) return null;
+  if (typeof date === 'string' || typeof date === 'number') {
+    const d = new Date(date);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  if (typeof date === 'object' && 'seconds' in date) {
+    return new Date(date.seconds * 1000);
+  }
+  return null;
+}
+
+function formatDate(date: any) {
+  const d = parseFirestoreDate(date);
+  if (!d) return 'Data não definida';
+  return d.toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
 export default function AdminBlogPage() {
   const [posts, setPosts] = useState<BlogPost[]>([])
   const [loading, setLoading] = useState(true)
@@ -192,20 +217,6 @@ export default function AdminBlogPage() {
     setShowForm(false)
     setEditingPost(null)
     resetForm()
-  }
-
-  const formatDate = (dateString: string) => {
-    try {
-      return new Date(dateString).toLocaleDateString('pt-BR', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-    } catch {
-      return 'Data inválida'
-    }
   }
 
   const getStatusBadge = (post: BlogPost) => {
