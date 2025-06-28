@@ -89,8 +89,8 @@ export default function TestFirebasePage() {
       <div className="mt-8">
         <h2 className="text-xl font-semibold mb-4">Instruções:</h2>
         <ol className="list-decimal list-inside space-y-2">
-          <li>Clique no botão "Testar Firebase"</li>
-          <li>Verifique se aparece "Sucesso!"</li>
+          <li>Clique no botão &quot;Testar Firebase&quot;</li>
+          <li>Verifique se aparece &quot;Sucesso!&quot;</li>
           <li>Se aparecer erro, verifique as variáveis de ambiente no Vercel</li>
           <li>Abra o console do navegador para ver logs detalhados</li>
         </ol>

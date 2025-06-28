@@ -4,12 +4,9 @@ import { collection, getDocs, query, where, orderBy, limit, serverTimestamp } fr
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('Iniciando busca de estatísticas...')
-    
     // Verificar se é uma requisição administrativa
     const authHeader = request.headers.get('authorization')
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log('Tentando acessar sem autorização, retornando dados de teste...')
       // Retornar dados de teste se não houver autorização
       return NextResponse.json({
         period: 30,
@@ -107,8 +104,6 @@ export async function GET(request: NextRequest) {
     const now = new Date()
     const startDate = new Date(now.getTime() - parseInt(period) * 24 * 60 * 60 * 1000)
 
-    console.log('Tentando conectar com Firebase...')
-
     // Estatísticas de usuários
     interface UserWithMeta {
       id: string;
@@ -123,8 +118,6 @@ export async function GET(request: NextRequest) {
     const usersRef = collection(db, 'users')
     const allUsers = await getDocs(usersRef)
     const users = allUsers.docs.map(doc => ({ id: doc.id, ...doc.data() })) as UserWithMeta[]
-
-    console.log('Usuários carregados:', users.length)
 
     const newUsers = users.filter(user => 
       user.createdAt && (
@@ -245,8 +238,6 @@ export async function GET(request: NextRequest) {
       reportRate: users.length > 0 ? (reports.length / users.length) * 100 : 0,
     }
 
-    console.log('Estatísticas calculadas com sucesso')
-
     return NextResponse.json({
       period: parseInt(period),
       startDate: startDate.toISOString(),
@@ -319,9 +310,6 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Erro ao buscar estatísticas:', error)
-    console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace')
-    
     // Retornar dados de teste em caso de erro
     return NextResponse.json({
       period: 30,

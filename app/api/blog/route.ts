@@ -4,13 +4,6 @@ import { collection, addDoc, updateDoc, doc, deleteDoc, serverTimestamp, getDocs
 
 export async function GET(req: NextRequest) {
   try {
-    console.log('Testando conexão com Firebase no Vercel...')
-    console.log('Firebase config:', {
-      projectId: db.app.options.projectId,
-      databaseId: db.app.options.databaseId,
-      authDomain: db.app.options.authDomain
-    })
-    
     const { searchParams } = new URL(req.url)
     const status = searchParams.get('status')
     
@@ -20,20 +13,15 @@ export async function GET(req: NextRequest) {
       q = query(q, where('status', '==', status))
     }
     
-    console.log('Executando query...')
     const snapshot = await getDocs(q)
-    console.log('Query executada com sucesso, documentos encontrados:', snapshot.docs.length)
     
     const posts = snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }))
     
-    console.log('Posts processados:', posts.length)
-    
     // Se não há posts, retornar dados de teste para verificar se a API está funcionando
     if (posts.length === 0) {
-      console.log('Nenhum post encontrado, retornando dados de teste...')
       const testPosts = [
         {
           id: 'test-1',
@@ -62,8 +50,6 @@ export async function GET(req: NextRequest) {
     
     return NextResponse.json(posts)
   } catch (error) {
-    console.error('Erro detalhado ao buscar posts:', error)
-    console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace')
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

@@ -33,23 +33,16 @@ export default function AdminBlogPage() {
 
   const fetchPosts = async () => {
     try {
-      console.log('Iniciando busca de posts...')
       const response = await fetch('/api/blog')
-      console.log('Response status:', response.status)
-      console.log('Response ok:', response.ok)
       
       if (response.ok) {
         const posts = await response.json()
-        console.log('Posts recebidos da API:', posts)
         setPosts(posts)
       } else {
         const errorText = await response.text()
-        console.error('Erro ao buscar posts:', response.statusText)
-        console.error('Erro detalhado:', errorText)
         toast.error('Erro ao carregar posts')
       }
     } catch (error) {
-      console.error('Erro ao buscar posts:', error)
       toast.error('Erro ao carregar posts')
     } finally {
       setLoading(false)
