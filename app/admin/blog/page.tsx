@@ -172,7 +172,9 @@ export default function AdminBlogPage() {
   }
 
   const handleDeletePost = async (postId: string) => {
-    if (!confirm('Tem certeza que deseja excluir este post?')) { return }
+    if (!confirm('Tem certeza que deseja excluir este post?')) {
+      return
+    }
 
     try {
       const response = await fetch(`/api/blog/${postId}`, {
