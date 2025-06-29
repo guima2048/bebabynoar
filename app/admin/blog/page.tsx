@@ -18,7 +18,7 @@ interface BlogPost {
 
 // Função utilitária para tratar datas do Firestore
 function parseFirestoreDate(date: any): Date | null {
-  if (!date) return null;
+  if (!date) { return null; }
   if (typeof date === 'string' || typeof date === 'number') {
     const d = new Date(date);
     return isNaN(d.getTime()) ? null : d;
@@ -31,7 +31,7 @@ function parseFirestoreDate(date: any): Date | null {
 
 function formatDate(date: any) {
   const d = parseFirestoreDate(date);
-  if (!d) return 'Data não definida';
+  if (!d) { return 'Data não definida'; }
   return d.toLocaleDateString('pt-BR', {
     day: '2-digit',
     month: '2-digit',
