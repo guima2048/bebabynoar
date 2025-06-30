@@ -53,6 +53,8 @@ interface Section {
   subtitle?: string
   content: string
   imageUrl?: string
+  backgroundColor?: string
+  textColor?: string
   layout?: string
   isActive: boolean
   order: number
