@@ -282,10 +282,10 @@ export default function BlogPage() {
 
   const now = new Date();
   const postsPublicados = posts.filter(post => {
-    if (post.status !== 'published') return false;
+    if (post.status !== 'published') { return false; }
     if (post.publishedAt) {
       const pubDate = parseFirestoreDate(post.publishedAt);
-      if (!pubDate || pubDate > now) return false;
+      if (!pubDate || pubDate > now) { return false; }
     }
     return true;
   });
