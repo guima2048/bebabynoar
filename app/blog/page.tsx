@@ -312,41 +312,44 @@ export default function BlogPage() {
             </div>
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {posts.map((post) => (
-                <article key={post.id} className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
-                  {post.featuredImage && (
-                    <div className="relative h-48">
-                      <Image
-                        src={post.featuredImage}
-                        alt={post.title}
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                  )}
-                  <div className="p-6">
-                    <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
-                      <div className="flex items-center gap-1">
-                        <Calendar size={16} />
-                        {format(new Date(post.createdAt), 'dd/MM/yyyy', { locale: ptBR })}
+              {posts.map((post: BlogPost) => {
+                const data = parseFirestoreDate(post.createdAt);
+                return (
+                  <article key={post.id} className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
+                    {post.featuredImage && (
+                      <div className="relative h-48">
+                        <Image
+                          src={post.featuredImage}
+                          alt={post.title}
+                          fill
+                          className="object-cover"
+                        />
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Clock size={16} />
-                        {format(new Date(post.createdAt), 'HH:mm', { locale: ptBR })}
+                    )}
+                    <div className="p-6">
+                      <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
+                        <div className="flex items-center gap-1">
+                          <Calendar size={16} />
+                          {data ? format(data, 'dd/MM/yyyy', { locale: ptBR }) : 'Data inválida'}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock size={16} />
+                          {data ? format(data, 'HH:mm', { locale: ptBR }) : '--:--'}
+                        </div>
                       </div>
+                      <h3 className="text-xl font-bold mb-3 line-clamp-2">{post.title}</h3>
+                      <p className="text-gray-600 mb-4 line-clamp-3">{post.excerpt}</p>
+                      <Link
+                        href={`/blog/${post.slug}`}
+                        className="inline-flex items-center gap-2 text-purple-600 hover:text-purple-700 font-semibold"
+                      >
+                        Ler mais
+                        <ArrowRight size={16} />
+                      </Link>
                     </div>
-                    <h3 className="text-xl font-bold mb-3 line-clamp-2">{post.title}</h3>
-                    <p className="text-gray-600 mb-4 line-clamp-3">{post.excerpt}</p>
-                    <Link
-                      href={`/blog/${post.slug}`}
-                      className="inline-flex items-center gap-2 text-purple-600 hover:text-purple-700 font-semibold"
-                    >
-                      Ler mais
-                      <ArrowRight size={16} />
-                    </Link>
-                  </div>
-                </article>
-              ))}
+                  </article>
+                )
+              })}
             </div>
           )}
         </div>
