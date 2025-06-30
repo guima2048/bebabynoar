@@ -55,6 +55,8 @@ export default function AdminBlogPage() {
     scheduledFor: '',
     featuredImage: ''
   })
+  const [uploadingImage, setUploadingImage] = useState(false)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
 
   useEffect(() => {
     fetchPosts()
@@ -207,6 +209,7 @@ export default function AdminBlogPage() {
       scheduledFor: post.scheduledFor ? new Date(post.scheduledFor).toISOString().slice(0, 16) : '',
       featuredImage: post.featuredImage || ''
     })
+    setImagePreview(post.featuredImage || null)
     setShowForm(true)
   }
 
@@ -219,12 +222,71 @@ export default function AdminBlogPage() {
       scheduledFor: '',
       featuredImage: ''
     })
+    setImagePreview(null)
   }
 
   const handleCancelForm = () => {
     setShowForm(false)
     setEditingPost(null)
     resetForm()
+    setImagePreview(null)
+  }
+
+  const handleImageUpload = async (file: File) => {
+    if (!file) return
+
+    // Validações
+    const maxSize = 10 * 1024 * 1024 // 10MB
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+
+    if (file.size > maxSize) {
+      toast.error('Arquivo muito grande. Máximo 10MB.')
+      return
+    }
+
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Tipo de arquivo não suportado. Use JPG, PNG, WebP ou GIF.')
+      return
+    }
+
+    setUploadingImage(true)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const response = await fetch('/api/upload-blog-image', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        setFormData(prev => ({ ...prev, featuredImage: result.url }))
+        setImagePreview(result.url)
+        toast.success('Imagem enviada com sucesso!')
+      } else {
+        const error = await response.json()
+        toast.error(error.error || 'Erro ao enviar imagem')
+      }
+    } catch (error) {
+      console.error('Erro no upload:', error)
+      toast.error('Erro ao enviar imagem')
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      handleImageUpload(file)
+    }
+  }
+
+  const removeImage = () => {
+    setFormData(prev => ({ ...prev, featuredImage: '' }))
+    setImagePreview(null)
   }
 
   const getStatusBadge = (post: BlogPost) => {
@@ -327,18 +389,66 @@ export default function AdminBlogPage() {
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                URL da Foto de Capa
+                Foto de Capa
               </label>
-              <input
-                type="url"
-                value={formData.featuredImage}
-                onChange={(e) => setFormData(prev => ({ ...prev, featuredImage: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                placeholder="https://exemplo.com/imagem.jpg"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                URL da imagem que será exibida como capa do post
-              </p>
+              
+              {/* Preview da imagem */}
+              {(imagePreview || formData.featuredImage) && (
+                <div className="mb-3">
+                  <img
+                    src={imagePreview || formData.featuredImage}
+                    alt="Preview da imagem"
+                    className="w-full max-w-md h-48 object-cover rounded-lg border"
+                  />
+                  <button
+                    type="button"
+                    onClick={removeImage}
+                    className="mt-2 text-sm text-red-600 hover:text-red-800"
+                  >
+                    Remover imagem
+                  </button>
+                </div>
+              )}
+
+              {/* Upload de arquivo */}
+              <div className="mb-3">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Fazer upload de arquivo
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  disabled={uploadingImage}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+                />
+                {uploadingImage && (
+                  <p className="text-sm text-blue-600 mt-1">Enviando imagem...</p>
+                )}
+                <p className="text-xs text-gray-500 mt-1">
+                  Formatos aceitos: JPG, PNG, WebP, GIF. Máximo 10MB.
+                </p>
+              </div>
+
+              {/* Ou inserir URL */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Ou inserir URL da imagem
+                </label>
+                <input
+                  type="url"
+                  value={formData.featuredImage}
+                  onChange={(e) => {
+                    setFormData(prev => ({ ...prev, featuredImage: e.target.value }))
+                    setImagePreview(e.target.value)
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  placeholder="https://exemplo.com/imagem.jpg"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  URL da imagem que será exibida como capa do post
+                </p>
+              </div>
             </div>
 
             <div className="mb-4">
