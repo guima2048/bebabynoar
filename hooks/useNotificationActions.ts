@@ -3,15 +3,7 @@ import toast from 'react-hot-toast'
 import { useAuth } from '@/contexts/AuthContext'
 
 export const useNotificationActions = () => {
-  let markAsRead: (notificationId: string) => Promise<void> = async () => {}
-  let markAllAsRead: () => Promise<void> = async () => {}
-  try {
-    const ctx = useNotifications()
-    markAsRead = ctx.markAsRead
-    markAllAsRead = ctx.markAllAsRead
-  } catch (e) {
-    // Provider não disponível
-  }
+  const { markAsRead, markAllAsRead } = useNotifications()
   const { user } = useAuth()
 
   const handleMarkAsRead = async (notificationId: string) => {

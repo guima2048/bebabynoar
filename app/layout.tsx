@@ -3,8 +3,8 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from '@/contexts/AuthContext'
-// import { NotificationProvider } from '@/contexts/NotificationContext'
-// import NotificationToast from '@/components/NotificationToast'
+import { NotificationProvider } from '@/contexts/NotificationContext'
+import NotificationToast from '@/components/NotificationToast'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -56,15 +56,15 @@ export default function RootLayout({
     <html lang="pt-BR">
       <body className={inter.className}>
         <AuthProvider>
-          {/* <NotificationProvider> */}
+          <NotificationProvider>
             <div className="min-h-screen flex flex-col">
               <main className="flex-1">
                 {children}
               </main>
             </div>
-            {/* <NotificationToast /> */}
+            <NotificationToast />
             <Toaster position="top-right" />
-          {/* </NotificationProvider> */}
+          </NotificationProvider>
         </AuthProvider>
       </body>
     </html>
