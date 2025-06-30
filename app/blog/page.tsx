@@ -2,7 +2,7 @@ import React from 'react'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { Calendar, Clock, ArrowRight, Search } from 'lucide-react'
+import { Calendar, Clock, ArrowRight } from 'lucide-react'
 import Image from 'next/image'
 
 interface BlogPost {
@@ -189,14 +189,6 @@ export default async function BlogPage() {
           <p className="text-xl md:text-2xl mb-8 opacity-90">
             {settings.heroSubtitle}
           </p>
-          <div className="relative max-w-md mx-auto">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-            <input
-              type="text"
-              placeholder={settings.searchPlaceholder}
-              className="w-full pl-10 pr-4 py-3 rounded-full bg-white/90 backdrop-blur-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/50"
-            />
-          </div>
         </div>
       </section>
 
