@@ -5,13 +5,7 @@ import { useNotifications } from '@/contexts/NotificationContext'
 import toast from 'react-hot-toast'
 
 export default function NotificationToast() {
-  let notifications = []
-  try {
-    notifications = useNotifications().notifications
-  } catch (e) {
-    // Não faz nada se não houver provider
-    return null
-  }
+  const { notifications } = useNotifications()
 
   useEffect(() => {
     // Pega a notificação mais recente
