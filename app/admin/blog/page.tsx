@@ -14,6 +14,7 @@ interface BlogPost {
   scheduledFor?: string
   createdAt: string
   updatedAt: string
+  featuredImage?: string
 }
 
 // Função utilitária para tratar datas do Firestore
@@ -51,7 +52,8 @@ export default function AdminBlogPage() {
     content: '',
     excerpt: '',
     status: 'draft' as 'draft' | 'published' | 'scheduled',
-    scheduledFor: ''
+    scheduledFor: '',
+    featuredImage: ''
   })
 
   useEffect(() => {
@@ -94,7 +96,8 @@ export default function AdminBlogPage() {
         title: formData.title,
         content: formData.content,
         excerpt: formData.excerpt,
-        status: formData.status
+        status: formData.status,
+        featuredImage: formData.featuredImage
       }
 
       if (formData.status === 'scheduled' && formData.scheduledFor) {
@@ -140,7 +143,8 @@ export default function AdminBlogPage() {
         title: formData.title,
         content: formData.content,
         excerpt: formData.excerpt,
-        status: formData.status
+        status: formData.status,
+        featuredImage: formData.featuredImage
       }
 
       if (formData.status === 'scheduled' && formData.scheduledFor) {
@@ -200,7 +204,8 @@ export default function AdminBlogPage() {
       content: post.content,
       excerpt: post.excerpt,
       status: post.status,
-      scheduledFor: post.scheduledFor ? new Date(post.scheduledFor).toISOString().slice(0, 16) : ''
+      scheduledFor: post.scheduledFor ? new Date(post.scheduledFor).toISOString().slice(0, 16) : '',
+      featuredImage: post.featuredImage || ''
     })
     setShowForm(true)
   }
@@ -211,7 +216,8 @@ export default function AdminBlogPage() {
       content: '',
       excerpt: '',
       status: 'draft',
-      scheduledFor: ''
+      scheduledFor: '',
+      featuredImage: ''
     })
   }
 
@@ -318,6 +324,22 @@ export default function AdminBlogPage() {
                 />
               </div>
             )}
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                URL da Foto de Capa
+              </label>
+              <input
+                type="url"
+                value={formData.featuredImage}
+                onChange={(e) => setFormData(prev => ({ ...prev, featuredImage: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+                placeholder="https://exemplo.com/imagem.jpg"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                URL da imagem que será exibida como capa do post
+              </p>
+            </div>
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
