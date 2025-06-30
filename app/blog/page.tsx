@@ -516,10 +516,10 @@ export default function BlogPage() {
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {posts.map((post) => (
                 <article key={post.id} className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
-                  {post.coverImage && (
+                  {post.featuredImage && (
                     <div className="relative h-48">
                       <Image
-                        src={post.coverImage}
+                        src={post.featuredImage}
                         alt={post.title}
                         fill
                         className="object-cover"
