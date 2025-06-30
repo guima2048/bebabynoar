@@ -77,18 +77,22 @@ async function getRelatedPosts(currentPost: BlogPost): Promise<BlogPost[]> {
 }
 
 export default async function BlogPostPage({ params }: PageProps) {
+  console.log('Slug recebido:', params.slug);
   const post = await getBlogPost(params.slug)
   
+  console.log('Post recuperado:', post);
   if (!post) {
+    console.error('Post não encontrado para o slug:', params.slug);
     notFound()
   }
 
   // Checagens de segurança e log para depuração
-  if (!post.title || !post.content || !post.author || !post.publishedAt) {
-    console.error('Post com campos obrigatórios ausentes:', post);
-    notFound();
-  }
+  if (!post.title) console.error('Campo title ausente:', post);
+  if (!post.content) console.error('Campo content ausente:', post);
+  if (!post.author) console.error('Campo author ausente:', post);
+  if (!post.publishedAt) console.error('Campo publishedAt ausente:', post);
   if (!Array.isArray(post.tags)) {
+    console.error('Campo tags não é array:', post.tags);
     post.tags = [];
   }
   const now = new Date();
