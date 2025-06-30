@@ -83,10 +83,18 @@ export default async function BlogPostPage({ params }: PageProps) {
     notFound()
   }
 
-  // Verificar se o post está publicado e a data de publicação já passou
+  // Checagens de segurança e log para depuração
+  if (!post.title || !post.content || !post.author || !post.publishedAt) {
+    console.error('Post com campos obrigatórios ausentes:', post);
+    notFound();
+  }
+  if (!Array.isArray(post.tags)) {
+    post.tags = [];
+  }
   const now = new Date();
   const pubDate = post.publishedAt ? new Date(post.publishedAt) : null;
-  if (post.status !== 'published' || (pubDate && pubDate > now)) {
+  if (post.status !== 'published' || (pubDate && pubDate > now) || isNaN(pubDate?.getTime() ?? NaN)) {
+    console.error('Post não publicado, agendado para o futuro ou data inválida:', post);
     notFound();
   }
 
