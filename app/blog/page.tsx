@@ -556,16 +556,3 @@ export default function BlogPage() {
     </div>
   );
 }
-
-export const metadata = {
-  title: 'Blog Bebaby - Dicas e Histórias sobre Relacionamentos Sugar',
-  description: 'Conecte-se com nossa comunidade através de conteúdo exclusivo sobre relacionamentos sugar. Dicas, histórias e insights.',
-  keywords: 'blog, relacionamentos sugar, dicas, histórias, comunidade',
-  openGraph: {
-    title: 'Blog Bebaby - Dicas e Histórias sobre Relacionamentos Sugar',
-    description: 'Conecte-se com nossa comunidade através de conteúdo exclusivo sobre relacionamentos sugar.',
-    url: 'https://bebaby.app/blog',
-    siteName: 'Bebaby App',
-    type: 'website',
-  },
-}
