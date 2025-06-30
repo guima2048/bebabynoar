@@ -87,10 +87,10 @@ export default async function BlogPostPage({ params }: PageProps) {
   }
 
   // Checagens de segurança e log para depuração
-  if (!post.title) console.error('Campo title ausente:', post);
-  if (!post.content) console.error('Campo content ausente:', post);
-  if (!post.author) console.error('Campo author ausente:', post);
-  if (!post.publishedAt) console.error('Campo publishedAt ausente:', post);
+  if (!post.title) { console.error('Campo title ausente:', post); }
+  if (!post.content) { console.error('Campo content ausente:', post); }
+  if (!post.author) { console.error('Campo author ausente:', post); }
+  if (!post.publishedAt) { console.error('Campo publishedAt ausente:', post); }
   if (!Array.isArray(post.tags)) {
     console.error('Campo tags não é array:', post.tags);
     post.tags = [];
