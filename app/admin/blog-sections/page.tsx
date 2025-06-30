@@ -243,7 +243,7 @@ export default function BlogSectionsPage() {
 
           {settings && (
             <div className="space-y-4">
-              {settings.sections.map((section, index) => (
+              {(settings?.sections ?? []).map((section, index) => (
                 <div key={section.id} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
