@@ -15,6 +15,7 @@ interface BlogPost {
   createdAt: string
   updatedAt: string
   featuredImage?: string
+  author: string
 }
 
 // Função utilitária para tratar datas do Firestore
@@ -53,7 +54,8 @@ export default function AdminBlogPage() {
     excerpt: '',
     status: 'draft' as 'draft' | 'published' | 'scheduled',
     scheduledFor: '',
-    featuredImage: ''
+    featuredImage: '',
+    author: ''
   })
   const [uploadingImage, setUploadingImage] = useState(false)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
@@ -99,7 +101,8 @@ export default function AdminBlogPage() {
         content: formData.content,
         excerpt: formData.excerpt,
         status: formData.status,
-        featuredImage: formData.featuredImage
+        featuredImage: formData.featuredImage,
+        author: formData.author
       }
 
       if (formData.status === 'scheduled' && formData.scheduledFor) {
@@ -146,7 +149,8 @@ export default function AdminBlogPage() {
         content: formData.content,
         excerpt: formData.excerpt,
         status: formData.status,
-        featuredImage: formData.featuredImage
+        featuredImage: formData.featuredImage,
+        author: formData.author
       }
 
       if (formData.status === 'scheduled' && formData.scheduledFor) {
@@ -207,7 +211,8 @@ export default function AdminBlogPage() {
       excerpt: post.excerpt,
       status: post.status,
       scheduledFor: post.scheduledFor ? new Date(post.scheduledFor).toISOString().slice(0, 16) : '',
-      featuredImage: post.featuredImage || ''
+      featuredImage: post.featuredImage || '',
+      author: post.author || ''
     })
     setImagePreview(post.featuredImage || null)
     setShowForm(true)
@@ -220,7 +225,8 @@ export default function AdminBlogPage() {
       excerpt: '',
       status: 'draft',
       scheduledFor: '',
-      featuredImage: ''
+      featuredImage: '',
+      author: ''
     })
     setImagePreview(null)
   }
@@ -474,6 +480,17 @@ export default function AdminBlogPage() {
                 rows={10}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
                 placeholder="Conteúdo completo do post..."
+                required
+              />
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Autor *</label>
+              <input
+                type="text"
+                value={formData.author}
+                onChange={e => setFormData(prev => ({ ...prev, author: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
                 required
               />
             </div>
