@@ -305,7 +305,7 @@ export async function generateMetadata({ params }: PageProps) {
   return {
     title: `${post.title} - Blog Bebaby`,
     description: post.excerpt,
-    keywords: post.tags.join(', '),
+    keywords: (post.tags || []).join(', '),
     openGraph: {
       title: post.title,
       description: post.excerpt,
