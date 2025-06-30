@@ -1,12 +1,9 @@
 import React from 'react'
 import Link from 'next/link'
-import { db } from '@/lib/firebase'
-import { collection, query, where, orderBy, getDocs } from 'firebase/firestore'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Calendar, Clock, ArrowRight } from 'lucide-react'
-import Image from 'next/image' // Importar o componente Image do next/image
-import { toast } from 'react-hot-toast'
+import Image from 'next/image'
 
 interface BlogPost {
   id: string
@@ -14,23 +11,28 @@ interface BlogPost {
   excerpt: string
   slug: string
   featuredImage?: string
-  publishedAt: string
+  publishedAt: any
+  scheduledFor?: any
+  createdAt: any
   readTime: number
   author: string
+  status: string
 }
 
 async function getBlogPosts(): Promise<BlogPost[]> {
   try {
-    const q = query(
-      collection(db, 'blog'),
-      where('status', '==', 'published'),
-      orderBy('publishedAt', 'desc')
-    )
-    const snap = await getDocs(q)
-    return snap.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    })) as BlogPost[]
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'https://123124239.vercel.app'}/api/blog?status=published`, {
+      cache: 'no-store'
+    })
+    
+    if (!response.ok) {
+      console.error('Erro na API:', response.status)
+      return []
+    }
+    
+    const posts = await response.json()
+    console.log('Posts recebidos:', posts.length)
+    return posts
   } catch (err) {
     console.error('Erro ao carregar posts:', err)
     return []
@@ -50,7 +52,7 @@ function parseFirestoreDate(date: any): Date {
   return new Date(0);
 }
 
-function getPostDate(post: any): string {
+function getPostDate(post: BlogPost): string {
   if (post.status === 'scheduled' && post.scheduledFor) {
     return `Agendado para ${format(parseFirestoreDate(post.scheduledFor), 'dd MMM yyyy HH:mm', { locale: ptBR })}`;
   }
@@ -99,7 +101,7 @@ export default async function BlogPage() {
                       loading="lazy"
                       placeholder="empty"
                       unoptimized={post.featuredImage.startsWith('http')}
-                      sizes="(max-width: 1024px) 100vw, 400px" // Adicionado para otimização responsiva
+                      sizes="(max-width: 1024px) 100vw, 400px"
                     />
                   </div>
                 )}
@@ -111,7 +113,7 @@ export default async function BlogPage() {
                     </span>
                     <span className="flex items-center gap-1">
                       <Clock className="w-4 h-4" />
-                      {post.readTime} min de leitura
+                      {post.readTime || 3} min de leitura
                     </span>
                   </div>
                   
@@ -127,7 +129,7 @@ export default async function BlogPage() {
                   
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-secondary-500">
-                      Por {post.author}
+                      Por {post.author || 'Admin'}
                     </span>
                     <Link 
                       href={`/blog/${post.slug}`}
