@@ -280,6 +280,16 @@ export default function BlogPage() {
     color: settings.titleColor
   };
 
+  const now = new Date();
+  const postsPublicados = posts.filter(post => {
+    if (post.status !== 'published') return false;
+    if (post.publishedAt) {
+      const pubDate = parseFirestoreDate(post.publishedAt);
+      if (!pubDate || pubDate > now) return false;
+    }
+    return true;
+  });
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: settings.backgroundColor }}>
       {/* Seções Configuráveis */}
@@ -306,13 +316,13 @@ export default function BlogPage() {
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
               <p className="mt-4 text-gray-600">Carregando posts...</p>
             </div>
-          ) : posts.length === 0 ? (
+          ) : postsPublicados.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-gray-500">Nenhum post encontrado.</p>
             </div>
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {posts.map((post: BlogPost) => {
+              {postsPublicados.map((post: BlogPost) => {
                 const data = parseFirestoreDate(post.createdAt);
                 return (
                   <article key={post.id} className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow">

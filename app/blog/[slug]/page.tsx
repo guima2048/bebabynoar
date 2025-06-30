@@ -83,6 +83,13 @@ export default async function BlogPostPage({ params }: PageProps) {
     notFound()
   }
 
+  // Verificar se o post está publicado e a data de publicação já passou
+  const now = new Date();
+  const pubDate = post.publishedAt ? new Date(post.publishedAt) : null;
+  if (post.status !== 'published' || (pubDate && pubDate > now)) {
+    notFound();
+  }
+
   const relatedPosts = await getRelatedPosts(post)
 
   return (
