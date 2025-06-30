@@ -8,6 +8,7 @@ export default function TestFirebasePage() {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
+  const [posts, setPosts] = useState<any[]>([])
 
   const testFirebase = async () => {
     setLoading(true)
@@ -58,6 +59,28 @@ export default function TestFirebasePage() {
     }
   }
 
+  const listarPostsBlog = async () => {
+    setLoading(true)
+    setError(null)
+    setPosts([])
+    try {
+      const q = query(collection(db, 'blog'));
+      const snapshot = await getDocs(q);
+      const postsList = snapshot.docs.map(doc => ({
+        id: doc.id,
+        slug: doc.data().slug,
+        status: doc.data().status,
+        publishedAt: doc.data().publishedAt,
+        title: doc.data().title,
+      }));
+      setPosts(postsList);
+    } catch (err: any) {
+      setError(err.message || 'Erro desconhecido ao listar posts');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <div className="max-w-2xl mx-auto py-12 px-4">
       <h1 className="text-3xl font-bold mb-6">Teste do Firebase no Vercel</h1>
@@ -65,9 +88,16 @@ export default function TestFirebasePage() {
       <button
         onClick={testFirebase}
         disabled={loading}
-        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 mr-2"
       >
         {loading ? 'Testando...' : 'Testar Firebase'}
+      </button>
+      <button
+        onClick={listarPostsBlog}
+        disabled={loading}
+        className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 disabled:opacity-50"
+      >
+        {loading ? 'Listando...' : 'Listar Posts do Blog'}
       </button>
 
       {error && (
@@ -82,6 +112,36 @@ export default function TestFirebasePage() {
           <pre className="mt-2 text-sm overflow-auto">
             {JSON.stringify(result, null, 2)}
           </pre>
+        </div>
+      )}
+
+      {posts.length > 0 && (
+        <div className="mt-8">
+          <h2 className="text-xl font-semibold mb-4">Posts do Blog</h2>
+          <div className="overflow-x-auto">
+            <table className="min-w-full bg-white border border-gray-200">
+              <thead>
+                <tr>
+                  <th className="px-4 py-2 border">ID</th>
+                  <th className="px-4 py-2 border">Slug</th>
+                  <th className="px-4 py-2 border">Status</th>
+                  <th className="px-4 py-2 border">PublishedAt</th>
+                  <th className="px-4 py-2 border">Title</th>
+                </tr>
+              </thead>
+              <tbody>
+                {posts.map(post => (
+                  <tr key={post.id}>
+                    <td className="px-4 py-2 border text-xs">{post.id}</td>
+                    <td className="px-4 py-2 border text-xs">{post.slug}</td>
+                    <td className="px-4 py-2 border text-xs">{post.status}</td>
+                    <td className="px-4 py-2 border text-xs">{JSON.stringify(post.publishedAt)}</td>
+                    <td className="px-4 py-2 border text-xs">{post.title}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
