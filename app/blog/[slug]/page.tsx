@@ -31,23 +31,27 @@ interface PageProps {
 
 async function getBlogPost(slug: string): Promise<BlogPost | null> {
   try {
+    console.log('[DEBUG-BLOG] Buscando post com slug:', slug);
     const q = query(
       collection(db, 'blog'),
       where('slug', '==', slug),
       where('status', '==', 'published')
     )
     const snap = await getDocs(q)
-    
+    console.log('[DEBUG-BLOG] Resultado da query:', snap.empty ? 'Nenhum post encontrado' : `${snap.size} post(s) encontrado(s)`);
     if (snap.empty) {
+      console.error('[ERRO-BLOG] Nenhum post encontrado para o slug:', slug);
       return null
     }
-    
     const doc = snap.docs[0]
+    const data = doc.data()
+    console.log('[DEBUG-BLOG] Dados do post retornado:', data);
     return {
       id: doc.id,
-      ...doc.data()
+      ...data
     } as BlogPost
   } catch (err) {
+    console.error('[ERRO-BLOG] Exceção ao buscar post:', err)
     toast.error('Erro ao carregar post')
     return null
   }
@@ -82,23 +86,31 @@ export default async function BlogPostPage({ params }: PageProps) {
   
   console.log('Post recuperado:', post);
   if (!post) {
-    console.error('Post não encontrado para o slug:', params.slug);
+    console.error('[ERRO-BLOG] Post não encontrado após getBlogPost para o slug:', params.slug);
     notFound()
   }
 
   // Checagens de segurança e log para depuração
-  if (!post.title) { console.error('Campo title ausente:', post); }
-  if (!post.content) { console.error('Campo content ausente:', post); }
-  if (!post.author) { console.error('Campo author ausente:', post); }
-  if (!post.publishedAt) { console.error('Campo publishedAt ausente:', post); }
+  if (!post.title) { console.error('[ERRO-BLOG] Campo title ausente:', post); }
+  if (!post.content) { console.error('[ERRO-BLOG] Campo content ausente:', post); }
+  if (!post.author) { console.error('[ERRO-BLOG] Campo author ausente:', post); }
+  if (!post.publishedAt) { console.error('[ERRO-BLOG] Campo publishedAt ausente:', post); }
   if (!Array.isArray(post.tags)) {
-    console.error('Campo tags não é array:', post.tags);
+    console.error('[ERRO-BLOG] Campo tags não é array:', post.tags);
     post.tags = [];
   }
   const now = new Date();
   const pubDate = post.publishedAt ? new Date(post.publishedAt) : null;
-  if (post.status !== 'published' || (pubDate && pubDate > now) || isNaN(pubDate?.getTime() ?? NaN)) {
-    console.error('Post não publicado, agendado para o futuro ou data inválida:', post);
+  if (post.status !== 'published') {
+    console.error('[ERRO-BLOG] Status diferente de published:', post.status, post);
+    notFound();
+  }
+  if (pubDate && pubDate > now) {
+    console.error('[ERRO-BLOG] Data de publicação no futuro:', post.publishedAt, post);
+    notFound();
+  }
+  if (isNaN(pubDate?.getTime() ?? NaN)) {
+    console.error('[ERRO-BLOG] Data de publicação inválida:', post.publishedAt, post);
     notFound();
   }
 
