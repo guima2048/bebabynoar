@@ -7,8 +7,17 @@ import { useNotifications } from '@/contexts/NotificationContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { Bell, Check, Trash2, Filter, X, Heart, Eye, Camera, CheckCircle, XCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { NotificationProvider } from '@/contexts/NotificationContext'
 
 export default function NotificationsPage() {
+  return (
+    <NotificationProvider>
+      <NotificationsPageContent />
+    </NotificationProvider>
+  )
+}
+
+function NotificationsPageContent() {
   const { notifications, markAsRead, markAllAsRead, loading } = useNotifications()
   const { user } = useAuth()
   const router = useRouter()
