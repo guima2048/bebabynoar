@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -22,6 +22,7 @@ interface BlogPost {
 interface BlogSettings {
   primaryColor: string
   secondaryColor: string
+  accentColor: string
   backgroundColor: string
   textColor: string
   titleColor: string
@@ -44,6 +45,9 @@ interface BlogSettings {
   termsText: string
   contactText: string
   sections: Section[]
+  metaTitle: string
+  metaDescription: string
+  metaKeywords: string
 }
 
 interface Section {
@@ -99,6 +103,7 @@ async function getBlogSettings(): Promise<BlogSettings> {
       return {
         primaryColor: '#D4AF37',
         secondaryColor: '#4A1E3A',
+        accentColor: '#FFD700',
         backgroundColor: '#FAFAFA',
         textColor: '#2D3748',
         titleColor: '#D4AF37',
@@ -120,7 +125,10 @@ async function getBlogSettings(): Promise<BlogSettings> {
         privacyPolicyText: 'Política de Privacidade',
         termsText: 'Termos de Uso',
         contactText: 'Contato',
-        sections: []
+        sections: [],
+        metaTitle: 'Universo Sugar - O Melhor Site de Relacionamento Sugar',
+        metaDescription: 'Conecte-se com sugar daddies e sugar babies de qualidade. Nosso site de relacionamento sugar oferece a melhor experiência.',
+        metaKeywords: 'universo sugar, patrocinador, sugar baby, sugar daddy, site de relacionamento sugar',
       }
     }
     
@@ -130,6 +138,7 @@ async function getBlogSettings(): Promise<BlogSettings> {
     return {
       primaryColor: '#D4AF37',
       secondaryColor: '#4A1E3A',
+      accentColor: '#FFD700',
       backgroundColor: '#FAFAFA',
       textColor: '#2D3748',
       titleColor: '#D4AF37',
@@ -151,7 +160,10 @@ async function getBlogSettings(): Promise<BlogSettings> {
       privacyPolicyText: 'Política de Privacidade',
       termsText: 'Termos de Uso',
       contactText: 'Contato',
-      sections: []
+      sections: [],
+      metaTitle: 'Universo Sugar - O Melhor Site de Relacionamento Sugar',
+      metaDescription: 'Conecte-se com sugar daddies e sugar babies de qualidade. Nosso site de relacionamento sugar oferece a melhor experiência.',
+      metaKeywords: 'universo sugar, patrocinador, sugar baby, sugar daddy, site de relacionamento sugar',
     }
   }
 }
@@ -174,11 +186,73 @@ function formatDate(date: any) {
   return format(d, 'dd/MM/yyyy', { locale: ptBR });
 }
 
-export default async function BlogPage() {
-  const [posts, settings] = await Promise.all([
-    getBlogPosts(),
-    getBlogSettings()
-  ]);
+export default function BlogPage() {
+  const [posts, setPosts] = useState<BlogPost[]>([])
+  const [settings, setSettings] = useState<BlogSettings>({
+    primaryColor: '#D4AF37',
+    secondaryColor: '#4A1E3A',
+    accentColor: '#FFD700',
+    backgroundColor: '#FAFAFA',
+    textColor: '#2D3748',
+    titleColor: '#D4AF37',
+    titleFont: 'Playfair Display',
+    bodyFont: 'Inter',
+    heroTitle: 'Bem-vindo ao Universo Sugar',
+    heroSubtitle: 'Descubra relacionamentos extraordinários',
+    heroBackgroundImage: '',
+    heroBackgroundAlt: 'Hero background',
+    siteTitle: 'Universo Sugar',
+    siteDescription: 'Site de relacionamento sugar',
+    recentArticlesTitle: 'Artigos Recentes',
+    noArticlesText: 'Nenhum artigo encontrado',
+    readMoreText: 'Ler mais',
+    footerText: '© 2024 Universo Sugar. Todos os direitos reservados.',
+    privacyPolicyText: 'Política de Privacidade',
+    termsText: 'Termos de Uso',
+    contactText: 'Contato',
+    defaultKeywords: 'universo sugar, patrocinador, sugar baby, sugar daddy, site de relacionamento sugar',
+    searchPlaceholder: 'Buscar artigos...',
+    popularArticlesTitle: 'Artigos Populares',
+    metaTitle: 'Universo Sugar - O Melhor Site de Relacionamento Sugar',
+    metaDescription: 'Conecte-se com sugar daddies e sugar babies de qualidade. Nosso site de relacionamento sugar oferece a melhor experiência.',
+    metaKeywords: 'universo sugar, patrocinador, sugar baby, sugar daddy, site de relacionamento sugar',
+    sections: []
+  })
+  const [loading, setLoading] = useState(true)
+  const [postsLoading, setPostsLoading] = useState(true)
+
+  useEffect(() => {
+    fetchSettings()
+    fetchPosts()
+  }, [])
+
+  const fetchSettings = async () => {
+    try {
+      const response = await fetch('/api/blog-settings')
+      if (response.ok) {
+        const data = await response.json()
+        setSettings(data)
+      }
+    } catch (error) {
+      console.error('Erro ao carregar configurações:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchPosts = async () => {
+    try {
+      const response = await fetch('/api/blog')
+      if (response.ok) {
+        const data = await response.json()
+        setPosts(data)
+      }
+    } catch (error) {
+      console.error('Erro ao carregar posts:', error)
+    } finally {
+      setPostsLoading(false)
+    }
+  }
 
   // Estilos dinâmicos baseados nas configurações
   const dynamicStyles = {
@@ -427,7 +501,7 @@ export default async function BlogPage() {
             </p>
           </div>
 
-          {loading ? (
+          {postsLoading ? (
             <div className="text-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
               <p className="mt-4 text-gray-600">Carregando posts...</p>
