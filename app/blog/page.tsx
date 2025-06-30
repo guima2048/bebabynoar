@@ -50,6 +50,12 @@ interface BlogSettings {
   metaTitle: string
   metaDescription: string
   metaKeywords: string
+  h1FontSize: string
+  h1Align: string
+  h1LineHeight: string
+  h2FontSize: string
+  h2Align: string
+  h2LineHeight: string
 }
 
 interface Section {
@@ -131,6 +137,12 @@ async function getBlogSettings(): Promise<BlogSettings> {
         metaTitle: 'Universo Sugar - O Melhor Site de Relacionamento Sugar',
         metaDescription: 'Conecte-se com sugar daddies e sugar babies de qualidade. Nosso site de relacionamento sugar oferece a melhor experiência.',
         metaKeywords: 'universo sugar, patrocinador, sugar baby, sugar daddy, site de relacionamento sugar',
+        h1FontSize: '2.5rem',
+        h1Align: 'center',
+        h1LineHeight: '1.2',
+        h2FontSize: '1.5rem',
+        h2Align: 'center',
+        h2LineHeight: '1.2',
       }
     }
     
@@ -166,6 +178,12 @@ async function getBlogSettings(): Promise<BlogSettings> {
       metaTitle: 'Universo Sugar - O Melhor Site de Relacionamento Sugar',
       metaDescription: 'Conecte-se com sugar daddies e sugar babies de qualidade. Nosso site de relacionamento sugar oferece a melhor experiência.',
       metaKeywords: 'universo sugar, patrocinador, sugar baby, sugar daddy, site de relacionamento sugar',
+      h1FontSize: '2.5rem',
+      h1Align: 'center',
+      h1LineHeight: '1.2',
+      h2FontSize: '1.5rem',
+      h2Align: 'center',
+      h2LineHeight: '1.2',
     }
   }
 }
@@ -218,7 +236,13 @@ export default function BlogPage() {
     metaTitle: 'Universo Sugar - O Melhor Site de Relacionamento Sugar',
     metaDescription: 'Conecte-se com sugar daddies e sugar babies de qualidade. Nosso site de relacionamento sugar oferece a melhor experiência.',
     metaKeywords: 'universo sugar, patrocinador, sugar baby, sugar daddy, site de relacionamento sugar',
-    sections: []
+    sections: [],
+    h1FontSize: '2.5rem',
+    h1Align: 'center',
+    h1LineHeight: '1.2',
+    h2FontSize: '1.5rem',
+    h2Align: 'center',
+    h2LineHeight: '1.2',
   })
   const [loading, setLoading] = useState(true)
   const [postsLoading, setPostsLoading] = useState(true)
@@ -267,226 +291,26 @@ export default function BlogPage() {
     '--body-font': settings.bodyFont,
   } as React.CSSProperties;
 
+  const h1Style = {
+    fontSize: settings.h1FontSize,
+    textAlign: settings.h1Align as any,
+    lineHeight: settings.h1LineHeight,
+    fontFamily: settings.titleFont,
+    color: settings.titleColor
+  };
+  const h2Style = {
+    fontSize: settings.h2FontSize,
+    textAlign: settings.h2Align as any,
+    lineHeight: settings.h2LineHeight,
+    fontFamily: settings.titleFont,
+    color: settings.titleColor
+  };
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: settings.backgroundColor }}>
       {/* Seções Configuráveis */}
-      {settings.sections
-        .filter(section => section.isActive)
-        .sort((a, b) => a.order - b.order)
-        .map((section) => (
-          <div
-            key={section.id}
-            className="py-16 px-4"
-            style={{ 
-              backgroundColor: section.backgroundColor,
-              color: section.textColor
-            }}
-          >
-            <div className="max-w-6xl mx-auto">
-              {section.type === 'hero' && (
-                <div className="text-center">
-                  {section.config?.showTitle && (
-                    <h1 
-                      className="text-4xl md:text-6xl font-bold mb-4"
-                      style={{ fontFamily: settings.titleFont }}
-                    >
-                      {section.title}
-                    </h1>
-                  )}
-                  {section.config?.showSubtitle && section.subtitle && (
-                    <p className="text-xl md:text-2xl mb-8 opacity-90">
-                      {section.subtitle}
-                    </p>
-                  )}
-                  {section.content && (
-                    <p className="text-lg mb-8 max-w-3xl mx-auto">
-                      {section.content}
-                    </p>
-                  )}
-                  {section.config?.buttonText && (
-                    <Link
-                      href={section.config.buttonLink || '#'}
-                      className="inline-block bg-purple-600 text-white px-8 py-3 rounded-full text-lg font-semibold hover:bg-purple-700 transition-colors"
-                    >
-                      {section.config.buttonText}
-                    </Link>
-                  )}
-                </div>
-              )}
-
-              {section.type === 'about' && (
-                <div className={`grid md:grid-cols-2 gap-12 items-center ${
-                  section.config?.layout === 'right' ? 'md:grid-flow-col-dense' : ''
-                }`}>
-                  <div className={section.config?.layout === 'right' ? 'md:col-start-2' : ''}>
-                    {section.config?.showTitle && (
-                      <h2 
-                        className="text-3xl md:text-4xl font-bold mb-4"
-                        style={{ fontFamily: settings.titleFont }}
-                      >
-                        {section.title}
-                      </h2>
-                    )}
-                    {section.config?.showSubtitle && section.subtitle && (
-                      <p className="text-xl text-purple-600 mb-4">
-                        {section.subtitle}
-                      </p>
-                    )}
-                    <div className="text-lg leading-relaxed mb-6">
-                      {section.content}
-                    </div>
-                    {section.config?.buttonText && (
-                      <Link
-                        href={section.config.buttonLink || '#'}
-                        className="inline-block bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition-colors"
-                      >
-                        {section.config.buttonText}
-                      </Link>
-                    )}
-                  </div>
-                  {section.config?.showImage && section.imageUrl && (
-                    <div className={section.config?.layout === 'right' ? 'md:col-start-1' : ''}>
-                      <div className="relative h-96 rounded-lg overflow-hidden">
-                        <Image
-                          src={section.imageUrl}
-                          alt={section.title}
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {section.type === 'features' && (
-                <div className="text-center">
-                  {section.config?.showTitle && (
-                    <h2 
-                      className="text-3xl md:text-4xl font-bold mb-4"
-                      style={{ fontFamily: settings.titleFont }}
-                    >
-                      {section.title}
-                    </h2>
-                  )}
-                  {section.config?.showSubtitle && section.subtitle && (
-                    <p className="text-xl text-purple-600 mb-8">
-                      {section.subtitle}
-                    </p>
-                  )}
-                  <div className="text-lg leading-relaxed mb-8 max-w-4xl mx-auto">
-                    {section.content}
-                  </div>
-                  {section.config?.buttonText && (
-                    <Link
-                      href={section.config.buttonLink || '#'}
-                      className="inline-block bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition-colors"
-                    >
-                      {section.config.buttonText}
-                    </Link>
-                  )}
-                </div>
-              )}
-
-              {section.type === 'cta' && (
-                <div className="text-center bg-purple-600 text-white rounded-2xl p-12">
-                  {section.config?.showTitle && (
-                    <h2 
-                      className="text-3xl md:text-4xl font-bold mb-4"
-                      style={{ fontFamily: settings.titleFont }}
-                    >
-                      {section.title}
-                    </h2>
-                  )}
-                  {section.config?.showSubtitle && section.subtitle && (
-                    <p className="text-xl mb-6 opacity-90">
-                      {section.subtitle}
-                    </p>
-                  )}
-                  <div className="text-lg mb-8 max-w-3xl mx-auto">
-                    {section.content}
-                  </div>
-                  {section.config?.buttonText && (
-                    <Link
-                      href={section.config.buttonLink || '#'}
-                      className="inline-block bg-white text-purple-600 px-8 py-3 rounded-full text-lg font-semibold hover:bg-gray-100 transition-colors"
-                    >
-                      {section.config.buttonText}
-                    </Link>
-                  )}
-                </div>
-              )}
-
-              {section.type === 'newsletter' && (
-                <div className="text-center bg-gray-100 rounded-2xl p-12">
-                  {section.config?.showTitle && (
-                    <h2 
-                      className="text-3xl md:text-4xl font-bold mb-4"
-                      style={{ fontFamily: settings.titleFont }}
-                    >
-                      {section.title}
-                    </h2>
-                  )}
-                  {section.config?.showSubtitle && section.subtitle && (
-                    <p className="text-xl text-gray-600 mb-6">
-                      {section.subtitle}
-                    </p>
-                  )}
-                  <div className="text-lg mb-8 max-w-3xl mx-auto">
-                    {section.content}
-                  </div>
-                  <div className="max-w-md mx-auto">
-                    <div className="flex gap-2">
-                      <input
-                        type="email"
-                        placeholder="Seu email"
-                        className="flex-1 px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                      />
-                      <button className="bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition-colors">
-                        Inscrever
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {section.type === 'contact' && (
-                <div className="text-center">
-                  {section.config?.showTitle && (
-                    <h2 
-                      className="text-3xl md:text-4xl font-bold mb-4"
-                      style={{ fontFamily: settings.titleFont }}
-                    >
-                      {section.title}
-                    </h2>
-                  )}
-                  {section.config?.showSubtitle && section.subtitle && (
-                    <p className="text-xl text-purple-600 mb-8">
-                      {section.subtitle}
-                    </p>
-                  )}
-                  <div className="text-lg leading-relaxed mb-8 max-w-4xl mx-auto">
-                    {section.content}
-                  </div>
-                  <div className="grid md:grid-cols-3 gap-8">
-                    <div>
-                      <h3 className="text-xl font-semibold mb-2">Email</h3>
-                      <p>contato@universosugar.com</p>
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-semibold mb-2">Suporte</h3>
-                      <p>24/7 disponível</p>
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-semibold mb-2">Localização</h3>
-                      <p>Brasil</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
+      {/* Remover todo o bloco que faz uso de settings.sections.filter(...).map(...) */}
+      {/* Manter apenas o layout do blog, hero, posts, etc, sem seções configuráveis. */}
 
       {/* Posts do Blog */}
       <section className="py-16 px-4 bg-white">
@@ -494,7 +318,7 @@ export default function BlogPage() {
           <div className="text-center mb-12">
             <h2 
               className="text-3xl md:text-4xl font-bold mb-4"
-              style={{ fontFamily: settings.titleFont }}
+              style={h2Style}
             >
               Últimos Posts
             </h2>

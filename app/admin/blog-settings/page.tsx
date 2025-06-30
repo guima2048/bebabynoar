@@ -42,6 +42,14 @@ interface BlogSettings {
   
   // Meta
   updatedAt: string
+
+  // Adicionar novas propriedades
+  h1FontSize: string
+  h1Align: string
+  h1LineHeight: string
+  h2FontSize: string
+  h2Align: string
+  h2LineHeight: string
 }
 
 const fontOptions = [
@@ -81,7 +89,13 @@ export default function BlogSettingsPage() {
     privacyPolicyText: 'Política de Privacidade',
     termsText: 'Termos de Uso',
     contactText: 'Contato',
-    updatedAt: new Date().toISOString()
+    updatedAt: new Date().toISOString(),
+    h1FontSize: '3rem',
+    h1Align: 'center',
+    h1LineHeight: '1.2',
+    h2FontSize: '2rem',
+    h2Align: 'center',
+    h2LineHeight: '1.2',
   })
 
   const [loading, setLoading] = useState(true)
@@ -621,6 +635,54 @@ export default function BlogSettingsPage() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md"
                     placeholder="Contato"
                   />
+                </div>
+              </div>
+            </div>
+
+            {/* Configurações de H1 e H2 */}
+            <div className="mt-8 space-y-6">
+              <div className="flex items-center space-x-2">
+                <Type className="h-5 w-5 text-gray-600" />
+                <h2 className="text-xl font-semibold text-gray-900">Configurações de H1 e H2</h2>
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-gray-800">H1</h3>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Tamanho da Fonte</label>
+                    <input type="text" value={settings.h1FontSize} onChange={e => handleInputChange('h1FontSize', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="Ex: 3rem ou 48px" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Alinhamento</label>
+                    <select value={settings.h1Align} onChange={e => handleInputChange('h1Align', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md">
+                      <option value="left">Esquerda</option>
+                      <option value="center">Centro</option>
+                      <option value="right">Direita</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Altura da Linha</label>
+                    <input type="text" value={settings.h1LineHeight} onChange={e => handleInputChange('h1LineHeight', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="Ex: 1.2 ou 56px" />
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-gray-800">H2</h3>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Tamanho da Fonte</label>
+                    <input type="text" value={settings.h2FontSize} onChange={e => handleInputChange('h2FontSize', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="Ex: 2rem ou 32px" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Alinhamento</label>
+                    <select value={settings.h2Align} onChange={e => handleInputChange('h2Align', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md">
+                      <option value="left">Esquerda</option>
+                      <option value="center">Centro</option>
+                      <option value="right">Direita</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Altura da Linha</label>
+                    <input type="text" value={settings.h2LineHeight} onChange={e => handleInputChange('h2LineHeight', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="Ex: 1.2 ou 40px" />
+                  </div>
                 </div>
               </div>
             </div>
