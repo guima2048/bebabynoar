@@ -98,7 +98,9 @@ export default function BlogSectionsPage() {
   }
 
   const toggleSectionActive = async (sectionId: string) => {
-    if (!settings) return
+    if (!settings) {
+      return
+    }
 
     const updatedSections = settings.sections.map(section =>
       section.id === sectionId ? { ...section, isActive: !section.isActive } : section
@@ -109,7 +111,9 @@ export default function BlogSectionsPage() {
   }
 
   const deleteSection = async (sectionId: string) => {
-    if (!settings || !confirm('Tem certeza que deseja excluir esta seção?')) return
+    if (!settings || !confirm('Tem certeza que deseja excluir esta seção?')) {
+      return
+    }
 
     const updatedSections = settings.sections.filter(section => section.id !== sectionId)
     const updatedSettings = { ...settings, sections: updatedSections }
@@ -117,7 +121,9 @@ export default function BlogSectionsPage() {
   }
 
   const addSection = async () => {
-    if (!settings || !newSection.title) return
+    if (!settings || !newSection.title) {
+      return
+    }
 
     const section: BlogSection = {
       id: `section-${Date.now()}`,
@@ -166,7 +172,9 @@ export default function BlogSectionsPage() {
   }
 
   const updateSection = async (updatedSection: BlogSection) => {
-    if (!settings) return
+    if (!settings) {
+      return
+    }
 
     const updatedSections = settings.sections.map(section =>
       section.id === updatedSection.id ? updatedSection : section
@@ -179,7 +187,9 @@ export default function BlogSectionsPage() {
   }
 
   const moveSection = async (sectionId: string, direction: 'up' | 'down') => {
-    if (!settings) return
+    if (!settings) {
+      return
+    }
 
     const sections = [...settings.sections]
     const currentIndex = sections.findIndex(s => s.id === sectionId)
