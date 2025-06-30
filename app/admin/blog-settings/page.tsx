@@ -514,7 +514,7 @@ export default function BlogSettingsPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Título "Artigos Recentes"
+                    Título &quot;Artigos Recentes&quot;
                   </label>
                   <input
                     type="text"
@@ -527,7 +527,7 @@ export default function BlogSettingsPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Título "Artigos Populares"
+                    Título &quot;Artigos Populares&quot;
                   </label>
                   <input
                     type="text"
@@ -540,7 +540,7 @@ export default function BlogSettingsPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Texto "Ler Mais"
+                    Texto &quot;Ler Mais&quot;
                   </label>
                   <input
                     type="text"
@@ -553,7 +553,7 @@ export default function BlogSettingsPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Texto "Nenhum Artigo"
+                    Texto &quot;Nenhum Artigo&quot;
                   </label>
                   <input
                     type="text"
@@ -586,7 +586,7 @@ export default function BlogSettingsPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Texto "Política de Privacidade"
+                    Texto &quot;Política de Privacidade&quot;
                   </label>
                   <input
                     type="text"
@@ -599,7 +599,7 @@ export default function BlogSettingsPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Texto "Termos de Uso"
+                    Texto &quot;Termos de Uso&quot;
                   </label>
                   <input
                     type="text"
@@ -612,7 +612,7 @@ export default function BlogSettingsPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Texto "Contato"
+                    Texto &quot;Contato&quot;
                   </label>
                   <input
                     type="text"
