@@ -78,6 +78,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { href: '/admin/reports', label: 'Denúncias', icon: '🚨' },
     { href: '/admin/pending-content', label: 'Conteúdo Pendente', icon: '⏳' },
     { href: '/admin/blog', label: 'Blog', icon: '📝' },
+    { href: '/admin/blog-settings', label: 'Configurações do Blog', icon: '⚙️' },
   ]
 
   return (
