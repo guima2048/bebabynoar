@@ -46,7 +46,6 @@ interface BlogSettings {
   privacyPolicyText: string
   termsText: string
   contactText: string
-  sections: Section[]
   metaTitle: string
   metaDescription: string
   metaKeywords: string
@@ -56,28 +55,6 @@ interface BlogSettings {
   h2FontSize: string
   h2Align: string
   h2LineHeight: string
-}
-
-interface Section {
-  id: string
-  type: string
-  title: string
-  subtitle?: string
-  content: string
-  imageUrl?: string
-  backgroundColor?: string
-  textColor?: string
-  layout?: string
-  isActive: boolean
-  order: number
-  config?: {
-    showTitle?: boolean
-    showSubtitle?: boolean
-    buttonText?: string
-    buttonLink?: string
-    layout?: string
-    showImage?: boolean
-  }
 }
 
 async function getBlogPosts(): Promise<BlogPost[]> {
@@ -133,7 +110,6 @@ async function getBlogSettings(): Promise<BlogSettings> {
         privacyPolicyText: 'Política de Privacidade',
         termsText: 'Termos de Uso',
         contactText: 'Contato',
-        sections: [],
         metaTitle: 'Universo Sugar - O Melhor Site de Relacionamento Sugar',
         metaDescription: 'Conecte-se com sugar daddies e sugar babies de qualidade. Nosso site de relacionamento sugar oferece a melhor experiência.',
         metaKeywords: 'universo sugar, patrocinador, sugar baby, sugar daddy, site de relacionamento sugar',
@@ -174,7 +150,6 @@ async function getBlogSettings(): Promise<BlogSettings> {
       privacyPolicyText: 'Política de Privacidade',
       termsText: 'Termos de Uso',
       contactText: 'Contato',
-      sections: [],
       metaTitle: 'Universo Sugar - O Melhor Site de Relacionamento Sugar',
       metaDescription: 'Conecte-se com sugar daddies e sugar babies de qualidade. Nosso site de relacionamento sugar oferece a melhor experiência.',
       metaKeywords: 'universo sugar, patrocinador, sugar baby, sugar daddy, site de relacionamento sugar',
@@ -236,7 +211,6 @@ export default function BlogPage() {
     metaTitle: 'Universo Sugar - O Melhor Site de Relacionamento Sugar',
     metaDescription: 'Conecte-se com sugar daddies e sugar babies de qualidade. Nosso site de relacionamento sugar oferece a melhor experiência.',
     metaKeywords: 'universo sugar, patrocinador, sugar baby, sugar daddy, site de relacionamento sugar',
-    sections: [],
     h1FontSize: '2.5rem',
     h1Align: 'center',
     h1LineHeight: '1.2',
