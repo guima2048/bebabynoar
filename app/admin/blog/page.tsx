@@ -233,7 +233,7 @@ export default function AdminBlogPage() {
   }
 
   const handleImageUpload = async (file: File) => {
-    if (!file) return
+    if (!file) { return; }
 
     // Validações
     const maxSize = 10 * 1024 * 1024 // 10MB
