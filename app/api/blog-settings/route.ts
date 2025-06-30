@@ -7,9 +7,9 @@ interface BlogSettings {
   // Cores
   primaryColor: string;
   secondaryColor: string;
+  accentColor: string;
   backgroundColor: string;
   textColor: string;
-  titleColor: string;
   
   // Fontes
   titleFont: string;
@@ -41,15 +41,39 @@ interface BlogSettings {
   
   // Meta
   updatedAt: string;
+  
+  // Seções Configuráveis
+  sections: BlogSection[];
+}
+
+interface BlogSection {
+  id: string;
+  type: 'hero' | 'about' | 'features' | 'testimonials' | 'cta' | 'newsletter' | 'contact';
+  title: string;
+  subtitle?: string;
+  content: string;
+  imageUrl?: string;
+  backgroundColor?: string;
+  textColor?: string;
+  order: number;
+  isActive: boolean;
+  config: {
+    layout?: 'left' | 'right' | 'center';
+    showTitle?: boolean;
+    showSubtitle?: boolean;
+    showImage?: boolean;
+    buttonText?: string;
+    buttonLink?: string;
+  };
 }
 
 // Configurações padrão
 const defaultSettings: BlogSettings = {
   primaryColor: '#D4AF37', // Dourado
   secondaryColor: '#4A1E3A', // Roxo profundo
+  accentColor: '#FFD700', // Amarelo
   backgroundColor: '#FAFAFA', // Branco cremoso
   textColor: '#2D3748', // Cinza escuro
-  titleColor: '#D4AF37', // Dourado
   
   titleFont: 'Playfair Display',
   bodyFont: 'Open Sans',
@@ -74,7 +98,70 @@ const defaultSettings: BlogSettings = {
   termsText: 'Termos de Uso',
   contactText: 'Contato',
   
-  updatedAt: new Date().toISOString()
+  updatedAt: new Date().toISOString(),
+  
+  sections: [
+    {
+      id: 'hero-1',
+      type: 'hero',
+      title: 'Bem-vindo ao Universo Sugar',
+      subtitle: 'Descubra relacionamentos extraordinários em nossa plataforma exclusiva',
+      content: 'Conectamos pessoas especiais que buscam experiências únicas e relacionamentos baseados em respeito mútuo e benefícios compartilhados.',
+      imageUrl: '',
+      backgroundColor: '#1a1a1a',
+      textColor: '#ffffff',
+      order: 1,
+      isActive: true,
+      config: {
+        layout: 'center',
+        showTitle: true,
+        showSubtitle: true,
+        showImage: false,
+        buttonText: 'Começar Agora',
+        buttonLink: '/register'
+      }
+    },
+    {
+      id: 'about-1',
+      type: 'about',
+      title: 'Sobre o Universo Sugar',
+      subtitle: 'Uma plataforma segura e discreta',
+      content: 'Nossa missão é criar um ambiente seguro e respeitoso onde pessoas possam encontrar relacionamentos baseados em benefícios mútuos, sempre priorizando a segurança e privacidade de todos os membros.',
+      imageUrl: '',
+      backgroundColor: '#ffffff',
+      textColor: '#2D3748',
+      order: 2,
+      isActive: true,
+      config: {
+        layout: 'left',
+        showTitle: true,
+        showSubtitle: true,
+        showImage: true,
+        buttonText: 'Saiba Mais',
+        buttonLink: '/about'
+      }
+    },
+    {
+      id: 'features-1',
+      type: 'features',
+      title: 'Por que escolher nossa plataforma?',
+      subtitle: 'Recursos exclusivos para relacionamentos sugar',
+      content: 'Verificação rigorosa de perfis, sistema de segurança avançado, suporte 24/7, e uma comunidade exclusiva de pessoas que valorizam relacionamentos baseados em benefícios mútuos.',
+      imageUrl: '',
+      backgroundColor: '#f8f9fa',
+      textColor: '#2D3748',
+      order: 3,
+      isActive: true,
+      config: {
+        layout: 'center',
+        showTitle: true,
+        showSubtitle: true,
+        showImage: false,
+        buttonText: 'Ver Recursos',
+        buttonLink: '/premium'
+      }
+    }
+  ]
 };
 
 export async function GET() {
