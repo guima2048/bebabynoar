@@ -42,7 +42,7 @@ interface BannerSettings {
   updatedAt: string
 }
 
-// Função para converter imagem para WebP com compressão
+// Função simplificada para converter imagem para WebP
 const convertToWebP = (file: File, maxSizeKB: number = 200): Promise<File> => {
   return new Promise((resolve, reject) => {
     const canvas = document.createElement('canvas')
@@ -50,63 +50,51 @@ const convertToWebP = (file: File, maxSizeKB: number = 200): Promise<File> => {
     const img = new window.Image()
     
     img.onload = () => {
-      // Calcular dimensões mantendo proporção
-      let { width, height } = img
-      const maxDimension = 1200
-      
-      if (width > height) {
-        if (width > maxDimension) {
-          height = (height * maxDimension) / width
-          width = maxDimension
-        }
-      } else {
-        if (height > maxDimension) {
-          width = (width * maxDimension) / height
-          height = maxDimension
-        }
-      }
-      
-      canvas.width = width
-      canvas.height = height
-      
-      // Desenhar imagem redimensionada
-      ctx?.drawImage(img, 0, 0, width, height)
-      
-      // Converter para WebP com qualidade ajustável
-      let quality = 0.8
-      let dataURL = canvas.toDataURL('image/webp', quality)
-      
-      // Verificar tamanho e ajustar qualidade se necessário
-      const checkSize = () => {
-        const base64 = dataURL.split(',')[1]
-        const sizeInBytes = atob(base64).length
-        const sizeInKB = sizeInBytes / 1024
+      try {
+        // Calcular dimensões mantendo proporção
+        let { width, height } = img
+        const maxDimension = 1200
         
-        if (sizeInKB > maxSizeKB && quality > 0.1) {
-          quality -= 0.1
-          dataURL = canvas.toDataURL('image/webp', quality)
-          checkSize()
-        } else {
-          // Converter dataURL para File
-          const arr = dataURL.split(',')
-          const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/webp'
-          const bstr = atob(arr[1])
-          let n = bstr.length
-          const u8arr = new Uint8Array(n)
-          
-          while (n--) {
-            u8arr[n] = bstr.charCodeAt(n)
+        if (width > height) {
+          if (width > maxDimension) {
+            height = (height * maxDimension) / width
+            width = maxDimension
           }
-          
-          const webpFile = new File([u8arr], `${file.name.split('.')[0]}.webp`, { type: 'image/webp' })
-          resolve(webpFile)
+        } else {
+          if (height > maxDimension) {
+            width = (width * maxDimension) / height
+            height = maxDimension
+          }
         }
+        
+        canvas.width = width
+        canvas.height = height
+        
+        // Desenhar imagem redimensionada
+        ctx?.drawImage(img, 0, 0, width, height)
+        
+        // Converter para WebP com qualidade fixa
+        const dataURL = canvas.toDataURL('image/webp', 0.8)
+        
+        // Converter dataURL para File
+        const arr = dataURL.split(',')
+        const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/webp'
+        const bstr = atob(arr[1])
+        let n = bstr.length
+        const u8arr = new Uint8Array(n)
+        
+        while (n--) {
+          u8arr[n] = bstr.charCodeAt(n)
+        }
+        
+        const webpFile = new File([u8arr], `${file.name.split('.')[0]}.webp`, { type: 'image/webp' })
+        resolve(webpFile)
+      } catch (error) {
+        reject(error)
       }
-      
-      checkSize()
     }
     
-    img.onerror = reject
+    img.onerror = () => reject(new Error('Erro ao carregar imagem'))
     img.src = URL.createObjectURL(file)
   })
 }
@@ -235,6 +223,8 @@ export default function LandingSettingsPage() {
   }
 
   const handleSave = async () => {
+    if (saving) return // Prevenir múltiplos cliques
+    
     try {
       setSaving(true)
       const db = getFirestoreDB()
@@ -277,7 +267,8 @@ export default function LandingSettingsPage() {
         await setDoc(docRef, settingsData)
       }
 
-      await loadSettings()
+      // Recarregar configurações sem chamar loadSettings para evitar loop
+      setSettings(prev => prev ? { ...prev, ...settingsData } : null)
       alert('Configurações salvas com sucesso!')
     } catch (error) {
       console.error('Erro ao salvar configurações:', error)
