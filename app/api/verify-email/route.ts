@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/firebase'
-import { doc, getDoc, updateDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore'
+import { getFirestoreDB } from '@/lib/firebase'
+import { doc, getDoc, updateDoc, serverTimestamp, collection, query, where, getDocs, addDoc } from 'firebase/firestore'
 import { verifyEmailSchema, validateAndSanitize, createErrorResponse } from '@/lib/schemas'
 import crypto from 'crypto'
 
 export async function POST(req: NextRequest) {
   try {
-    if (!db) {
-      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
-    }
+    const db = getFirestoreDB()
     const { email } = await req.json()
 
     if (!email) {
@@ -77,9 +75,7 @@ export async function POST(req: NextRequest) {
 // Verificar token de email
 export async function PUT(req: NextRequest) {
   try {
-    if (!db) {
-      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
-    }
+    const db = getFirestoreDB()
     const { token, email } = await req.json()
 
     if (!token || !email) {
@@ -150,6 +146,7 @@ export async function PUT(req: NextRequest) {
 
 async function sendVerificationEmail(email: string, verificationUrl: string, userName: string) {
   try {
+    const db = getFirestoreDB()
     const res = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {
@@ -220,6 +217,7 @@ async function sendVerificationEmail(email: string, verificationUrl: string, use
 
 async function sendEmailVerifiedConfirmation(email: string, userName: string) {
   try {
+    const db = getFirestoreDB()
     const res = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {
@@ -280,9 +278,7 @@ async function sendEmailVerifiedConfirmation(email: string, userName: string) {
 
 export async function GET(req: NextRequest) {
   try {
-    if (!db) {
-      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
-    }
+    const db = getFirestoreDB()
     const { searchParams } = new URL(req.url)
     const token = searchParams.get('token')
 
@@ -326,5 +322,44 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     console.error('Erro ao verificar email:', error)
     return NextResponse.redirect(new URL('/verify-email?error=true', req.url))
+  }
+}
+
+async function verifyEmailToken(token: string) {
+  try {
+    const db = getFirestoreDB()
+    // Buscar token na coleção de verificação
+    const tokenQuery = query(
+      collection(db, 'emailVerificationTokens'),
+      where('token', '==', token),
+      where('expiresAt', '>', new Date())
+    )
+    const querySnapshot = await getDocs(tokenQuery)
+
+    if (querySnapshot.empty) {
+      return false
+    }
+
+    return true
+  } catch (error) {
+    console.error('Erro ao verificar token de email:', error)
+    return false
+  }
+}
+
+async function sendWelcomeEmail(userId: string, userData: any) {
+  try {
+    const db = getFirestoreDB()
+    // Criar notificação de boas-vindas
+    await addDoc(collection(db, 'notifications'), {
+      userId,
+      type: 'welcome',
+      title: 'Bem-vindo ao Bebaby!',
+      message: 'Seu e-mail foi verificado com sucesso. Agora você pode aproveitar todos os recursos da plataforma!',
+      read: false,
+      createdAt: serverTimestamp()
+    })
+  } catch (error) {
+    console.error('Erro ao enviar e-mail de boas-vindas:', error)
   }
 } 

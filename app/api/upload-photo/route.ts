@@ -1,17 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { storage, db } from '@/lib/firebase';
+import { getFirestoreDB, getFirebaseStorage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { photoUploadSchema, validateAndSanitize, createErrorResponse } from '@/lib/schemas';
 
 export async function POST(request: NextRequest) {
   try {
-    if (!db) {
-      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
-    }
-    if (!storage) {
-      return NextResponse.json({ error: 'Erro de configuração do storage' }, { status: 500 });
-    }
+    const db = getFirestoreDB()
+    const storage = getFirebaseStorage()
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const userId = formData.get('userId') as string;
@@ -107,18 +103,11 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    if (!db) {
-      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
-    }
-    if (!storage) {
-      return NextResponse.json({ error: 'Erro de configuração do storage' }, { status: 500 });
-    }
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
-    const photoUrl = searchParams.get('photoUrl');
-    const type = searchParams.get('type') as 'profile' | 'gallery';
+    const db = getFirestoreDB()
+    const storage = getFirebaseStorage()
+    const { userId, photoUrl } = await request.json();
 
-    if (!userId || !photoUrl || !type) {
+    if (!userId || !photoUrl) {
       return NextResponse.json({ error: 'Parâmetros obrigatórios faltando' }, { status: 400 });
     }
 
@@ -141,12 +130,9 @@ export async function DELETE(request: NextRequest) {
     // Atualizar documento do usuário
     const updateData: any = {};
     
-    if (type === 'profile') {
-      updateData.profilePhoto = null;
-    } else if (type === 'gallery') {
-      const userData = userDoc.data();
-      const existingPhotos = userData.photos || [];
-      updateData.photos = existingPhotos.filter((url: string) => url !== photoUrl);
+    const userData = userDoc.data();
+    if (userData.photos) {
+      updateData.photos = arrayRemove(photoUrl);
     }
 
     await updateDoc(userRef, updateData);
