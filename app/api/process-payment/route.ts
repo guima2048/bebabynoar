@@ -4,6 +4,9 @@ import { collection, addDoc, query, where, getDocs, updateDoc, doc, serverTimest
 
 export async function POST(req: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 })
+    }
     const { userId, plan, paymentProof, paymentMethod, amount } = await req.json()
     
     if (!userId || !plan || !paymentProof || !paymentMethod || !amount) {
@@ -70,6 +73,9 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 })
+    }
     const { paymentId, status, adminNotes } = await req.json()
     
     if (!paymentId || !status) {
