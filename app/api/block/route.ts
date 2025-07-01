@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/firebase'
+import { getFirestoreDB } from '@/lib/firebase'
 import { collection, doc, getDoc, setDoc, deleteDoc, query, where, getDocs, orderBy } from 'firebase/firestore'
 
 // Interfaces TypeScript
@@ -159,7 +159,7 @@ export async function GET(request: NextRequest) {
     // Buscar dados dos usuários bloqueados
     const blockedUsers = await Promise.all(
       blocks.map(async (block) => {
-        if (!db) { return null; }
+        const db = getFirestoreDB()
         const userRef = doc(db, 'users', block.targetUserId)
         const userDoc = await getDoc(userRef)
         if (userDoc.exists()) {

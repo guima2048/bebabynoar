@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/firebase'
+import { getFirestoreDB } from '@/lib/firebase'
 import { collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, query, where, getDocs, writeBatch, CollectionReference, Query } from 'firebase/firestore'
 import { createNotificationSchema, validateAndSanitize, createErrorResponse } from '@/lib/schemas'
 
@@ -13,9 +13,7 @@ interface UserData {
 
 export async function POST(request: NextRequest) {
   try {
-    if (!db) {
-      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
-    }
+    const db = getFirestoreDB()
     const { title, message, targetUsers = 'all', premiumOnly = false, gender, location } = await request.json()
 
     if (!title || !message) {
@@ -133,9 +131,7 @@ export async function POST(request: NextRequest) {
 // Registrar token de push do usuário
 export async function PUT(req: NextRequest) {
   try {
-    if (!db) {
-      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
-    }
+    const db = getFirestoreDB()
     const { userId, token, platform } = await req.json()
 
     if (!userId || !token) {
@@ -185,9 +181,7 @@ export async function PUT(req: NextRequest) {
 // Remover token de push do usuário
 export async function DELETE(req: NextRequest) {
   try {
-    if (!db) {
-      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
-    }
+    const db = getFirestoreDB()
     const { userId, token } = await req.json()
 
     if (!userId || !token) {

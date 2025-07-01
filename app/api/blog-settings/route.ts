@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
+import { getFirestoreDB } from '@/lib/firebase';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 
 // Interface para as configurações do blog
@@ -79,9 +79,7 @@ const defaultSettings: BlogSettings = {
 
 export async function GET() {
   try {
-    if (!db) {
-      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
-    }
+    const db = getFirestoreDB()
     const settingsDoc = await getDoc(doc(db, 'blog-settings', 'main'));
     
     if (settingsDoc.exists()) {
@@ -99,9 +97,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    if (!db) {
-      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
-    }
+    const db = getFirestoreDB()
     const settings: Partial<BlogSettings> = await request.json();
     
     // Adicionar timestamp de atualização

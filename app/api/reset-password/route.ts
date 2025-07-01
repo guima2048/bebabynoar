@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/firebase'
+import { getFirestoreDB } from '@/lib/firebase'
 import { doc, getDoc, updateDoc, collection, query, where, getDocs, serverTimestamp } from 'firebase/firestore'
 import { resetPasswordSchema, validateAndSanitize, createErrorResponse } from '@/lib/schemas'
 import crypto from 'crypto'
 
 export async function POST(request: NextRequest) {
   try {
-    if (!db) {
-      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
-    }
+    const db = getFirestoreDB()
     const { email } = await request.json()
 
     if (!email) {
@@ -97,9 +95,7 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    if (!db) {
-      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
-    }
+    const db = getFirestoreDB()
     const { token, newPassword } = await request.json()
 
     if (!token || !newPassword) {

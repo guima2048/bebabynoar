@@ -4,9 +4,7 @@ import { query, where, getDocs, orderBy, limit } from 'firebase/firestore'
 
 export async function POST(req: NextRequest) {
   try {
-    if (!db) {
-      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
-    }
+    const db = getFirestoreDB()
     const { reporterId, reportedUserId, reason, description } = await req.json()
 
     if (!reporterId || !reportedUserId || !reason) {
@@ -91,9 +89,7 @@ export async function POST(req: NextRequest) {
 // Buscar relatórios (para admin)
 export async function GET(req: NextRequest) {
   try {
-    if (!db) {
-      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
-    }
+    const db = getFirestoreDB()
     const reportsSnapshot = await getDocs(
       query(
         collection(db, 'reports'),
@@ -126,9 +122,7 @@ export async function GET(req: NextRequest) {
 // Atualizar status do relatório (para admin)
 export async function PUT(req: NextRequest) {
   try {
-    if (!db) {
-      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
-    }
+    const db = getFirestoreDB()
     const { reportId, status, moderatorNotes, action } = await req.json()
 
     if (!reportId || !status) {
@@ -207,10 +201,7 @@ function getReportPriority(reason: string): string {
 
 async function notifyModerators(reportId: string, reportedUserName: string, reason: string) {
   try {
-    if (!db) {
-      console.error('Erro: db não está inicializado em notifyModerators');
-      return;
-    }
+    const db = getFirestoreDB()
     
     // Buscar moderadores ativos
     const moderatorsQuery = await getDocs(
@@ -246,10 +237,7 @@ async function notifyModerators(reportId: string, reportedUserName: string, reas
 
 async function sendReportConfirmation(reporterId: string, reportedUserName: string, reason: string) {
   try {
-    if (!db) {
-      console.error('Erro: db não está inicializado em sendReportConfirmation');
-      return;
-    }
+    const db = getFirestoreDB()
     await addDoc(collection(db, 'notifications'), {
       userId: reporterId,
       type: 'report_confirmation',
@@ -265,10 +253,7 @@ async function sendReportConfirmation(reporterId: string, reportedUserName: stri
 
 async function applyReportAction(userId: string, action: string, reason: string) {
   try {
-    if (!db) {
-      console.error('Erro: db não está inicializado em applyReportAction');
-      return;
-    }
+    const db = getFirestoreDB()
     const userRef = doc(db, 'users', userId)
 
     switch (action) {
@@ -315,10 +300,7 @@ async function applyReportAction(userId: string, action: string, reason: string)
 
 async function notifyReporter(reporterId: string, status: string, moderatorNotes: string) {
   try {
-    if (!db) {
-      console.error('Erro: db não está inicializado em notifyReporter');
-      return;
-    }
+    const db = getFirestoreDB()
     
     const message = status === 'resolved' 
       ? 'Seu relatório foi analisado e uma ação foi tomada.'
@@ -339,10 +321,7 @@ async function notifyReporter(reporterId: string, status: string, moderatorNotes
 
 async function notifyUserAction(userId: string, action: string, reason: string) {
   try {
-    if (!db) {
-      console.error('Erro: db não está inicializado em notifyUserAction');
-      return;
-    }
+    const db = getFirestoreDB()
     
     const actionMessages = {
       warn: 'Você recebeu um aviso por violar nossas diretrizes.',

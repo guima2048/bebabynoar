@@ -4,9 +4,7 @@ import { sendInterestSchema, respondInterestSchema, validateAndSanitize, createE
 
 export async function POST(req: NextRequest) {
   try {
-    if (!db) {
-      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
-    }
+    const db = getFirestoreDB()
     const body = await req.json()
     
     // Validação Zod
@@ -136,9 +134,7 @@ export async function POST(req: NextRequest) {
 // Responder ao interesse
 export async function PUT(req: NextRequest) {
   try {
-    if (!db) {
-      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
-    }
+    const db = getFirestoreDB()
     const body = await req.json()
     
     // Validação Zod

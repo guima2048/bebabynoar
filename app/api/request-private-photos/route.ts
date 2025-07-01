@@ -3,9 +3,7 @@ import { db, collection, addDoc, serverTimestamp, doc, updateDoc, getDoc, query,
 
 export async function POST(req: NextRequest) {
   try {
-    if (!db) {
-      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
-    }
+    const db = getFirestoreDB()
     const { requesterId, targetUserId, message } = await req.json()
 
     if (!requesterId || !targetUserId) {
@@ -127,9 +125,7 @@ export async function POST(req: NextRequest) {
 // Responder à solicitação de fotos privadas
 export async function PUT(req: NextRequest) {
   try {
-    if (!db) {
-      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
-    }
+    const db = getFirestoreDB()
     const { requestId, response, message } = await req.json()
 
     if (!requestId || !response) {

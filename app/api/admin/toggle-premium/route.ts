@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
+import { getFirestoreDB } from '@/lib/firebase';
 import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 
 export async function POST(request: NextRequest) {
@@ -17,9 +17,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar se o Firebase está inicializado
-    if (!db) {
-      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
-    }
+    const db = getFirestoreDB()
 
     // Verificar se o usuário existe
     const userRef = doc(db, 'users', userId);

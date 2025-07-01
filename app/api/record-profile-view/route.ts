@@ -3,9 +3,7 @@ import { db, collection, addDoc, serverTimestamp, doc, updateDoc, getDoc, query,
 
 export async function POST(req: NextRequest) {
   try {
-    if (!db) {
-      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
-    }
+    const db = getFirestoreDB()
     const { viewerId, viewedUserId } = await req.json()
 
     if (!viewerId || !viewedUserId) {
@@ -90,9 +88,7 @@ export async function POST(req: NextRequest) {
 // Buscar visualizações de um usuário
 export async function GET(req: NextRequest) {
   try {
-    if (!db) {
-      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
-    }
+    const db = getFirestoreDB()
     const { searchParams } = new URL(req.url)
     const userId = searchParams.get('userId')
     const limitCount = parseInt(searchParams.get('limit') || '20')
