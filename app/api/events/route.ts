@@ -29,6 +29,9 @@ interface UserData {
 
 export async function POST(request: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
+    }
     const { title, description, date, location, category, organizerId, maxParticipants, isPremium } = await request.json()
 
     if (!title || !description || !date || !location || !category || !organizerId) {
@@ -74,6 +77,9 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
+    }
     const { searchParams } = new URL(request.url)
     const category = searchParams.get('category')
     const location = searchParams.get('location')
@@ -139,6 +145,7 @@ export async function GET(request: NextRequest) {
     // Buscar dados dos organizadores
     const eventsWithOrganizers = await Promise.all(
       paginatedEvents.map(async (event) => {
+        if (!db) { return event; }
         const organizerRef = doc(db, 'users', event.organizerId)
         const organizerDoc = await getDoc(organizerRef)
         
@@ -185,6 +192,9 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
+    }
     const { eventId, action, userId } = await request.json()
 
     if (!eventId || !action || !userId) {
