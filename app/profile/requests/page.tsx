@@ -38,7 +38,7 @@ export default function RequestsPage() {
       
       // Busca solicitações de interesse
       const interestQuery = query(
-        collection(db, 'interests'),
+        collection(getFirestoreDB(), 'interests'),
         where('targetId', '==', user?.id),
         orderBy('createdAt', 'desc')
       )
@@ -46,7 +46,7 @@ export default function RequestsPage() {
       
       // Busca solicitações de fotos privadas
       const photoQuery = query(
-        collection(db, 'private_photo_requests'),
+        collection(getFirestoreDB(), 'private_photo_requests'),
         where('targetId', '==', user?.id),
         orderBy('createdAt', 'desc')
       )
@@ -98,7 +98,7 @@ export default function RequestsPage() {
   const handleResponse = async (requestId: string, type: string, response: 'approved' | 'rejected') => {
     try {
       const collectionName = type === 'interest' ? 'interests' : 'private_photo_requests'
-      const requestRef = doc(db, collectionName, requestId)
+      const requestRef = doc(getFirestoreDB(), collectionName, requestId)
       
       await updateDoc(requestRef, {
         status: response,
