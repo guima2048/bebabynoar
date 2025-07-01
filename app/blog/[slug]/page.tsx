@@ -88,6 +88,11 @@ async function getRelatedPosts(currentPost: BlogPost): Promise<BlogPost[]> {
   }
 }
 
+// Type guard para BlogPost
+function isBlogPost(obj: any): obj is BlogPost {
+  return obj && typeof obj === 'object' && 'title' in obj && 'slug' in obj && 'status' in obj;
+}
+
 export default async function BlogPostPage({ params }: PageProps) {
   const result = await getBlogPost(params.slug)
   if (!result || (typeof result === 'object' && 'error' in result)) {
@@ -305,15 +310,20 @@ export default async function BlogPostPage({ params }: PageProps) {
 }
 
 export async function generateMetadata({ params }: PageProps) {
-  const post = await getBlogPost(params.slug)
-  
-  if (!post) {
+  const result = await getBlogPost(params.slug)
+  if (!result || (typeof result === 'object' && 'error' in result)) {
     return {
       title: 'Post não encontrado - Blog Bebaby',
-      description: 'O post que você está procurando não foi encontrado.',
+      description: 'O post solicitado não foi encontrado.',
     }
   }
-
+  if (!isBlogPost(result)) {
+    return {
+      title: 'Post inválido - Blog Bebaby',
+      description: 'Erro ao carregar post.',
+    }
+  }
+  const post = result as BlogPost
   return {
     title: `${post.title} - Blog Bebaby`,
     description: post.excerpt,
@@ -321,18 +331,11 @@ export async function generateMetadata({ params }: PageProps) {
     openGraph: {
       title: post.title,
       description: post.excerpt,
-      url: `https://bebaby.app/blog/${post.slug}`,
-      siteName: 'Bebaby App',
+      url: `/blog/${post.slug}`,
       images: post.featuredImage ? [post.featuredImage] : [],
       type: 'article',
       publishedTime: post.publishedAt,
       authors: [post.author],
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: post.title,
-      description: post.excerpt,
-      images: post.featuredImage ? [post.featuredImage] : [],
     },
   }
 }
