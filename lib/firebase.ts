@@ -1,8 +1,8 @@
-import { initializeApp, getApps } from 'firebase/app'
-import { getAuth } from 'firebase/auth'
-import { getFirestore, collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, orderBy, limit, serverTimestamp } from 'firebase/firestore'
-import { getStorage } from 'firebase/storage'
-import { getAnalytics } from 'firebase/analytics'
+import { initializeApp, getApps, FirebaseApp } from 'firebase/app'
+import { getAuth, Auth } from 'firebase/auth'
+import { getFirestore, Firestore, collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, orderBy, limit, serverTimestamp } from 'firebase/firestore'
+import { getStorage, FirebaseStorage } from 'firebase/storage'
+import { getAnalytics, Analytics } from 'firebase/analytics'
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -14,18 +14,39 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 }
 
-// Initialize Firebase only if no apps exist
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0]
+// Verificar se todas as variáveis de ambiente necessárias estão presentes
+const isFirebaseConfigured = () => {
+  return (
+    process.env.NEXT_PUBLIC_FIREBASE_API_KEY &&
+    process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN &&
+    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID &&
+    process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET &&
+    process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID &&
+    process.env.NEXT_PUBLIC_FIREBASE_APP_ID
+  )
+}
 
-// Initialize Firebase services - sempre disponível
-export const db = getFirestore(app)
-export const storage = getStorage(app)
+// Initialize Firebase only if configured
+let app: FirebaseApp
+let db: Firestore
+let storage: FirebaseStorage
+let auth: Auth
+let analytics: Analytics | null = null
 
-// Initialize Auth only in browser to avoid build issues
-export const auth = typeof window !== 'undefined' ? getAuth(app) : null
+if (!isFirebaseConfigured()) {
+  throw new Error('Firebase não configurado corretamente. Verifique as variáveis de ambiente.')
+}
 
-// Initialize Analytics only in browser
-export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null
+app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0]
+db = getFirestore(app)
+storage = getStorage(app)
+auth = getAuth(app)
+if (typeof window !== 'undefined') {
+  analytics = getAnalytics(app)
+}
+
+// Export Firebase services - sempre disponível
+export { db, storage, auth, analytics }
 
 // Export Firestore functions for convenience
 export { collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, orderBy, limit, serverTimestamp }

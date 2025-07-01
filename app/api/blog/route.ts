@@ -54,6 +54,25 @@ export async function POST(req: NextRequest) {
       .replace(/\s+/g, '-')
       .replace(/-+/g, '-')
       .trim()
+    // Validação de unicidade do slug
+    const slugQuery = query(collection(db, 'blog'), where('slug', '==', slug));
+    const slugSnap = await getDocs(slugQuery);
+    if (!slugSnap.empty) {
+      return NextResponse.json({ error: 'Já existe um post com esse slug.' }, { status: 400 });
+    }
+    // Validação de status
+    const validStatus = ['published', 'draft', 'scheduled'];
+    if (status && !validStatus.includes(status)) {
+      return NextResponse.json({ error: 'Status inválido.' }, { status: 400 });
+    }
+    // Validação de data de publicação
+    if (status === 'published' && scheduledFor) {
+      const pubDate = new Date(scheduledFor);
+      const now = new Date();
+      if (isNaN(pubDate.getTime()) || pubDate > now) {
+        return NextResponse.json({ error: 'Data de publicação inválida.' }, { status: 400 });
+      }
+    }
     const postData: any = {
       title,
       slug,

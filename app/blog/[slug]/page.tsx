@@ -85,32 +85,21 @@ export default async function BlogPostPage({ params }: PageProps) {
   const post = await getBlogPost(params.slug)
   
   console.log('Post recuperado:', post);
-  if (!post) {
-    console.error('[ERRO-BLOG] Post não encontrado após getBlogPost para o slug:', params.slug);
-    notFound()
+  if (
+    !post ||
+    !post.title ||
+    !post.content ||
+    !post.author ||
+    !post.publishedAt ||
+    !Array.isArray(post.tags) ||
+    post.status !== 'published'
+  ) {
+    notFound();
   }
 
-  // Checagens de segurança e log para depuração
-  if (!post.title) { console.error('[ERRO-BLOG] Campo title ausente:', post); }
-  if (!post.content) { console.error('[ERRO-BLOG] Campo content ausente:', post); }
-  if (!post.author) { console.error('[ERRO-BLOG] Campo author ausente:', post); }
-  if (!post.publishedAt) { console.error('[ERRO-BLOG] Campo publishedAt ausente:', post); }
-  if (!Array.isArray(post.tags)) {
-    console.error('[ERRO-BLOG] Campo tags não é array:', post.tags);
-    post.tags = [];
-  }
+  const pubDate = new Date(post.publishedAt);
   const now = new Date();
-  const pubDate = post.publishedAt ? new Date(post.publishedAt) : null;
-  if (post.status !== 'published') {
-    console.error('[ERRO-BLOG] Status diferente de published:', post.status, post);
-    notFound();
-  }
-  if (pubDate && pubDate > now) {
-    console.error('[ERRO-BLOG] Data de publicação no futuro:', post.publishedAt, post);
-    notFound();
-  }
-  if (isNaN(pubDate?.getTime() ?? NaN)) {
-    console.error('[ERRO-BLOG] Data de publicação inválida:', post.publishedAt, post);
+  if (isNaN(pubDate.getTime()) || pubDate > now) {
     notFound();
   }
 
