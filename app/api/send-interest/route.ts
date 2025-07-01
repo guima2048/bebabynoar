@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db, collection, addDoc, serverTimestamp, doc, getDoc, query, where, getDocs, updateDoc } from '@/lib/firebase'
+import { getFirestoreDB, collection, addDoc, serverTimestamp, doc, getDoc, query, where, getDocs, updateDoc } from '@/lib/firebase'
 import { sendInterestSchema, respondInterestSchema, validateAndSanitize, createErrorResponse } from '@/lib/schemas'
 
 export async function POST(req: NextRequest) {

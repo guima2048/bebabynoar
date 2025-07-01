@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db, collection, addDoc, serverTimestamp, query, where, getDocs, doc, updateDoc, getDoc, deleteDoc } from '@/lib/firebase'
+import { getFirestoreDB, collection, addDoc, serverTimestamp, query, where, getDocs, doc, updateDoc, getDoc, deleteDoc } from '@/lib/firebase'
 import { orderBy, limit, setDoc } from 'firebase/firestore'
 
 interface Review {
