@@ -148,7 +148,9 @@ export default function LandingSettingsPage() {
   }
 
   const handleSave = async () => {
-    if (saving) return
+    if (saving) {
+      return
+    }
     
     try {
       setSaving(true)
