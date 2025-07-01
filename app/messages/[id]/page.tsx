@@ -152,10 +152,10 @@ export default function ChatPage() {
 
   const sendMessage = async () => {
     if (!user || !chatId || !newMessage.trim() || sending) { return }
-+   if (!db) {
-+     toast.error('Serviço de banco de dados indisponível')
-+     return
-+   }
+    if (!db) {
+      toast.error('Serviço de banco de dados indisponível')
+      return
+    }
 
     if (!canStartConversation) {
       toast.error('Você não pode iniciar conversa com este usuário')
