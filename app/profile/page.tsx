@@ -100,7 +100,7 @@ export default function ProfilePage() {
       const downloadURL = await getDownloadURL(storageRef)
       
       // Atualiza o perfil no Firestore
-      const userRef = doc(db, 'users', user.id)
+      const userRef = doc(getFirestoreDB(), 'users', user.id)
       await updateDoc(userRef, { photoURL: downloadURL })
       
       setProfile(prev => prev ? { ...prev, photoURL: downloadURL } : null)
