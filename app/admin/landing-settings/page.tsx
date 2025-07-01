@@ -6,28 +6,10 @@ import {
   Save, 
   ArrowLeft
 } from 'lucide-react'
-import { getFirestoreDB, getFirebaseStorage } from '@/lib/firebase'
-import { 
-  collection, 
-  doc, 
-  getDocs, 
-  setDoc,
-  updateDoc,
-  query,
-  where,
-  orderBy,
-  limit
-} from 'firebase/firestore'
-import { 
-  ref, 
-  uploadBytes, 
-  getDownloadURL
-} from 'firebase/storage'
 import Link from 'next/link'
 import Image from 'next/image'
 
 interface BannerSettings {
-  id: string
   bannerImageURL: string
   bannerTitle: string
   bannerSubtitle: string
@@ -37,18 +19,15 @@ interface BannerSettings {
   secondaryButtonText: string
   secondaryButtonLink: string
   isActive: boolean
-  updatedAt: string
 }
 
 export default function LandingSettingsPage() {
-  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [uploading, setUploading] = useState(false)
-  const [settings, setSettings] = useState<BannerSettings | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewImage, setPreviewImage] = useState<string | null>(null)
   
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<BannerSettings>({
+    bannerImageURL: '',
     bannerTitle: 'A Maior Rede Sugar do Brasil',
     bannerSubtitle: 'Mulheres Lindas, Homens Ricos',
     bannerDescription: 'Encontre sua conexão perfeita no Bebaby App. A plataforma mais confiável e segura para Sugar Babies e Sugar Daddies encontrarem relacionamentos genuínos.',
@@ -59,53 +38,17 @@ export default function LandingSettingsPage() {
     isActive: true
   })
 
-  // Carregar configurações existentes
+  // Carregar configurações do localStorage
   useEffect(() => {
-    loadSettings()
-  }, [])
-
-  const loadSettings = async () => {
-    try {
-      const db = getFirestoreDB()
-      if (!db) {
-        console.error('Firebase não inicializado')
-        setLoading(false)
-        return
+    const saved = localStorage.getItem('landing-settings')
+    if (saved) {
+      const settings = JSON.parse(saved)
+      setFormData(settings)
+      if (settings.bannerImageURL) {
+        setPreviewImage(settings.bannerImageURL)
       }
-
-      const settingsQuery = query(
-        collection(db, 'landing_settings'),
-        where('isActive', '==', true),
-        orderBy('updatedAt', 'desc'),
-        limit(1)
-      )
-
-      const querySnapshot = await getDocs(settingsQuery)
-      
-      if (!querySnapshot.empty) {
-        const doc = querySnapshot.docs[0]
-        const data = doc.data() as BannerSettings
-        setSettings({ ...data, id: doc.id })
-        setFormData({
-          bannerTitle: data.bannerTitle || 'A Maior Rede Sugar do Brasil',
-          bannerSubtitle: data.bannerSubtitle || 'Mulheres Lindas, Homens Ricos',
-          bannerDescription: data.bannerDescription || 'Encontre sua conexão perfeita no Bebaby App.',
-          primaryButtonText: data.primaryButtonText || 'Cadastre-se Grátis',
-          primaryButtonLink: data.primaryButtonLink || '/register',
-          secondaryButtonText: data.secondaryButtonText || 'Explorar Perfis',
-          secondaryButtonLink: data.secondaryButtonLink || '/explore',
-          isActive: data.isActive !== undefined ? data.isActive : true
-        })
-        if (data.bannerImageURL) {
-          setPreviewImage(data.bannerImageURL)
-        }
-      }
-    } catch (error) {
-      console.error('Erro ao carregar configurações:', error)
-    } finally {
-      setLoading(false)
     }
-  }
+  }, [])
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -125,26 +68,12 @@ export default function LandingSettingsPage() {
       // Criar preview
       const reader = new FileReader()
       reader.onload = (e) => {
-        setPreviewImage(e.target?.result as string)
+        const result = e.target?.result as string
+        setPreviewImage(result)
+        setFormData(prev => ({ ...prev, bannerImageURL: result }))
       }
       reader.readAsDataURL(file)
     }
-  }
-
-  const uploadImage = async (file: File): Promise<string> => {
-    const storage = getFirebaseStorage()
-    if (!storage) {
-      throw new Error('Firebase Storage não inicializado')
-    }
-
-    const timestamp = Date.now()
-    const fileName = `banner_${timestamp}.webp`
-    const storageRef = ref(storage, `landing/banner/${fileName}`)
-    
-    const snapshot = await uploadBytes(storageRef, file)
-    const downloadURL = await getDownloadURL(snapshot.ref)
-    
-    return downloadURL
   }
 
   const handleSave = async () => {
@@ -154,55 +83,17 @@ export default function LandingSettingsPage() {
     
     try {
       setSaving(true)
-      console.log('Iniciando salvamento...')
+      console.log('Salvando configurações...')
       
-      const db = getFirestoreDB()
-      if (!db) {
-        throw new Error('Firebase não inicializado')
-      }
-
-      let bannerImageURL = settings?.bannerImageURL || ''
-
-      // Upload da imagem se selecionada
-      if (selectedFile) {
-        console.log('Fazendo upload da imagem...')
-        setUploading(true)
-        try {
-          bannerImageURL = await uploadImage(selectedFile)
-          console.log('Upload concluído:', bannerImageURL)
-        } catch (error) {
-          console.error('Erro no upload:', error)
-          throw new Error('Erro ao fazer upload da imagem')
-        } finally {
-          setUploading(false)
-        }
-      }
-
-      const settingsData = {
-        ...formData,
-        bannerImageURL,
-        updatedAt: new Date().toISOString()
-      }
-
-      console.log('Salvando configurações:', settingsData)
-
-      if (settings?.id) {
-        await updateDoc(doc(db, 'landing_settings', settings.id), settingsData)
-        console.log('Configurações atualizadas')
-      } else {
-        const docRef = doc(collection(db, 'landing_settings'))
-        await setDoc(docRef, settingsData)
-        console.log('Novas configurações criadas')
-      }
-
-      setSettings(prev => prev ? { ...prev, ...settingsData } : null)
-      console.log('Salvamento concluído com sucesso!')
+      // Salvar no localStorage (temporário)
+      localStorage.setItem('landing-settings', JSON.stringify(formData))
+      
+      console.log('Configurações salvas com sucesso!')
       alert('Configurações salvas com sucesso!')
     } catch (error) {
       console.error('Erro ao salvar configurações:', error)
       alert(`Erro ao salvar configurações: ${error instanceof Error ? error.message : 'Erro desconhecido'}`)
     } finally {
-      console.log('Finalizando salvamento...')
       setSaving(false)
     }
   }
@@ -210,24 +101,7 @@ export default function LandingSettingsPage() {
   const handleRemoveImage = () => {
     setSelectedFile(null)
     setPreviewImage(null)
-  }
-
-  if (loading) {
-    return (
-      <div className="max-w-6xl mx-auto py-8 px-4">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-48 mb-8"></div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="space-y-4">
-              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-              <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-              <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-            </div>
-            <div className="h-64 bg-gray-200 rounded"></div>
-          </div>
-        </div>
-      </div>
-    )
+    setFormData(prev => ({ ...prev, bannerImageURL: '' }))
   }
 
   return (
@@ -410,7 +284,7 @@ export default function LandingSettingsPage() {
 
           <button
             onClick={handleSave}
-            disabled={saving || uploading}
+            disabled={saving}
             className="w-full bg-gradient-to-r from-pink-600 to-purple-600 text-white py-3 px-6 rounded-lg font-semibold hover:from-pink-700 hover:to-purple-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {saving ? (
@@ -476,6 +350,7 @@ export default function LandingSettingsPage() {
               <li>• Formatos aceitos: PNG, JPG, JPEG</li>
               <li>• Tamanho máximo: 10MB</li>
               <li>• As alterações são aplicadas imediatamente</li>
+              <li>• <strong>MODO TESTE:</strong> Salvando no navegador (localStorage)</li>
             </ul>
           </div>
         </div>
