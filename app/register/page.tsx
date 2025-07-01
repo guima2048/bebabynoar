@@ -6,7 +6,8 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { createUserWithEmailAndPassword } from 'firebase/auth'
 import { doc, setDoc, getDoc, collection, query, where, getDocs } from 'firebase/firestore'
-import { auth, db } from '@/lib/firebase'
+import { auth } from '@/lib/firebase'
+import { getFirestoreDB } from '@/lib/firebase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
@@ -110,6 +111,13 @@ export default function RegisterPage() {
   async function onSubmit(data: FormData) {
     setLoading(true)
     try {
+      const db = getFirestoreDB()
+      if (!db) {
+        toast.error('Erro de configuração do banco de dados')
+        setLoading(false)
+        return
+      }
+      
       console.log('Iniciando processo de cadastro...', { username: data.username, email: data.email })
       
       // Verifica unicidade do nome de usuário

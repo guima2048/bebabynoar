@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { db } from '@/lib/firebase'
+import { getFirestoreDB } from '@/lib/firebase'
 import { doc, getDoc } from 'firebase/firestore'
 import toast from 'react-hot-toast'
 import { Check, Star, Crown, Zap, Heart, Shield, Users, ArrowRight } from 'lucide-react'
@@ -108,6 +108,11 @@ export default function PremiumPage() {
     if (!user) { return }
     setLoading(true)
     try {
+      const db = getFirestoreDB()
+      if (!db) {
+        toast.error('Erro de configuração do banco de dados')
+        return
+      }
       const userDoc = await getDoc(doc(db, 'users', user.id))
       if (userDoc.exists()) {
         setIsPremium(!!userDoc.data().premium)

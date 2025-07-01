@@ -18,7 +18,7 @@ import {
   updateDoc, 
   serverTimestamp 
 } from 'firebase/firestore'
-import { db } from '@/lib/firebase'
+import { getFirestoreDB } from '@/lib/firebase'
 
 interface User {
   id: string
@@ -61,6 +61,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
+          const db = getFirestoreDB()
+          if (!db) {
+            console.error('Erro de configuração do banco de dados')
+            return
+          }
           const userDoc = await getDoc(doc(db, 'users', user.uid))
           if (userDoc.exists()) {
             const userData = userDoc.data()
@@ -120,6 +125,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUp = async (email: string, password: string, userData: any): Promise<void> => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password)
     const user = userCredential.user
+    const db = getFirestoreDB()
+    if (!db) {
+      throw new Error('Erro de configuração do banco de dados')
+    }
     await setDoc(doc(db, 'users', user.uid), {
       ...userData,
       email: user.email || '',
@@ -152,6 +161,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!user) { throw new Error('Usuário não autenticado') }
 
     try {
+      const db = getFirestoreDB()
+      if (!db) {
+        throw new Error('Erro de configuração do banco de dados')
+      }
       await updateDoc(doc(db, 'users', user.id), data)
       setUser(prev => prev ? { ...prev, ...data } : null)
     } catch (error: any) {
