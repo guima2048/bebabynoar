@@ -41,6 +41,9 @@ function BlogError({ error }: { error: string }) {
 
 async function getBlogPost(slug: string): Promise<BlogPost | null | { error: string }> {
   try {
+    if (!db) {
+      return { error: 'Erro de configuração do banco de dados' };
+    }
     console.log('[DEBUG-BLOG] Buscando post com slug:', slug);
     const q = query(
       collection(db, 'blog'),
@@ -66,6 +69,9 @@ async function getBlogPost(slug: string): Promise<BlogPost | null | { error: str
 
 async function getRelatedPosts(currentPost: BlogPost): Promise<BlogPost[]> {
   try {
+    if (!db) {
+      return [];
+    }
     const q = query(
       collection(db, 'blog'),
       where('status', '==', 'published')
