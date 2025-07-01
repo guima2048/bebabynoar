@@ -21,6 +21,60 @@ import {
   Camera
 } from 'lucide-react'
 
+// Componente para carregar imagens em múltiplos formatos
+const MultiFormatImage = ({ 
+  baseName, 
+  alt, 
+  className, 
+  fill = false,
+  width,
+  height,
+  priority = false
+}: {
+  baseName: string
+  alt: string
+  className?: string
+  fill?: boolean
+  width?: number
+  height?: number
+  priority?: boolean
+}) => {
+  const [currentFormatIndex, setCurrentFormatIndex] = useState(0)
+  const [imageError, setImageError] = useState(false)
+  
+  const formats = ['webp', 'png', 'jpg', 'jpeg']
+  const currentSrc = `/landing/${baseName}.${formats[currentFormatIndex]}`
+  
+  const handleError = () => {
+    if (currentFormatIndex < formats.length - 1) {
+      setCurrentFormatIndex(prev => prev + 1)
+    } else {
+      setImageError(true)
+    }
+  }
+  
+  if (imageError) {
+    return (
+      <div className={`bg-gray-200 flex items-center justify-center ${className}`}>
+        <Camera className="w-6 h-6 text-gray-400" />
+      </div>
+    )
+  }
+  
+  return (
+    <Image
+      src={currentSrc}
+      alt={alt}
+      className={className}
+      fill={fill}
+      width={width}
+      height={height}
+      priority={priority}
+      onError={handleError}
+    />
+  )
+}
+
 export default function HomePage() {
   const [currentSlide, setCurrentSlide] = useState(0)
   const [landingSettings, setLandingSettings] = useState({
@@ -66,21 +120,21 @@ export default function HomePage() {
       location: "São Paulo",
       story: "Conheci meu Sugar Daddy há 2 anos. Hoje viajamos pelo mundo juntos e tenho uma vida que sempre sonhei.",
       rating: 5,
-      photo: "/landing/testimonial-1.jpg"
+      photo: "testimonial-1"
     },
     {
       name: "Roberto, 45",
       location: "Rio de Janeiro", 
       story: "O Bebaby App me conectou com pessoas incríveis. A verificação de perfis me dá total segurança.",
       rating: 5,
-      photo: "/landing/testimonial-2.jpg"
+      photo: "testimonial-2"
     },
     {
       name: "Camila, 26",
       location: "Brasília",
       story: "Em apenas 3 meses, encontrei meu parceiro ideal. A plataforma é realmente exclusiva e segura.",
       rating: 5,
-      photo: "/landing/testimonial-3.jpg"
+      photo: "testimonial-3"
     }
   ]
 
@@ -89,25 +143,25 @@ export default function HomePage() {
       name: "Ana, 23",
       location: "São Paulo",
       profession: "Secretária",
-      photo: "/landing/baby-1.jpg"
+      photo: "baby-1"
     },
     {
       name: "Maria, 20",
       location: "Belo Horizonte",
       profession: "Universitária",
-      photo: "/landing/baby-2.jpg"
+      photo: "baby-2"
     },
     {
       name: "Julia, 25",
       location: "Florianópolis",
       profession: "Estudante",
-      photo: "/landing/baby-3.jpg"
+      photo: "baby-3"
     },
     {
       name: "Sofia, 22",
       location: "Rio de Janeiro",
       profession: "Recepcionista",
-      photo: "/landing/baby-4.jpg"
+      photo: "baby-4"
     }
   ]
 
@@ -116,25 +170,25 @@ export default function HomePage() {
       name: "Carlos, 45",
       location: "São Paulo",
       profession: "Empresário",
-      photo: "/landing/daddy-1.jpg"
+      photo: "daddy-1"
     },
     {
       name: "Roberto, 52",
       location: "Rio de Janeiro",
       profession: "Advogado",
-      photo: "/landing/daddy-2.jpg"
+      photo: "daddy-2"
     },
     {
       name: "Dr. Paulo, 48",
       location: "Brasília",
       profession: "Médico",
-      photo: "/landing/daddy-3.jpg"
+      photo: "daddy-3"
     },
     {
       name: "Marcos, 50",
       location: "Belo Horizonte",
       profession: "Executivo",
-      photo: "/landing/daddy-4.jpg"
+      photo: "daddy-4"
     }
   ]
 
@@ -211,8 +265,8 @@ export default function HomePage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-white rounded-xl p-4 shadow-sm">
                     <div className="relative w-16 h-16 mx-auto mb-3">
-                      <Image
-                        src="/landing/hero-baby-1.jpg"
+                      <MultiFormatImage
+                        baseName="hero-baby-1"
                         alt="Sugar Baby"
                         fill
                         className="rounded-full object-cover"
@@ -222,8 +276,8 @@ export default function HomePage() {
                   </div>
                   <div className="bg-white rounded-xl p-4 shadow-sm">
                     <div className="relative w-16 h-16 mx-auto mb-3">
-                      <Image
-                        src="/landing/hero-daddy-1.jpg"
+                      <MultiFormatImage
+                        baseName="hero-daddy-1"
                         alt="Sugar Daddy"
                         fill
                         className="rounded-full object-cover"
@@ -233,8 +287,8 @@ export default function HomePage() {
                   </div>
                   <div className="bg-white rounded-xl p-4 shadow-sm">
                     <div className="relative w-16 h-16 mx-auto mb-3">
-                      <Image
-                        src="/landing/hero-baby-2.jpg"
+                      <MultiFormatImage
+                        baseName="hero-baby-2"
                         alt="Sugar Baby"
                         fill
                         className="rounded-full object-cover"
@@ -244,8 +298,8 @@ export default function HomePage() {
                   </div>
                   <div className="bg-white rounded-xl p-4 shadow-sm">
                     <div className="relative w-16 h-16 mx-auto mb-3">
-                      <Image
-                        src="/landing/hero-daddy-2.jpg"
+                      <MultiFormatImage
+                        baseName="hero-daddy-2"
                         alt="Sugar Daddy"
                         fill
                         className="rounded-full object-cover"
@@ -332,8 +386,8 @@ export default function HomePage() {
                 {sugarBabies.slice(0, 2).map((baby, index) => (
                   <div key={index} className="bg-white rounded-xl p-4 shadow-sm">
                     <div className="relative w-20 h-20 mx-auto mb-3">
-                      <Image
-                        src={baby.photo}
+                      <MultiFormatImage
+                        baseName={baby.photo}
                         alt={baby.name}
                         fill
                         className="rounded-full object-cover"
@@ -348,8 +402,8 @@ export default function HomePage() {
                 {sugarBabies.slice(2, 4).map((baby, index) => (
                   <div key={index} className="bg-white rounded-xl p-4 shadow-sm">
                     <div className="relative w-20 h-20 mx-auto mb-3">
-                      <Image
-                        src={baby.photo}
+                      <MultiFormatImage
+                        baseName={baby.photo}
                         alt={baby.name}
                         fill
                         className="rounded-full object-cover"
@@ -375,8 +429,8 @@ export default function HomePage() {
                   {sugarDaddies.slice(0, 2).map((daddy, index) => (
                     <div key={index} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
                       <div className="relative w-20 h-20 mx-auto mb-3">
-                        <Image
-                          src={daddy.photo}
+                        <MultiFormatImage
+                          baseName={daddy.photo}
                           alt={daddy.name}
                           fill
                           className="rounded-full object-cover"
@@ -391,8 +445,8 @@ export default function HomePage() {
                   {sugarDaddies.slice(2, 4).map((daddy, index) => (
                     <div key={index} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
                       <div className="relative w-20 h-20 mx-auto mb-3">
-                        <Image
-                          src={daddy.photo}
+                        <MultiFormatImage
+                          baseName={daddy.photo}
                           alt={daddy.name}
                           fill
                           className="rounded-full object-cover"
@@ -497,8 +551,8 @@ export default function HomePage() {
           <div className="bg-gradient-to-br from-pink-50 to-purple-50 rounded-2xl p-8">
             <div className="flex items-center justify-center mb-6">
               <div className="relative w-16 h-16 mr-4">
-                <Image
-                  src={testimonials[currentSlide].photo}
+                <MultiFormatImage
+                  baseName={testimonials[currentSlide].photo}
                   alt={testimonials[currentSlide].name}
                   fill
                   className="rounded-full object-cover"

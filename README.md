@@ -300,8 +300,56 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 - [Vercel](https://vercel.com/) - Deploy e hosting
 - [Stripe](https://stripe.com/) - Processamento de pagamentos
 
+## Formatos de Imagem Suportados
+
+A landing page agora suporta múltiplos formatos de imagem para melhor compatibilidade e performance:
+
+### Formatos Suportados (em ordem de preferência):
+1. **WebP** - Melhor compressão e qualidade
+2. **PNG** - Suporte a transparência
+3. **JPG/JPEG** - Compatibilidade universal
+
+### Como Funciona:
+O componente `MultiFormatImage` tenta carregar as imagens automaticamente na seguinte ordem:
+1. Primeiro tenta carregar o formato WebP
+2. Se falhar, tenta PNG
+3. Se falhar, tenta JPG
+4. Se falhar, tenta JPEG
+5. Se todos falharem, exibe um placeholder com ícone de câmera
+
+### Estrutura de Arquivos:
+```
+public/landing/
+├── baby-1.webp (ou .png, .jpg, .jpeg)
+├── baby-2.webp (ou .png, .jpg, .jpeg)
+├── baby-3.webp (ou .png, .jpg, .jpeg)
+├── baby-4.webp (ou .png, .jpg, .jpeg)
+├── daddy-1.webp (ou .png, .jpg, .jpeg)
+├── daddy-2.webp (ou .png, .jpg, .jpeg)
+├── daddy-3.webp (ou .png, .jpg, .jpeg)
+├── daddy-4.webp (ou .png, .jpg, .jpeg)
+├── hero-baby-1.webp (ou .png, .jpg, .jpeg)
+├── hero-baby-2.webp (ou .png, .jpg, .jpeg)
+├── hero-daddy-1.webp (ou .png, .jpg, .jpeg)
+├── hero-daddy-2.webp (ou .png, .jpg, .jpeg)
+├── testimonial-1.webp (ou .png, .jpg, .jpeg)
+├── testimonial-2.webp (ou .png, .jpg, .jpeg)
+└── testimonial-3.webp (ou .png, .jpg, .jpeg)
+```
+
+### Vantagens:
+- **Performance**: WebP oferece melhor compressão
+- **Compatibilidade**: Fallback automático para formatos mais antigos
+- **Flexibilidade**: Você pode usar qualquer um dos formatos
+- **Fallback**: Placeholder automático se nenhuma imagem for encontrada
+
+### Recomendação:
+Use **WebP** como formato principal para melhor performance, mas mantenha versões JPG como fallback para navegadores mais antigos.
+
 ---
 
-**Bebaby App** - Conectando pessoas, criando relacionamentos especiais 💕 #   U p d a t e d   a t   S a t ,   J u n   2 8 ,   2 0 2 5   1 1 : 1 1 : 2 6   A M  
- #   F o r c i n g   n e w   d e p l o y m e n t  
+**Bebaby App** - Conectando pessoas, criando relacionamentos especiais 💕 #   U p d a t e d   a t   S a t ,   J u n   2 8 ,   2 0 2 5   1 1 : 1 1 : 2 6   A M 
+ 
+ #   F o r c i n g   n e w   d e p l o y m e n t 
+ 
  
