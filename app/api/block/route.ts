@@ -27,6 +27,9 @@ interface UserData {
 
 export async function POST(request: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 })
+    }
     const { userId, targetUserId, reason } = await request.json()
 
     if (!userId || !targetUserId) {
@@ -98,6 +101,9 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 })
+    }
     const { userId, targetUserId } = await request.json()
 
     if (!userId || !targetUserId) {
@@ -129,6 +135,9 @@ export async function DELETE(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 })
+    }
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId')
 
@@ -150,9 +159,9 @@ export async function GET(request: NextRequest) {
     // Buscar dados dos usuários bloqueados
     const blockedUsers = await Promise.all(
       blocks.map(async (block) => {
+        if (!db) return null;
         const userRef = doc(db, 'users', block.targetUserId)
         const userDoc = await getDoc(userRef)
-        
         if (userDoc.exists()) {
           const userData = userDoc.data() as UserData
           return {
