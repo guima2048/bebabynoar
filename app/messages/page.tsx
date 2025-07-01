@@ -52,6 +52,10 @@ export default function MessagesPage() {
 
   const loadConversations = () => {
     if (!user) { return }
+    if (!db) {
+      toast.error('Serviço de banco de dados indisponível')
+      return
+    }
 
     // Buscar conversas onde o usuário atual é participante
     const conversationsQuery = query(
@@ -72,6 +76,10 @@ export default function MessagesPage() {
         
         if (otherUserId) {
           try {
+            if (!db) {
+              console.error('Erro: db não está inicializado em loadConversations')
+              continue
+            }
             // Buscar dados do outro usuário
             const userDoc = await getDoc(doc(db, 'users', otherUserId))
             if (userDoc.exists()) {
