@@ -6,6 +6,9 @@ import crypto from 'crypto'
 
 export async function POST(request: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
+    }
     const { email } = await request.json()
 
     if (!email) {
@@ -94,6 +97,9 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
+    }
     const { token, newPassword } = await request.json()
 
     if (!token || !newPassword) {

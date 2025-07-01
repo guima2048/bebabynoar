@@ -4,6 +4,9 @@ import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'fire
 
 export async function POST(req: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
+    }
     const { reporterId, reportedId, reason, description } = await req.json()
     
     if (!reporterId || !reportedId || !reason) {
