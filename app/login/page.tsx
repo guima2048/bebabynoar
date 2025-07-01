@@ -27,6 +27,11 @@ export default function LoginPage() {
         setLoading(false);
         return;
       }
+      if (!db) {
+        toast.error('Serviço de banco de dados indisponível. Tente novamente mais tarde.');
+        setLoading(false);
+        return;
+      }
       let email = data.identifier
       // Se não for e-mail, tenta buscar pelo nome de usuário
       if (!/^[^@]+@[^@]+\.[^@]+$/.test(data.identifier)) {
