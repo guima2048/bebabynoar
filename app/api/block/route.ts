@@ -159,7 +159,7 @@ export async function GET(request: NextRequest) {
     // Buscar dados dos usuários bloqueados
     const blockedUsers = await Promise.all(
       blocks.map(async (block) => {
-        if (!db) return null;
+        if (!db) { return null; }
         const userRef = doc(db, 'users', block.targetUserId)
         const userDoc = await getDoc(userRef)
         if (userDoc.exists()) {
