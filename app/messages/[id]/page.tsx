@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { db } from '@/lib/firebase'
+import { getFirestoreDB } from '@/lib/firebase'
 import { 
   collection, 
   doc, 
@@ -66,12 +66,9 @@ export default function ChatPage() {
 
   const checkConversationPermissions = async () => {
     if (!user) { return }
-    if (!db) {
-      toast.error('Serviço de banco de dados indisponível')
-      return
-    }
     
     try {
+      const db = getFirestoreDB()
       // Buscar dados do usuário atual
       const currentUserDoc = await getDoc(doc(db, 'users', user.id))
       const currentUserData = currentUserDoc.data()
@@ -100,11 +97,8 @@ export default function ChatPage() {
   }
 
   const loadChatUser = async () => {
-    if (!db) {
-      toast.error('Serviço de banco de dados indisponível')
-      return
-    }
     try {
+      const db = getFirestoreDB()
       const userDoc = await getDoc(doc(db, 'users', chatId))
       if (userDoc.exists()) {
         setChatUser({
@@ -119,43 +113,40 @@ export default function ChatPage() {
 
   const loadMessages = () => {
     if (!user || !chatId) { return }
-    if (!db) {
-      toast.error('Serviço de banco de dados indisponível')
-      return
+
+    try {
+      const db = getFirestoreDB()
+      // Criar ID único para a conversa (ordenado alfabeticamente)
+      const conversationId = [user.id, chatId].sort().join('_')
+      
+      const messagesQuery = query(
+        collection(db, 'conversations', conversationId, 'messages'),
+        orderBy('timestamp', 'asc')
+      )
+
+      const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
+        const messagesData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Message[]
+        
+        setMessages(messagesData)
+        setLoading(false)
+        
+        // Scroll para a última mensagem
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+        }, 100)
+      })
+
+      return unsubscribe
+    } catch (error) {
+      toast.error('Erro ao carregar mensagens')
     }
-
-    // Criar ID único para a conversa (ordenado alfabeticamente)
-    const conversationId = [user.id, chatId].sort().join('_')
-    
-    const messagesQuery = query(
-      collection(db, 'conversations', conversationId, 'messages'),
-      orderBy('timestamp', 'asc')
-    )
-
-    const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
-      const messagesData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Message[]
-      
-      setMessages(messagesData)
-      setLoading(false)
-      
-      // Scroll para a última mensagem
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-      }, 100)
-    })
-
-    return unsubscribe
   }
 
   const sendMessage = async () => {
     if (!user || !chatId || !newMessage.trim() || sending) { return }
-    if (!db) {
-      toast.error('Serviço de banco de dados indisponível')
-      return
-    }
 
     if (!canStartConversation) {
       toast.error('Você não pode iniciar conversa com este usuário')
@@ -164,6 +155,7 @@ export default function ChatPage() {
 
     setSending(true)
     try {
+      const db = getFirestoreDB()
       const conversationId = [user.id, chatId].sort().join('_')
       
       // Adicionar mensagem

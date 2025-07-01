@@ -1,41 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/firebase'
-import { collection, addDoc, updateDoc, doc, serverTimestamp, query, where, getDocs } from 'firebase/firestore'
+import { getFirestoreDB } from '@/lib/firebase'
+import { collection, getDocs, query, where, updateDoc, doc, addDoc, serverTimestamp } from 'firebase/firestore'
 
 export async function POST(req: NextRequest) {
   try {
+    const db = getFirestoreDB()
     const body = await req.text()
     const signature = req.headers.get('stripe-signature')
 
-    // Verificar assinatura do webhook (Stripe)
-    if (signature) {
-      // Implementar verificação de assinatura do Stripe
-      // const event = stripe.webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET!)
+    if (!signature) {
+      return NextResponse.json({ error: 'Assinatura Stripe não fornecida' }, { status: 400 })
     }
 
+    // Verificar se é um webhook válido do Stripe
+    // const event = stripe.webhooks.constructEvent(body, signature, process.env.STRIPE_WEBHOOK_SECRET!)
+    
+    // Para desenvolvimento, vamos simular alguns eventos
     const event = JSON.parse(body)
-
-    if (!event) { return NextResponse.json({ error: 'Evento inválido' }, { status: 400 }) }
+    
+    console.log('Webhook recebido:', event.type)
 
     switch (event.type) {
       case 'payment_intent.succeeded':
         await handlePaymentSuccess(event.data.object)
         break
-      
       case 'payment_intent.payment_failed':
         await handlePaymentFailure(event.data.object)
         break
-      
       case 'invoice.payment_succeeded':
         await handleSubscriptionPayment(event.data.object)
         break
-      
       case 'customer.subscription.deleted':
         await handleSubscriptionCancelled(event.data.object)
         break
-      
       default:
-        // Removido console.log de produção
+        console.log(`Evento não tratado: ${event.type}`)
     }
 
     return NextResponse.json({ received: true })
@@ -50,10 +49,7 @@ export async function POST(req: NextRequest) {
 
 async function handlePaymentSuccess(paymentIntent: any) {
   try {
-    if (!db) {
-      console.error('Erro: db não está inicializado em handlePaymentSuccess')
-      return
-    }
+    const db = getFirestoreDB()
     const { customer, amount, metadata } = paymentIntent
     
     // Buscar usuário pelo customer ID
@@ -110,10 +106,7 @@ async function handlePaymentSuccess(paymentIntent: any) {
 
 async function handlePaymentFailure(paymentIntent: any) {
   try {
-    if (!db) {
-      console.error('Erro: db não está inicializado em handlePaymentFailure')
-      return
-    }
+    const db = getFirestoreDB()
     const { customer, last_payment_error } = paymentIntent
     
     // Buscar usuário
@@ -150,10 +143,7 @@ async function handlePaymentFailure(paymentIntent: any) {
 
 async function handleSubscriptionPayment(invoice: any) {
   try {
-    if (!db) {
-      console.error('Erro: db não está inicializado em handleSubscriptionPayment')
-      return
-    }
+    const db = getFirestoreDB()
     const { customer, subscription, amount_paid } = invoice
     
     // Buscar usuário
@@ -192,10 +182,7 @@ async function handleSubscriptionPayment(invoice: any) {
 
 async function handleSubscriptionCancelled(subscription: any) {
   try {
-    if (!db) {
-      console.error('Erro: db não está inicializado em handleSubscriptionCancelled')
-      return
-    }
+    const db = getFirestoreDB()
     const { customer } = subscription
     
     // Buscar usuário

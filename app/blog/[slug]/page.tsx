@@ -1,7 +1,9 @@
 import React from 'react'
 import Link from 'next/link'
-import { db } from '@/lib/firebase'
-import { collection, query, where, getDocs } from 'firebase/firestore'
+import { Metadata } from 'next'
+import { notFound } from 'next/navigation'
+import { getFirestoreDB } from '@/lib/firebase'
+import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Calendar, Clock, User, ArrowLeft, Share2, Heart, MessageCircle } from 'lucide-react'
@@ -41,10 +43,8 @@ function BlogError({ error }: { error: string }) {
 
 async function getBlogPost(slug: string): Promise<BlogPost | null | { error: string }> {
   try {
-    if (!db) {
-      return { error: 'Erro de configuração do banco de dados' };
-    }
-    console.log('[DEBUG-BLOG] Buscando post com slug:', slug);
+    const db = getFirestoreDB()
+    console.log('[DEBUG-BLOG] Buscando post com slug:', slug)
     const q = query(
       collection(db, 'blog'),
       where('slug', '==', slug),
@@ -69,9 +69,7 @@ async function getBlogPost(slug: string): Promise<BlogPost | null | { error: str
 
 async function getRelatedPosts(currentPost: BlogPost): Promise<BlogPost[]> {
   try {
-    if (!db) {
-      return [];
-    }
+    const db = getFirestoreDB()
     const q = query(
       collection(db, 'blog'),
       where('status', '==', 'published')

@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/firebase'
+import { getFirestoreDB } from '@/lib/firebase'
 import { doc, getDoc, updateDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore'
 
 export async function POST(req: NextRequest) {
   try {
-    if (!db) {
-      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
-    }
+    const db = getFirestoreDB()
     const { userId, plan, paymentMethod } = await req.json()
 
     if (!userId || !plan || !paymentMethod) {

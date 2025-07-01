@@ -8,6 +8,7 @@ import { auth, db } from '@/lib/firebase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
+import { getFirestoreDB } from '@/lib/firebase'
 
 interface LoginForm {
   identifier: string
@@ -23,15 +24,12 @@ export default function LoginPage() {
     setLoading(true)
     try {
       if (!auth) {
-        toast.error('Serviço de autenticação indisponível. Tente novamente mais tarde.');
-        setLoading(false);
-        return;
+        toast.error('Serviço de autenticação indisponível. Tente novamente mais tarde.')
+        setLoading(false)
+        return
       }
-      if (!db) {
-        toast.error('Serviço de banco de dados indisponível. Tente novamente mais tarde.');
-        setLoading(false);
-        return;
-      }
+      
+      const db = getFirestoreDB()
       let email = data.identifier
       // Se não for e-mail, tenta buscar pelo nome de usuário
       if (!/^[^@]+@[^@]+\.[^@]+$/.test(data.identifier)) {

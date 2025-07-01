@@ -15,7 +15,7 @@ import {
   getDocs,
   limit
 } from 'firebase/firestore'
-import { db } from '@/lib/firebase'
+import { getFirestoreDB } from '@/lib/firebase'
 import { MessageCircle, Crown, Shield, User, Clock } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -52,80 +52,81 @@ export default function MessagesPage() {
 
   const loadConversations = () => {
     if (!user) { return }
-    if (!db) {
-      toast.error('Serviço de banco de dados indisponível')
-      return
-    }
 
-    // Buscar conversas onde o usuário atual é participante
-    const conversationsQuery = query(
-      collection(db, 'conversations'),
-      where('participants', 'array-contains', user.id),
-      orderBy('lastMessageTime', 'desc')
-    )
+    try {
+      const db = getFirestoreDB()
+      // Buscar conversas onde o usuário atual é participante
+      const conversationsQuery = query(
+        collection(db, 'conversations'),
+        where('participants', 'array-contains', user.id),
+        orderBy('lastMessageTime', 'desc')
+      )
 
-    const unsubscribe = onSnapshot(conversationsQuery, async (snapshot) => {
-      const conversationsData: Conversation[] = []
+      const unsubscribe = onSnapshot(conversationsQuery, async (snapshot) => {
+        const conversationsData: Conversation[] = []
 
-      for (const docSnapshot of snapshot.docs) {
-        const data = docSnapshot.data()
-        const participants = data.participants || []
-        
-        // Encontrar o outro participante (não o usuário atual)
-        const otherUserId = participants.find((id: string) => id !== user.id)
-        
-        if (otherUserId) {
-          try {
-            if (!db) {
-              console.error('Erro: db não está inicializado em loadConversations')
-              continue
+        for (const docSnapshot of snapshot.docs) {
+          const data = docSnapshot.data()
+          const participants = data.participants || []
+          
+          // Encontrar o outro participante (não o usuário atual)
+          const otherUserId = participants.find((id: string) => id !== user.id)
+          
+          if (otherUserId) {
+            try {
+              if (!db) {
+                console.error('Erro: db não está inicializado em loadConversations')
+                continue
+              }
+              // Buscar dados do outro usuário
+              const userDoc = await getDoc(doc(db, 'users', otherUserId))
+              if (userDoc.exists()) {
+                const userData = userDoc.data() as UserData
+                
+                // Buscar última mensagem
+                const messagesQuery = query(
+                  collection(db, 'conversations', docSnapshot.id, 'messages'),
+                  orderBy('timestamp', 'desc'),
+                  limit(1)
+                )
+                const messagesSnap = await getDocs(messagesQuery)
+                const lastMessage = messagesSnap.docs[0]?.data()
+
+                // Contar mensagens não lidas
+                const unreadQuery = query(
+                  collection(db, 'conversations', docSnapshot.id, 'messages'),
+                  where('receiverId', '==', user.id),
+                  where('read', '==', false)
+                )
+                const unreadSnap = await getDocs(unreadQuery)
+
+                conversationsData.push({
+                  id: otherUserId,
+                  userId: otherUserId,
+                  username: userData.username || 'Usuário',
+                  photoURL: userData.photoURL,
+                  userType: userData.userType || 'user',
+                  premium: userData.premium || false,
+                  verified: userData.verified || false,
+                  lastMessage: lastMessage?.content,
+                  lastMessageTime: lastMessage?.timestamp,
+                  unreadCount: unreadSnap.size
+                })
+              }
+            } catch (error) {
+              toast.error('Erro ao carregar conversas')
             }
-            // Buscar dados do outro usuário
-            const userDoc = await getDoc(doc(db, 'users', otherUserId))
-            if (userDoc.exists()) {
-              const userData = userDoc.data() as UserData
-              
-              // Buscar última mensagem
-              const messagesQuery = query(
-                collection(db, 'conversations', docSnapshot.id, 'messages'),
-                orderBy('timestamp', 'desc'),
-                limit(1)
-              )
-              const messagesSnap = await getDocs(messagesQuery)
-              const lastMessage = messagesSnap.docs[0]?.data()
-
-              // Contar mensagens não lidas
-              const unreadQuery = query(
-                collection(db, 'conversations', docSnapshot.id, 'messages'),
-                where('receiverId', '==', user.id),
-                where('read', '==', false)
-              )
-              const unreadSnap = await getDocs(unreadQuery)
-
-              conversationsData.push({
-                id: otherUserId,
-                userId: otherUserId,
-                username: userData.username || 'Usuário',
-                photoURL: userData.photoURL,
-                userType: userData.userType || 'user',
-                premium: userData.premium || false,
-                verified: userData.verified || false,
-                lastMessage: lastMessage?.content,
-                lastMessageTime: lastMessage?.timestamp,
-                unreadCount: unreadSnap.size
-              })
-            }
-          } catch (error) {
-            toast.error('Erro ao carregar conversas')
           }
         }
-      }
 
-      setConversations(conversationsData)
-      setLoading(false)
-    })
+        setConversations(conversationsData)
+        setLoading(false)
+      })
 
-    return unsubscribe
+      return unsubscribe
+    } catch (error) {
+      toast.error('Erro ao carregar conversas')
+    }
   }
 
   const formatTime = (timestamp: any) => {

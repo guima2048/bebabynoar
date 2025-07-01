@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { storage } from '@/lib/firebase';
+import { getFirebaseStorage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 export async function POST(request: NextRequest) {
   try {
-    if (!storage) {
-      return NextResponse.json({ error: 'Erro de configuração do storage' }, { status: 500 });
-    }
+    const storage = getFirebaseStorage();
     const formData = await request.formData();
     const file = formData.get('file') as File;
 
