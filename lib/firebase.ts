@@ -60,4 +60,20 @@ export { db, storage, auth, analytics }
 // Export Firestore functions for convenience
 export { collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, orderBy, limit, serverTimestamp }
 
+// Função helper para garantir que o db está inicializado
+export function getFirestoreDB() {
+  if (!db) {
+    throw new Error('Firebase Firestore não está inicializado');
+  }
+  return db;
+}
+
+// Função helper para verificar se o storage está inicializado
+export function getFirebaseStorage() {
+  if (!storage) {
+    throw new Error('Firebase Storage não está inicializado');
+  }
+  return storage;
+}
+
 export default app 

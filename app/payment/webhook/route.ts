@@ -50,6 +50,10 @@ export async function POST(req: NextRequest) {
 
 async function handlePaymentSuccess(paymentIntent: any) {
   try {
+    if (!db) {
+      console.error('Erro: db não está inicializado em handlePaymentSuccess')
+      return
+    }
     const { customer, amount, metadata } = paymentIntent
     
     // Buscar usuário pelo customer ID
@@ -106,6 +110,10 @@ async function handlePaymentSuccess(paymentIntent: any) {
 
 async function handlePaymentFailure(paymentIntent: any) {
   try {
+    if (!db) {
+      console.error('Erro: db não está inicializado em handlePaymentFailure')
+      return
+    }
     const { customer, last_payment_error } = paymentIntent
     
     // Buscar usuário
@@ -142,6 +150,10 @@ async function handlePaymentFailure(paymentIntent: any) {
 
 async function handleSubscriptionPayment(invoice: any) {
   try {
+    if (!db) {
+      console.error('Erro: db não está inicializado em handleSubscriptionPayment')
+      return
+    }
     const { customer, subscription, amount_paid } = invoice
     
     // Buscar usuário
@@ -180,6 +192,10 @@ async function handleSubscriptionPayment(invoice: any) {
 
 async function handleSubscriptionCancelled(subscription: any) {
   try {
+    if (!db) {
+      console.error('Erro: db não está inicializado em handleSubscriptionCancelled')
+      return
+    }
     const { customer } = subscription
     
     // Buscar usuário
