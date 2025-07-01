@@ -29,7 +29,18 @@ interface PageProps {
   }
 }
 
-async function getBlogPost(slug: string): Promise<BlogPost | null> {
+// Adicionar um componente para exibir erros detalhados
+function BlogError({ error }: { error: string }) {
+  return (
+    <div style={{ padding: 32, color: 'red', background: '#fff0f0', border: '1px solid #fbb' }}>
+      <h2>Erro ao carregar o post do blog</h2>
+      <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{error}</pre>
+      <p>Se você for admin, envie este erro para o desenvolvedor.</p>
+    </div>
+  )
+}
+
+async function getBlogPost(slug: string): Promise<BlogPost | null | { error: string }> {
   try {
     console.log('[DEBUG-BLOG] Buscando post com slug:', slug);
     const q = query(
@@ -40,8 +51,7 @@ async function getBlogPost(slug: string): Promise<BlogPost | null> {
     const snap = await getDocs(q)
     console.log('[DEBUG-BLOG] Resultado da query:', snap.empty ? 'Nenhum post encontrado' : `${snap.size} post(s) encontrado(s)`);
     if (snap.empty) {
-      console.error('[ERRO-BLOG] Nenhum post encontrado para o slug:', slug);
-      return null
+      return { error: `[404] Nenhum post encontrado para o slug: ${slug}` }
     }
     const doc = snap.docs[0]
     const data = doc.data()
@@ -51,9 +61,7 @@ async function getBlogPost(slug: string): Promise<BlogPost | null> {
       ...data
     } as BlogPost
   } catch (err) {
-    console.error('[ERRO-BLOG] Exceção ao buscar post:', err)
-    toast.error('Erro ao carregar post')
-    return null
+    return { error: `[EXCEPTION] ${err instanceof Error ? err.message : String(err)}` }
   }
 }
 
@@ -81,8 +89,11 @@ async function getRelatedPosts(currentPost: BlogPost): Promise<BlogPost[]> {
 }
 
 export default async function BlogPostPage({ params }: PageProps) {
-  console.log('Slug recebido:', params.slug);
-  const post = await getBlogPost(params.slug)
+  const result = await getBlogPost(params.slug)
+  if (!result || (typeof result === 'object' && 'error' in result)) {
+    return <BlogError error={result && typeof result === 'object' && 'error' in result ? result.error : 'Post não encontrado'} />
+  }
+  const post = result as BlogPost
   
   console.log('Post recuperado:', post);
   if (
