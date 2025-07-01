@@ -4,6 +4,7 @@ import { collection, addDoc, query, where, getDocs, updateDoc, doc, serverTimest
 
 export async function POST(req: NextRequest) {
   try {
+    const db = getFirestoreDB()
     if (!db) {
       return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 })
     }
@@ -73,6 +74,7 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
+    const db = getFirestoreDB()
     if (!db) {
       return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 })
     }
