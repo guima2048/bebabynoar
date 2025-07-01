@@ -16,7 +16,7 @@ import {
   writeBatch,
   deleteDoc
 } from 'firebase/firestore'
-import { db } from '@/lib/firebase'
+import { getFirestoreDB } from '@/lib/firebase'
 
 interface Notification {
   id: string
@@ -55,6 +55,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     setLoading(true)
 
     // Buscar notificações do usuário
+    const db = getFirestoreDB()
+    if (!db) {
+      console.error('Erro de configuração do banco de dados')
+      setLoading(false)
+      return
+    }
+    
     const notificationsQuery = query(
       collection(db, 'notifications'),
       where('userId', '==', user.id),
@@ -84,6 +91,11 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     if (!user) { return }
 
     try {
+      const db = getFirestoreDB()
+      if (!db) {
+        console.error('Erro de configuração do banco de dados')
+        return
+      }
       await updateDoc(doc(db, 'notifications', notificationId), {
         read: true
       })
@@ -96,6 +108,11 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     if (!user) { return }
 
     try {
+      const db = getFirestoreDB()
+      if (!db) {
+        console.error('Erro de configuração do banco de dados')
+        return
+      }
       const batch = writeBatch(db)
       const unreadNotifications = notifications.filter(n => !n.read)
       

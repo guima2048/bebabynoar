@@ -4,7 +4,7 @@ import { useState, useCallback, useRef } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getFirestore, doc, getDoc, updateDoc, addDoc, collection } from 'firebase/firestore';
-import { storage, db } from '@/lib/firebase';
+import { getFirebaseStorage, getFirestoreDB } from '@/lib/firebase';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 import imageCompression from 'browser-image-compression';
@@ -78,6 +78,10 @@ export default function PhotoUpload({
     const uploadPromises = files.map(async (fileData) => {
       try {
         // Criar referência no Storage
+        const storage = getFirebaseStorage();
+        if (!storage) {
+          throw new Error('Erro de configuração do storage');
+        }
         const timestamp = Date.now();
         const fileName = `${timestamp}_${fileData.file.name}`;
         const storageRef = ref(storage, `users/${userId}/${type}/${fileName}`);
@@ -112,6 +116,10 @@ export default function PhotoUpload({
     if (successfulUrls.length > 0) {
       // Atualizar documento do usuário no Firestore
       try {
+        const db = getFirestoreDB();
+        if (!db) {
+          throw new Error('Erro de configuração do banco de dados');
+        }
         const userRef = doc(db, 'users', userId);
         const userDoc = await getDoc(userRef);
         
