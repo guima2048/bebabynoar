@@ -173,18 +173,17 @@ export default function LandingSettingsPage() {
       }
 
       try {
-        // Converter para WebP
-        const webpFile = await convertToWebP(file, 200)
-        setSelectedFile(webpFile)
+        // Usar arquivo original temporariamente
+        setSelectedFile(file)
         
         // Create preview
         const reader = new FileReader()
         reader.onload = (e) => {
           setPreviewImage(e.target?.result as string)
         }
-        reader.readAsDataURL(webpFile)
+        reader.readAsDataURL(file)
       } catch (error) {
-        console.error('Erro ao converter imagem:', error)
+        console.error('Erro ao processar imagem:', error)
         alert('Erro ao processar imagem. Tente novamente.')
       }
     }
@@ -229,6 +228,8 @@ export default function LandingSettingsPage() {
     
     try {
       setSaving(true)
+      console.log('Iniciando salvamento...')
+      
       const db = getFirestoreDB()
       if (!db) {
         throw new Error('Erro de configuração do banco de dados')
@@ -238,9 +239,11 @@ export default function LandingSettingsPage() {
 
       // Upload new image if selected
       if (selectedFile) {
+        console.log('Fazendo upload da imagem...')
         setUploading(true)
         try {
           bannerImageURL = await uploadImage(selectedFile)
+          console.log('Upload concluído:', bannerImageURL)
           
           // Delete old image if exists
           if (settings?.bannerImageURL && settings.bannerImageURL !== bannerImageURL) {
@@ -260,22 +263,28 @@ export default function LandingSettingsPage() {
         updatedAt: new Date().toISOString()
       }
 
+      console.log('Salvando configurações:', settingsData)
+
       if (settings?.id) {
         // Update existing settings
         await updateDoc(doc(db, 'landing_settings', settings.id), settingsData)
+        console.log('Configurações atualizadas')
       } else {
         // Create new settings
         const docRef = doc(collection(db, 'landing_settings'))
         await setDoc(docRef, settingsData)
+        console.log('Novas configurações criadas')
       }
 
       // Recarregar configurações sem chamar loadSettings para evitar loop
       setSettings(prev => prev ? { ...prev, ...settingsData } : null)
+      console.log('Salvamento concluído com sucesso!')
       alert('Configurações salvas com sucesso!')
     } catch (error) {
       console.error('Erro ao salvar configurações:', error)
       alert(`Erro ao salvar configurações: ${error instanceof Error ? error.message : 'Erro desconhecido'}`)
     } finally {
+      console.log('Finalizando salvamento...')
       setSaving(false)
     }
   }
