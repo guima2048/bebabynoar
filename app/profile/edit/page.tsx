@@ -82,6 +82,11 @@ export default function EditProfilePage() {
     if (!user) { return }
 
     try {
+      const db = getFirestoreDB()
+      if (!db) {
+        toast.error('Erro de configuração do banco de dados')
+        return
+      }
       const docRef = doc(db, 'users', user?.id)
       const docSnap = await getDoc(docRef)
       
@@ -150,6 +155,11 @@ export default function EditProfilePage() {
     if (!user) { return }
 
     try {
+      const db = getFirestoreDB()
+      if (!db) {
+        toast.error('Erro de configuração do banco de dados')
+        return
+      }
       setSaving(true)
       const userRef = doc(db, 'users', user?.id)
       await updateDoc(userRef, {

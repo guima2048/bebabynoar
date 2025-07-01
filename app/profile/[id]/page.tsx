@@ -44,6 +44,12 @@ export default function ProfileViewPage() {
     if (!id) { return }
 
     try {
+      const db = getFirestoreDB()
+      if (!db) {
+        setError('Erro de configuração do banco de dados')
+        return
+      }
+      
       setLoading(true)
       const docRef = doc(db, 'users', id)
       const docSnap = await getDoc(docRef)
@@ -53,6 +59,11 @@ export default function ProfileViewPage() {
         setProfile(data as ProfileData)
         
         // Galeria pública
+        const storage = getFirebaseStorage()
+        if (!storage) {
+          console.error('Erro de configuração do storage')
+          return
+        }
         const pubRef = ref(storage, `users/${id}/gallery/public`)
         const pubList = await listAll(pubRef)
         const pubURLs = await Promise.all(pubList.items.map(item => getDownloadURL(item)))
