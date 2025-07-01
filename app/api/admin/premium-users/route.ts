@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
+import { db, isFirebaseInitialized } from '@/lib/firebase';
 import { collection, getDocs, query, where, orderBy, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 
 export async function GET(request: NextRequest) {
@@ -8,6 +8,11 @@ export async function GET(request: NextRequest) {
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    }
+
+    // Verificar se o Firebase está inicializado
+    if (!isFirebaseInitialized() || !db) {
+      return NextResponse.json({ error: 'Firebase não inicializado' }, { status: 500 });
     }
 
     // Buscar usuários do Firestore

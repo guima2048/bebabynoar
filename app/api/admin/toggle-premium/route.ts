@@ -16,6 +16,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'ID do usuário é obrigatório' }, { status: 400 });
     }
 
+    // Verificar se o Firebase está inicializado
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
+    }
+
     // Verificar se o usuário existe
     const userRef = doc(db, 'users', userId);
     const userDoc = await getDoc(userRef);
