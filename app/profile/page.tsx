@@ -58,6 +58,11 @@ export default function ProfilePage() {
     if (!user) { return }
 
     try {
+      const db = getFirestoreDB()
+      if (!db) {
+        console.error('Erro de configuração do banco de dados')
+        return
+      }
       setLoadingProfile(true)
       const docRef = doc(db, 'users', user.id)
       const docSnap = await getDoc(docRef)
@@ -85,6 +90,10 @@ export default function ProfilePage() {
     }
 
     try {
+      const storage = getFirebaseStorage()
+      if (!storage) {
+        throw new Error('Erro de configuração do storage')
+      }
       setUploadingPhoto(true)
       const storageRef = ref(storage, `users/${user.id}/profile/${file.name}`)
       await uploadBytes(storageRef, file)
