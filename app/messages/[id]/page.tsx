@@ -66,6 +66,10 @@ export default function ChatPage() {
 
   const checkConversationPermissions = async () => {
     if (!user) { return }
+    if (!db) {
+      toast.error('Serviço de banco de dados indisponível')
+      return
+    }
     
     try {
       // Buscar dados do usuário atual
@@ -96,6 +100,10 @@ export default function ChatPage() {
   }
 
   const loadChatUser = async () => {
+    if (!db) {
+      toast.error('Serviço de banco de dados indisponível')
+      return
+    }
     try {
       const userDoc = await getDoc(doc(db, 'users', chatId))
       if (userDoc.exists()) {
@@ -111,6 +119,10 @@ export default function ChatPage() {
 
   const loadMessages = () => {
     if (!user || !chatId) { return }
+    if (!db) {
+      toast.error('Serviço de banco de dados indisponível')
+      return
+    }
 
     // Criar ID único para a conversa (ordenado alfabeticamente)
     const conversationId = [user.id, chatId].sort().join('_')
@@ -140,6 +152,10 @@ export default function ChatPage() {
 
   const sendMessage = async () => {
     if (!user || !chatId || !newMessage.trim() || sending) { return }
++   if (!db) {
++     toast.error('Serviço de banco de dados indisponível')
++     return
++   }
 
     if (!canStartConversation) {
       toast.error('Você não pode iniciar conversa com este usuário')
