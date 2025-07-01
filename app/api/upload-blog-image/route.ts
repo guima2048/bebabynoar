@@ -4,6 +4,9 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 export async function POST(request: NextRequest) {
   try {
+    if (!storage) {
+      return NextResponse.json({ error: 'Erro de configuração do storage' }, { status: 500 });
+    }
     const formData = await request.formData();
     const file = formData.get('file') as File;
 
