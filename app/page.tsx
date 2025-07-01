@@ -23,12 +23,41 @@ import {
 
 export default function HomePage() {
   const [currentSlide, setCurrentSlide] = useState(0)
+  const [landingSettings, setLandingSettings] = useState({
+    bannerImageURL: '',
+    bannerTitle: 'A Maior Rede Sugar do Brasil',
+    bannerSubtitle: 'Mulheres Lindas, Homens Ricos',
+    bannerDescription: 'Encontre sua conexão perfeita no Bebaby App. A plataforma mais confiável e segura para Sugar Babies e Sugar Daddies encontrarem relacionamentos genuínos.',
+    primaryButtonText: 'Cadastre-se Grátis',
+    primaryButtonLink: '/register',
+    secondaryButtonText: 'Explorar Perfis',
+    secondaryButtonLink: '/explore'
+  })
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % 3)
     }, 4000)
     return () => clearInterval(interval)
+  }, [])
+
+  useEffect(() => {
+    const loadLandingSettings = async () => {
+      try {
+        const response = await fetch('/api/landing-settings')
+        if (response.ok) {
+          const data = await response.json()
+          setLandingSettings(data)
+        }
+      } catch (error) {
+        console.error('Erro ao carregar configurações da landing page:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadLandingSettings()
   }, [])
 
   const testimonials = [
@@ -139,30 +168,41 @@ export default function HomePage() {
 
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-pink-50 via-white to-purple-50 py-20 lg:py-32">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {landingSettings.bannerImageURL && (
+          <div className="absolute inset-0 z-0">
+            <Image
+              src={landingSettings.bannerImageURL}
+              alt="Banner da landing page"
+              fill
+              className="object-cover opacity-20"
+              priority
+            />
+          </div>
+        )}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
               <h1 className="text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-                A Maior Rede Sugar do Brasil
+                {landingSettings.bannerTitle}
               </h1>
               <h2 className="text-2xl lg:text-3xl font-semibold text-pink-600 mb-8">
-                Mulheres Lindas, Homens Ricos
+                {landingSettings.bannerSubtitle}
               </h2>
               <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-                Encontre sua conexão perfeita no Bebaby App. A plataforma mais confiável e segura para Sugar Babies e Sugar Daddies encontrarem relacionamentos genuínos.
+                {landingSettings.bannerDescription}
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link 
-                  href="/register" 
+                  href={landingSettings.primaryButtonLink} 
                   className="bg-gradient-to-r from-pink-500 to-rose-500 text-white px-8 py-4 rounded-full font-semibold text-lg hover:from-pink-600 hover:to-rose-600 transition-all duration-300 transform hover:scale-105 shadow-lg"
                 >
-                  Cadastre-se Grátis
+                  {landingSettings.primaryButtonText}
                 </Link>
                 <Link 
-                  href="/explore" 
+                  href={landingSettings.secondaryButtonLink} 
                   className="border-2 border-pink-500 text-pink-500 px-8 py-4 rounded-full font-semibold text-lg hover:bg-pink-50 transition-all duration-300"
                 >
-                  Explorar Perfis
+                  {landingSettings.secondaryButtonText}
                 </Link>
               </div>
             </div>

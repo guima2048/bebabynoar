@@ -42,6 +42,75 @@ interface BannerSettings {
   updatedAt: string
 }
 
+// Função para converter imagem para WebP com compressão
+const convertToWebP = (file: File, maxSizeKB: number = 200): Promise<File> => {
+  return new Promise((resolve, reject) => {
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+    const img = new window.Image()
+    
+    img.onload = () => {
+      // Calcular dimensões mantendo proporção
+      let { width, height } = img
+      const maxDimension = 1200
+      
+      if (width > height) {
+        if (width > maxDimension) {
+          height = (height * maxDimension) / width
+          width = maxDimension
+        }
+      } else {
+        if (height > maxDimension) {
+          width = (width * maxDimension) / height
+          height = maxDimension
+        }
+      }
+      
+      canvas.width = width
+      canvas.height = height
+      
+      // Desenhar imagem redimensionada
+      ctx?.drawImage(img, 0, 0, width, height)
+      
+      // Converter para WebP com qualidade ajustável
+      let quality = 0.8
+      let dataURL = canvas.toDataURL('image/webp', quality)
+      
+      // Verificar tamanho e ajustar qualidade se necessário
+      const checkSize = () => {
+        const base64 = dataURL.split(',')[1]
+        const sizeInBytes = atob(base64).length
+        const sizeInKB = sizeInBytes / 1024
+        
+        if (sizeInKB > maxSizeKB && quality > 0.1) {
+          quality -= 0.1
+          dataURL = canvas.toDataURL('image/webp', quality)
+          checkSize()
+        } else {
+          // Converter dataURL para File
+          const arr = dataURL.split(',')
+          const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/webp'
+          const bstr = atob(arr[1])
+          let n = bstr.length
+          const u8arr = new Uint8Array(n)
+          
+          while (n--) {
+            u8arr[n] = bstr.charCodeAt(n)
+          }
+          
+          const webpFile = new File([u8arr], `${file.name.split('.')[0]}.webp`, { type: 'image/webp' })
+          resolve(webpFile)
+        }
+      }
+      
+      checkSize()
+    }
+    
+    img.onerror = reject
+    img.src = URL.createObjectURL(file)
+  })
+}
+
 export default function LandingSettingsPage() {
   const [settings, setSettings] = useState<BannerSettings | null>(null)
   const [loading, setLoading] = useState(true)
@@ -102,11 +171,11 @@ export default function LandingSettingsPage() {
     }
   }
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        alert('A imagem deve ter menos de 5MB')
+      if (file.size > 10 * 1024 * 1024) { // 10MB limit para arquivo original
+        alert('A imagem deve ter menos de 10MB')
         return
       }
 
@@ -115,14 +184,21 @@ export default function LandingSettingsPage() {
         return
       }
 
-      setSelectedFile(file)
-      
-      // Create preview
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        setPreviewImage(e.target?.result as string)
+      try {
+        // Converter para WebP
+        const webpFile = await convertToWebP(file, 200)
+        setSelectedFile(webpFile)
+        
+        // Create preview
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          setPreviewImage(e.target?.result as string)
+        }
+        reader.readAsDataURL(webpFile)
+      } catch (error) {
+        console.error('Erro ao converter imagem:', error)
+        alert('Erro ao processar imagem. Tente novamente.')
       }
-      reader.readAsDataURL(file)
     }
   }
 
@@ -132,7 +208,7 @@ export default function LandingSettingsPage() {
       throw new Error('Erro de configuração do storage')
     }
 
-    const fileName = `landing-banner-${Date.now()}-${file.name}`
+    const fileName = `landing-banner-${Date.now()}.webp`
     const storageRef = ref(storage, `landing/${fileName}`)
     
     await uploadBytes(storageRef, file)
@@ -148,7 +224,10 @@ export default function LandingSettingsPage() {
         return
       }
 
-      const imageRef = ref(storage, imageURL)
+      // Extrair o caminho do arquivo da URL
+      const urlParts = imageURL.split('/')
+      const fileName = urlParts[urlParts.length - 1].split('?')[0]
+      const imageRef = ref(storage, `landing/${fileName}`)
       await deleteObject(imageRef)
     } catch (error) {
       console.error('Erro ao deletar imagem antiga:', error)
@@ -168,13 +247,19 @@ export default function LandingSettingsPage() {
       // Upload new image if selected
       if (selectedFile) {
         setUploading(true)
-        bannerImageURL = await uploadImage(selectedFile)
-        
-        // Delete old image if exists
-        if (settings?.bannerImageURL && settings.bannerImageURL !== bannerImageURL) {
-          await deleteOldImage(settings.bannerImageURL)
+        try {
+          bannerImageURL = await uploadImage(selectedFile)
+          
+          // Delete old image if exists
+          if (settings?.bannerImageURL && settings.bannerImageURL !== bannerImageURL) {
+            await deleteOldImage(settings.bannerImageURL)
+          }
+        } catch (error) {
+          console.error('Erro no upload:', error)
+          throw new Error('Erro ao fazer upload da imagem')
+        } finally {
+          setUploading(false)
         }
-        setUploading(false)
       }
 
       const settingsData = {
@@ -196,7 +281,7 @@ export default function LandingSettingsPage() {
       alert('Configurações salvas com sucesso!')
     } catch (error) {
       console.error('Erro ao salvar configurações:', error)
-      alert('Erro ao salvar configurações')
+      alert(`Erro ao salvar configurações: ${error instanceof Error ? error.message : 'Erro desconhecido'}`)
     } finally {
       setSaving(false)
     }
@@ -374,7 +459,7 @@ export default function LandingSettingsPage() {
                     Clique para selecionar uma imagem ou arraste aqui
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
-                    PNG, JPG até 5MB
+                    PNG, JPG, JPEG até 10MB (será convertido para WebP)
                   </p>
                 </label>
               </div>
@@ -475,7 +560,7 @@ export default function LandingSettingsPage() {
               <li>• A imagem será exibida no banner principal da landing page</li>
               <li>• Tamanho recomendado: 1200x600 pixels</li>
               <li>• Formatos aceitos: PNG, JPG, JPEG</li>
-              <li>• Tamanho máximo: 5MB</li>
+              <li>• Tamanho máximo: 10MB (será convertido para WebP com máximo 200KB)</li>
               <li>• As alterações são aplicadas imediatamente</li>
             </ul>
           </div>
