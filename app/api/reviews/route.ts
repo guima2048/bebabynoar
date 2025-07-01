@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db, collection, addDoc, serverTimestamp, query, where, getDocs, doc, updateDoc, getDoc } from '@/lib/firebase'
+import { db, collection, addDoc, serverTimestamp, query, where, getDocs, doc, updateDoc, getDoc, deleteDoc } from '@/lib/firebase'
 import { orderBy, limit, setDoc } from 'firebase/firestore'
 
 interface Review {
@@ -25,6 +25,9 @@ interface ReviewWithUser extends Review {
 
 export async function POST(req: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
+    }
     const { userId, targetUserId, rating, comment, category } = await req.json()
 
     if (!userId || !targetUserId || !rating || !category) {
@@ -124,6 +127,9 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
+    }
     const { searchParams } = new URL(req.url)
     const targetUserId = searchParams.get('targetUserId')
     const category = searchParams.get('category')
@@ -160,6 +166,7 @@ export async function GET(req: NextRequest) {
     // Buscar dados dos usuários que fizeram as avaliações
     const reviewsWithUsers = await Promise.all(
       reviews.map(async (review) => {
+        if (!db) { return null; }
         const userRef = doc(db, 'users', review.userId)
         const userDoc = await getDoc(userRef)
         
@@ -226,6 +233,9 @@ export async function GET(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
+    }
     const { reviewId, rating, comment } = await req.json()
 
     if (!reviewId || !rating) {
@@ -291,6 +301,73 @@ export async function PUT(req: NextRequest) {
 
   } catch (error) {
     console.error('Erro ao atualizar avaliação:', error)
+    return NextResponse.json(
+      { error: 'Erro interno do servidor' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
+    }
+    const { reviewId } = await req.json()
+
+    if (!reviewId) {
+      return NextResponse.json(
+        { error: 'ID da avaliação é obrigatório' },
+        { status: 400 }
+      )
+    }
+
+    // Buscar avaliação existente
+    const reviewRef = doc(db, 'reviews', reviewId)
+    const reviewDoc = await getDoc(reviewRef)
+    
+    if (!reviewDoc.exists()) {
+      return NextResponse.json(
+        { error: 'Avaliação não encontrada' },
+        { status: 404 }
+      )
+    }
+
+    // Buscar dados da avaliação
+    const reviewData = reviewDoc.data() as Review
+
+    // Atualizar estatísticas do usuário avaliado
+    const targetRef = doc(db, 'users', reviewData.targetUserId)
+    const targetDoc = await getDoc(targetRef)
+    
+    if (targetDoc.exists()) {
+      const targetData = targetDoc.data()
+      const currentReviews = targetData.reviews || {}
+      const categoryReviews = currentReviews[reviewData.category] || { count: 0, total: 0 }
+      
+      // Remover rating da avaliação
+      categoryReviews.total -= reviewData.rating
+      categoryReviews.count -= 1
+      categoryReviews.average = categoryReviews.total / categoryReviews.count
+
+      await updateDoc(targetRef, {
+        reviews: {
+          ...currentReviews,
+          [reviewData.category]: categoryReviews,
+        },
+      })
+    }
+
+    // Remover avaliação
+    await deleteDoc(reviewRef)
+
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Avaliação removida com sucesso' 
+    })
+
+  } catch (error) {
+    console.error('Erro ao remover avaliação:', error)
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

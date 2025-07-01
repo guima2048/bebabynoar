@@ -4,6 +4,9 @@ import { query, where, getDocs, orderBy, limit } from 'firebase/firestore'
 
 export async function POST(req: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
+    }
     const { reporterId, reportedUserId, reason, description } = await req.json()
 
     if (!reporterId || !reportedUserId || !reason) {
@@ -88,6 +91,9 @@ export async function POST(req: NextRequest) {
 // Buscar relatórios (para admin)
 export async function GET(req: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
+    }
     const reportsSnapshot = await getDocs(
       query(
         collection(db, 'reports'),
@@ -120,6 +126,9 @@ export async function GET(req: NextRequest) {
 // Atualizar status do relatório (para admin)
 export async function PUT(req: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
+    }
     const { reportId, status, moderatorNotes, action } = await req.json()
 
     if (!reportId || !status) {

@@ -4,6 +4,9 @@ import { doc, getDoc, addDoc, collection, serverTimestamp, setDoc } from 'fireba
 
 export async function POST(req: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
+    }
     const { senderId, receiverId, initialMessage } = await req.json()
 
     if (!senderId || !receiverId) {

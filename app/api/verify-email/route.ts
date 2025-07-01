@@ -6,6 +6,9 @@ import crypto from 'crypto'
 
 export async function POST(req: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
+    }
     const { email } = await req.json()
 
     if (!email) {
@@ -74,6 +77,9 @@ export async function POST(req: NextRequest) {
 // Verificar token de email
 export async function PUT(req: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
+    }
     const { token, email } = await req.json()
 
     if (!token || !email) {
@@ -274,6 +280,9 @@ async function sendEmailVerifiedConfirmation(email: string, userName: string) {
 
 export async function GET(req: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
+    }
     const { searchParams } = new URL(req.url)
     const token = searchParams.get('token')
 

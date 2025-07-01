@@ -6,6 +6,12 @@ import { photoUploadSchema, validateAndSanitize, createErrorResponse } from '@/l
 
 export async function POST(request: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
+    }
+    if (!storage) {
+      return NextResponse.json({ error: 'Erro de configuração do storage' }, { status: 500 });
+    }
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const userId = formData.get('userId') as string;
@@ -101,6 +107,12 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
+    }
+    if (!storage) {
+      return NextResponse.json({ error: 'Erro de configuração do storage' }, { status: 500 });
+    }
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
     const photoUrl = searchParams.get('photoUrl');

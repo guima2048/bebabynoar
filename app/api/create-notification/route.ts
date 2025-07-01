@@ -3,6 +3,9 @@ import { db, collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, query,
 
 export async function POST(req: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
+    }
     const { userId, type, title, message, data } = await req.json()
 
     if (!userId || !type || !title || !message) {
@@ -98,6 +101,9 @@ export async function POST(req: NextRequest) {
 // Marcar notificação como lida
 export async function PUT(req: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
+    }
     const { notificationId, userId } = await req.json()
 
     if (!notificationId || !userId) {
@@ -147,6 +153,9 @@ export async function PUT(req: NextRequest) {
 // Marcar todas as notificações como lidas
 export async function PATCH(req: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
+    }
     const { userId } = await req.json()
 
     if (!userId) {
