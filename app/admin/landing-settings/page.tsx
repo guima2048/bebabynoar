@@ -3,10 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { 
   Upload, 
-  Eye, 
   Save, 
-  X, 
-  Image as ImageIcon,
   ArrowLeft
 } from 'lucide-react'
 import { getFirestoreDB, getFirebaseStorage } from '@/lib/firebase'
@@ -14,16 +11,17 @@ import {
   collection, 
   doc, 
   getDocs, 
-  setDoc, 
+  setDoc,
   updateDoc,
   query,
-  where
+  where,
+  orderBy,
+  limit
 } from 'firebase/firestore'
 import { 
   ref, 
   uploadBytes, 
-  getDownloadURL,
-  deleteObject
+  getDownloadURL
 } from 'firebase/storage'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -42,71 +40,14 @@ interface BannerSettings {
   updatedAt: string
 }
 
-// Função simplificada para converter imagem para WebP
-const convertToWebP = (file: File, maxSizeKB: number = 200): Promise<File> => {
-  return new Promise((resolve, reject) => {
-    const canvas = document.createElement('canvas')
-    const ctx = canvas.getContext('2d')
-    const img = new window.Image()
-    
-    img.onload = () => {
-      try {
-        // Calcular dimensões mantendo proporção
-        let { width, height } = img
-        const maxDimension = 1200
-        
-        if (width > height) {
-          if (width > maxDimension) {
-            height = (height * maxDimension) / width
-            width = maxDimension
-          }
-        } else {
-          if (height > maxDimension) {
-            width = (width * maxDimension) / height
-            height = maxDimension
-          }
-        }
-        
-        canvas.width = width
-        canvas.height = height
-        
-        // Desenhar imagem redimensionada
-        ctx?.drawImage(img, 0, 0, width, height)
-        
-        // Converter para WebP com qualidade fixa
-        const dataURL = canvas.toDataURL('image/webp', 0.8)
-        
-        // Converter dataURL para File
-        const arr = dataURL.split(',')
-        const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/webp'
-        const bstr = atob(arr[1])
-        let n = bstr.length
-        const u8arr = new Uint8Array(n)
-        
-        while (n--) {
-          u8arr[n] = bstr.charCodeAt(n)
-        }
-        
-        const webpFile = new File([u8arr], `${file.name.split('.')[0]}.webp`, { type: 'image/webp' })
-        resolve(webpFile)
-      } catch (error) {
-        reject(error)
-      }
-    }
-    
-    img.onerror = () => reject(new Error('Erro ao carregar imagem'))
-    img.src = URL.createObjectURL(file)
-  })
-}
-
 export default function LandingSettingsPage() {
-  const [settings, setSettings] = useState<BannerSettings | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
-  const [previewImage, setPreviewImage] = useState<string | null>(null)
+  const [settings, setSettings] = useState<BannerSettings | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
-
+  const [previewImage, setPreviewImage] = useState<string | null>(null)
+  
   const [formData, setFormData] = useState({
     bannerTitle: 'A Maior Rede Sugar do Brasil',
     bannerSubtitle: 'Mulheres Lindas, Homens Ricos',
@@ -118,39 +59,46 @@ export default function LandingSettingsPage() {
     isActive: true
   })
 
+  // Carregar configurações existentes
   useEffect(() => {
     loadSettings()
   }, [])
 
   const loadSettings = async () => {
     try {
-      setLoading(true)
       const db = getFirestoreDB()
       if (!db) {
-        throw new Error('Erro de configuração do banco de dados')
+        console.error('Firebase não inicializado')
+        setLoading(false)
+        return
       }
 
       const settingsQuery = query(
         collection(db, 'landing_settings'),
-        where('isActive', '==', true)
+        where('isActive', '==', true),
+        orderBy('updatedAt', 'desc'),
+        limit(1)
       )
-      const snapshot = await getDocs(settingsQuery)
 
-      if (!snapshot.empty) {
-        const doc = snapshot.docs[0]
+      const querySnapshot = await getDocs(settingsQuery)
+      
+      if (!querySnapshot.empty) {
+        const doc = querySnapshot.docs[0]
         const data = doc.data() as BannerSettings
         setSettings({ ...data, id: doc.id })
         setFormData({
           bannerTitle: data.bannerTitle || 'A Maior Rede Sugar do Brasil',
           bannerSubtitle: data.bannerSubtitle || 'Mulheres Lindas, Homens Ricos',
-          bannerDescription: data.bannerDescription || 'Encontre sua conexão perfeita no Bebaby App. A plataforma mais confiável e segura para Sugar Babies e Sugar Daddies encontrarem relacionamentos genuínos.',
+          bannerDescription: data.bannerDescription || 'Encontre sua conexão perfeita no Bebaby App.',
           primaryButtonText: data.primaryButtonText || 'Cadastre-se Grátis',
           primaryButtonLink: data.primaryButtonLink || '/register',
           secondaryButtonText: data.secondaryButtonText || 'Explorar Perfis',
           secondaryButtonLink: data.secondaryButtonLink || '/explore',
-          isActive: data.isActive !== false
+          isActive: data.isActive !== undefined ? data.isActive : true
         })
-        setPreviewImage(data.bannerImageURL || null)
+        if (data.bannerImageURL) {
+          setPreviewImage(data.bannerImageURL)
+        }
       }
     } catch (error) {
       console.error('Erro ao carregar configurações:', error)
@@ -159,10 +107,10 @@ export default function LandingSettingsPage() {
     }
   }
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      if (file.size > 10 * 1024 * 1024) { // 10MB limit para arquivo original
+      if (file.size > 10 * 1024 * 1024) {
         alert('A imagem deve ter menos de 10MB')
         return
       }
@@ -172,59 +120,35 @@ export default function LandingSettingsPage() {
         return
       }
 
-      try {
-        // Usar arquivo original temporariamente
-        setSelectedFile(file)
-        
-        // Create preview
-        const reader = new FileReader()
-        reader.onload = (e) => {
-          setPreviewImage(e.target?.result as string)
-        }
-        reader.readAsDataURL(file)
-      } catch (error) {
-        console.error('Erro ao processar imagem:', error)
-        alert('Erro ao processar imagem. Tente novamente.')
+      setSelectedFile(file)
+      
+      // Criar preview
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setPreviewImage(e.target?.result as string)
       }
+      reader.readAsDataURL(file)
     }
   }
 
   const uploadImage = async (file: File): Promise<string> => {
     const storage = getFirebaseStorage()
     if (!storage) {
-      throw new Error('Erro de configuração do storage')
+      throw new Error('Firebase Storage não inicializado')
     }
 
-    const fileName = `landing-banner-${Date.now()}.webp`
-    const storageRef = ref(storage, `landing/${fileName}`)
+    const timestamp = Date.now()
+    const fileName = `banner_${timestamp}.webp`
+    const storageRef = ref(storage, `landing/banner/${fileName}`)
     
-    await uploadBytes(storageRef, file)
-    const downloadURL = await getDownloadURL(storageRef)
+    const snapshot = await uploadBytes(storageRef, file)
+    const downloadURL = await getDownloadURL(snapshot.ref)
     
     return downloadURL
   }
 
-  const deleteOldImage = async (imageURL: string) => {
-    try {
-      const storage = getFirebaseStorage()
-      if (!storage) {
-        return
-      }
-
-      // Extrair o caminho do arquivo da URL
-      const urlParts = imageURL.split('/')
-      const fileName = urlParts[urlParts.length - 1].split('?')[0]
-      const imageRef = ref(storage, `landing/${fileName}`)
-      await deleteObject(imageRef)
-    } catch (error) {
-      console.error('Erro ao deletar imagem antiga:', error)
-    }
-  }
-
   const handleSave = async () => {
-    if (saving) {
-      return // Prevenir múltiplos cliques
-    }
+    if (saving) return
     
     try {
       setSaving(true)
@@ -232,23 +156,18 @@ export default function LandingSettingsPage() {
       
       const db = getFirestoreDB()
       if (!db) {
-        throw new Error('Erro de configuração do banco de dados')
+        throw new Error('Firebase não inicializado')
       }
 
       let bannerImageURL = settings?.bannerImageURL || ''
 
-      // Upload new image if selected
+      // Upload da imagem se selecionada
       if (selectedFile) {
         console.log('Fazendo upload da imagem...')
         setUploading(true)
         try {
           bannerImageURL = await uploadImage(selectedFile)
           console.log('Upload concluído:', bannerImageURL)
-          
-          // Delete old image if exists
-          if (settings?.bannerImageURL && settings.bannerImageURL !== bannerImageURL) {
-            await deleteOldImage(settings.bannerImageURL)
-          }
         } catch (error) {
           console.error('Erro no upload:', error)
           throw new Error('Erro ao fazer upload da imagem')
@@ -266,17 +185,14 @@ export default function LandingSettingsPage() {
       console.log('Salvando configurações:', settingsData)
 
       if (settings?.id) {
-        // Update existing settings
         await updateDoc(doc(db, 'landing_settings', settings.id), settingsData)
         console.log('Configurações atualizadas')
       } else {
-        // Create new settings
         const docRef = doc(collection(db, 'landing_settings'))
         await setDoc(docRef, settingsData)
         console.log('Novas configurações criadas')
       }
 
-      // Recarregar configurações sem chamar loadSettings para evitar loop
       setSettings(prev => prev ? { ...prev, ...settingsData } : null)
       console.log('Salvamento concluído com sucesso!')
       alert('Configurações salvas com sucesso!')
@@ -461,7 +377,7 @@ export default function LandingSettingsPage() {
                     Clique para selecionar uma imagem ou arraste aqui
                   </p>
                   <p className="text-xs text-gray-500 mt-1">
-                    PNG, JPG, JPEG até 10MB (será convertido para WebP)
+                    PNG, JPG, JPEG até 10MB
                   </p>
                 </label>
               </div>
@@ -472,9 +388,8 @@ export default function LandingSettingsPage() {
                     <span className="text-sm font-medium text-gray-700">Preview:</span>
                     <button
                       onClick={handleRemoveImage}
-                      className="text-red-600 hover:text-red-800 text-sm flex items-center gap-1"
+                      className="text-red-600 hover:text-red-800 text-sm"
                     >
-                      <X className="w-4 h-4" />
                       Remover
                     </button>
                   </div>
@@ -498,7 +413,7 @@ export default function LandingSettingsPage() {
           >
             {saving ? (
               <>
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 Salvando...
               </>
             ) : (
@@ -513,41 +428,36 @@ export default function LandingSettingsPage() {
         {/* Preview */}
         <div className="space-y-6">
           <div className="bg-white rounded-xl shadow-sm border p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6 flex items-center gap-2">
-              <Eye className="w-5 h-5" />
-              Preview do Banner
-            </h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-6">Preview do Banner</h2>
             
-            <div className="bg-gradient-to-br from-pink-50 via-white to-purple-50 rounded-xl p-8">
-              <div className="space-y-6">
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                    {formData.bannerTitle}
-                  </h1>
-                  <h2 className="text-xl font-semibold text-pink-600 mb-4">
-                    {formData.bannerSubtitle}
-                  </h2>
-                  <p className="text-gray-600 leading-relaxed">
-                    {formData.bannerDescription}
-                  </p>
+            <div className="relative bg-gradient-to-br from-pink-50 via-white to-purple-50 rounded-lg overflow-hidden">
+              {previewImage && (
+                <div className="absolute inset-0">
+                  <Image
+                    src={previewImage}
+                    alt="Banner preview"
+                    fill
+                    className="object-cover opacity-20"
+                  />
                 </div>
-
-                {previewImage && (
-                  <div className="relative w-full h-48 rounded-lg overflow-hidden">
-                    <Image
-                      src={previewImage}
-                      alt="Banner preview"
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                )}
-
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <button className="bg-gradient-to-r from-pink-500 to-rose-500 text-white px-6 py-3 rounded-full font-semibold hover:from-pink-600 hover:to-rose-600 transition-all duration-300">
+              )}
+              
+              <div className="relative z-10 p-8 text-center">
+                <h1 className="text-3xl font-bold text-gray-900 mb-4">
+                  {formData.bannerTitle}
+                </h1>
+                <h2 className="text-xl text-gray-700 mb-4">
+                  {formData.bannerSubtitle}
+                </h2>
+                <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
+                  {formData.bannerDescription}
+                </p>
+                
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <button className="bg-pink-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-pink-700 transition-colors">
                     {formData.primaryButtonText}
                   </button>
-                  <button className="border-2 border-pink-500 text-pink-500 px-6 py-3 rounded-full font-semibold hover:bg-pink-50 transition-all duration-300">
+                  <button className="border-2 border-pink-600 text-pink-600 px-8 py-3 rounded-lg font-semibold hover:bg-pink-600 hover:text-white transition-colors">
                     {formData.secondaryButtonText}
                   </button>
                 </div>
@@ -557,12 +467,12 @@ export default function LandingSettingsPage() {
 
           {/* Informações */}
           <div className="bg-blue-50 rounded-xl p-6">
-            <h3 className="text-lg font-semibold text-blue-900 mb-3">Informações</h3>
+            <h3 className="text-lg font-semibold text-blue-900 mb-4">Informações</h3>
             <ul className="space-y-2 text-sm text-blue-800">
               <li>• A imagem será exibida no banner principal da landing page</li>
               <li>• Tamanho recomendado: 1200x600 pixels</li>
               <li>• Formatos aceitos: PNG, JPG, JPEG</li>
-              <li>• Tamanho máximo: 10MB (será convertido para WebP com máximo 200KB)</li>
+              <li>• Tamanho máximo: 10MB</li>
               <li>• As alterações são aplicadas imediatamente</li>
             </ul>
           </div>
