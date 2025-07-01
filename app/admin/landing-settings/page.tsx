@@ -223,7 +223,9 @@ export default function LandingSettingsPage() {
   }
 
   const handleSave = async () => {
-    if (saving) return // Prevenir múltiplos cliques
+    if (saving) {
+      return // Prevenir múltiplos cliques
+    }
     
     try {
       setSaving(true)
