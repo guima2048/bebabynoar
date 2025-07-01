@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { db, storage } from '@/lib/firebase'
+import { getFirestoreDB, getFirebaseStorage } from '@/lib/firebase'
 import { doc, getDoc } from 'firebase/firestore'
 import { ref, listAll, getDownloadURL } from 'firebase/storage'
 import { useAuth } from '@/contexts/AuthContext'

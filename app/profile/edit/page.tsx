@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { db } from '@/lib/firebase'
+import { getFirestoreDB } from '@/lib/firebase'
 import { doc, getDoc, updateDoc } from 'firebase/firestore'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'

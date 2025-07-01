@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { db } from '@/lib/firebase'
+import { getFirestoreDB } from '@/lib/firebase'
 import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore'
 import Link from 'next/link'
 import { differenceInYears } from 'date-fns'
