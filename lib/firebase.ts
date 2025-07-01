@@ -26,18 +26,32 @@ const isFirebaseConfigured = () => {
   )
 }
 
-// Initialize Firebase only if configured
-if (!isFirebaseConfigured()) {
-  throw new Error('Firebase não configurado corretamente. Verifique as variáveis de ambiente.')
+// Initialize Firebase only if configured and not during build time
+let app: FirebaseApp | null = null
+let db: Firestore | null = null
+let storage: FirebaseStorage | null = null
+let auth: Auth | null = null
+let analytics: Analytics | null = null
+
+// Only initialize if configured and not during build time
+if (isFirebaseConfigured() && (typeof window !== 'undefined' || process.env.NODE_ENV === 'production')) {
+  try {
+    app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0]
+    db = getFirestore(app)
+    storage = getStorage(app)
+    auth = getAuth(app)
+    
+    if (typeof window !== 'undefined') {
+      analytics = getAnalytics(app)
+    }
+  } catch (error) {
+    console.warn('Firebase initialization failed:', error)
+  }
 }
 
-const app: FirebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0]
-const db: Firestore = getFirestore(app)
-const storage: FirebaseStorage = getStorage(app)
-const auth: Auth = getAuth(app)
-let analytics: Analytics | null = null
-if (typeof window !== 'undefined') {
-  analytics = getAnalytics(app)
+// Helper function to check if Firebase is initialized
+export const isFirebaseInitialized = () => {
+  return db !== null && storage !== null && auth !== null
 }
 
 // Export Firebase services - sempre disponível

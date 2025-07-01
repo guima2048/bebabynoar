@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/firebase'
+import { db, isFirebaseInitialized } from '@/lib/firebase'
 import { doc, updateDoc, deleteDoc, serverTimestamp } from 'firebase/firestore'
 
 export async function PUT(req: NextRequest) {
   try {
+    // Verificar se o Firebase está inicializado
+    if (!isFirebaseInitialized() || !db) {
+      return NextResponse.json({ error: 'Firebase não inicializado' }, { status: 500 })
+    }
+
     const { userId, action, adminNotes } = await req.json()
     
     if (!userId || !action) {
@@ -52,6 +57,11 @@ export async function PUT(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
+    // Verificar se o Firebase está inicializado
+    if (!isFirebaseInitialized() || !db) {
+      return NextResponse.json({ error: 'Firebase não inicializado' }, { status: 500 })
+    }
+
     const { userId, adminNotes } = await req.json()
     
     if (!userId) {

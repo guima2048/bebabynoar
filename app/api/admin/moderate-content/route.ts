@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db, storage } from '@/lib/firebase'
+import { db, storage, isFirebaseInitialized } from '@/lib/firebase'
 import { doc, updateDoc, deleteDoc, serverTimestamp, query, where, getDocs, collection, getDoc, addDoc, orderBy } from 'firebase/firestore'
 import { ref, deleteObject } from 'firebase/storage'
 
@@ -32,6 +32,11 @@ async function sendEmail({ to, subject, htmlContent }: { to: string, subject: st
 
 export async function PUT(req: NextRequest) {
   try {
+    // Verificar se o Firebase está inicializado
+    if (!isFirebaseInitialized() || !db) {
+      return NextResponse.json({ error: 'Firebase não inicializado' }, { status: 500 })
+    }
+
     const { contentId, contentType, action, adminNotes } = await req.json()
     
     if (!contentId || !contentType || !action) {
@@ -181,6 +186,11 @@ export async function PUT(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
+    // Verificar se o Firebase está inicializado
+    if (!isFirebaseInitialized() || !db) {
+      return NextResponse.json({ error: 'Firebase não inicializado' }, { status: 500 })
+    }
+
     const { searchParams } = new URL(req.url)
     const contentType = searchParams.get('type') // 'photo' ou 'text'
     
