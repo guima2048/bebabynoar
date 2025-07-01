@@ -37,7 +37,7 @@ export default function WhoViewedMePage() {
       setLoadingViews(true)
       
       const q = query(
-        collection(db, 'profile_views'),
+        collection(getFirestoreDB(), 'profile_views'),
         where('profileId', '==', user?.id),
         orderBy('viewedAt', 'desc')
       )
@@ -50,7 +50,7 @@ export default function WhoViewedMePage() {
         
         // Busca informações do usuário que visualizou
         const userDoc = await getDocs(query(
-          collection(db, 'users'),
+          collection(getFirestoreDB(), 'users'),
           where('__name__', '==', data.viewerId)
         ))
         
@@ -80,7 +80,7 @@ export default function WhoViewedMePage() {
 
     try {
       const userDoc = await getDocs(query(
-        collection(db, 'users'),
+        collection(getFirestoreDB(), 'users'),
         where('__name__', '==', user?.id)
       ))
       
