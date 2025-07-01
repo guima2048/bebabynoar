@@ -1,5 +1,4 @@
 import React from 'react'
-import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { db } from '@/lib/firebase'
 import { collection, query, where, getDocs } from 'firebase/firestore'
@@ -110,13 +109,13 @@ export default async function BlogPostPage({ params }: PageProps) {
     !Array.isArray(post.tags) ||
     post.status !== 'published'
   ) {
-    notFound();
+    return <BlogError error="Post inválido ou ausente" />
   }
 
   const pubDate = new Date(post.publishedAt);
   const now = new Date();
   if (isNaN(pubDate.getTime()) || pubDate > now) {
-    notFound();
+    return <BlogError error="Data de publicação inválida" />
   }
 
   const relatedPosts = await getRelatedPosts(post)
