@@ -28,6 +28,9 @@ interface UserData {
 
 export async function POST(request: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
+    }
     const { userId, targetUserId } = await request.json()
 
     if (!userId || !targetUserId) {
@@ -135,6 +138,9 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
+    }
     const { userId, targetUserId } = await request.json()
 
     if (!userId || !targetUserId) {
@@ -172,6 +178,9 @@ export async function DELETE(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
+    }
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId')
 
@@ -196,6 +205,7 @@ export async function GET(request: NextRequest) {
     // Buscar dados dos usuários favoritados
     const favoriteUsers = await Promise.all(
       favorites.map(async (favorite) => {
+        if (!db) { return null; }
         const userRef = doc(db, 'users', favorite.targetUserId)
         const userDoc = await getDoc(userRef)
         
