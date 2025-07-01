@@ -7,6 +7,9 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 })
+    }
     const docRef = doc(db, 'blog', params.id)
     const docSnap = await getDoc(docRef)
     
@@ -32,6 +35,9 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 })
+    }
     const { title, content, excerpt, status } = await req.json()
     
     if (!title || !content) {
@@ -80,6 +86,9 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 })
+    }
     const docRef = doc(db, 'blog', params.id)
     await deleteDoc(docRef)
     
