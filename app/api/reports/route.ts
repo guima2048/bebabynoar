@@ -207,6 +207,11 @@ function getReportPriority(reason: string): string {
 
 async function notifyModerators(reportId: string, reportedUserName: string, reason: string) {
   try {
+    if (!db) {
+      console.error('Erro: db não está inicializado em notifyModerators');
+      return;
+    }
+    
     // Buscar moderadores ativos
     const moderatorsQuery = await getDocs(
       query(
@@ -241,6 +246,10 @@ async function notifyModerators(reportId: string, reportedUserName: string, reas
 
 async function sendReportConfirmation(reporterId: string, reportedUserName: string, reason: string) {
   try {
+    if (!db) {
+      console.error('Erro: db não está inicializado em sendReportConfirmation');
+      return;
+    }
     await addDoc(collection(db, 'notifications'), {
       userId: reporterId,
       type: 'report_confirmation',
@@ -256,6 +265,10 @@ async function sendReportConfirmation(reporterId: string, reportedUserName: stri
 
 async function applyReportAction(userId: string, action: string, reason: string) {
   try {
+    if (!db) {
+      console.error('Erro: db não está inicializado em applyReportAction');
+      return;
+    }
     const userRef = doc(db, 'users', userId)
 
     switch (action) {
@@ -302,6 +315,11 @@ async function applyReportAction(userId: string, action: string, reason: string)
 
 async function notifyReporter(reporterId: string, status: string, moderatorNotes: string) {
   try {
+    if (!db) {
+      console.error('Erro: db não está inicializado em notifyReporter');
+      return;
+    }
+    
     const message = status === 'resolved' 
       ? 'Seu relatório foi analisado e uma ação foi tomada.'
       : 'Seu relatório foi atualizado.'
@@ -321,6 +339,11 @@ async function notifyReporter(reporterId: string, status: string, moderatorNotes
 
 async function notifyUserAction(userId: string, action: string, reason: string) {
   try {
+    if (!db) {
+      console.error('Erro: db não está inicializado em notifyUserAction');
+      return;
+    }
+    
     const actionMessages = {
       warn: 'Você recebeu um aviso por violar nossas diretrizes.',
       suspend: 'Sua conta foi suspensa temporariamente por violar nossas diretrizes.',
