@@ -144,7 +144,9 @@ export default function LandingSettingsPage() {
   const deleteOldImage = async (imageURL: string) => {
     try {
       const storage = getFirebaseStorage()
-      if (!storage) return
+      if (!storage) {
+        return
+      }
 
       const imageRef = ref(storage, imageURL)
       await deleteObject(imageRef)
