@@ -79,6 +79,9 @@ const defaultSettings: BlogSettings = {
 
 export async function GET() {
   try {
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
+    }
     const settingsDoc = await getDoc(doc(db, 'blog-settings', 'main'));
     
     if (settingsDoc.exists()) {
@@ -96,6 +99,9 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de configuração do banco de dados' }, { status: 500 });
+    }
     const settings: Partial<BlogSettings> = await request.json();
     
     // Adicionar timestamp de atualização
