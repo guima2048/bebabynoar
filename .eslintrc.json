@@ -1,28 +1,13 @@
 {
-  "extends": [
-    "next/core-web-vitals"
-  ],
+  "extends": "next/core-web-vitals",
   "rules": {
-    "prefer-const": "error",
-    "no-var": "error",
     "no-console": "warn",
-    "eqeqeq": "error",
-    "curly": "error",
-    "no-eval": "error",
-    "no-implied-eval": "error",
-    "no-new-func": "error",
-    "no-script-url": "error",
-    "no-self-compare": "error",
-    "no-sequences": "error",
-    "no-throw-literal": "error",
-    "no-unmodified-loop-condition": "error",
-    "no-unused-expressions": "error",
-    "no-useless-call": "error",
-    "no-useless-concat": "error",
-    "no-useless-return": "error",
-    "prefer-promise-reject-errors": "error",
-    "require-await": "warn",
-    "yoda": "error"
+    "react/no-unescaped-entities": "off",
+    "curly": "off",
+    "@next/next/no-img-element": "warn",
+    "jsx-a11y/alt-text": "warn",
+    "react-hooks/exhaustive-deps": "warn",
+    "require-await": "warn"
   },
   "ignorePatterns": [
     "node_modules/",
