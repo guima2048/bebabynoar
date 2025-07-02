@@ -63,7 +63,9 @@ export function getFirestoreDB() {
   if (typeof window === 'undefined') {
     throw new Error('getFirestoreDB só pode ser usado no client. Use getAdminFirestore() no server.')
   }
-  if (!db) throw new Error('Firebase Firestore não está inicializado')
+  if (!db) {
+    throw new Error('Firebase Firestore não está inicializado')
+  }
   return db
 }
 
@@ -71,7 +73,9 @@ export function getFirebaseStorage() {
   if (typeof window === 'undefined') {
     throw new Error('getFirebaseStorage só pode ser usado no client. Use getAdminStorage() no server.')
   }
-  if (!storage) throw new Error('Firebase Storage não está inicializado')
+  if (!storage) {
+    throw new Error('Firebase Storage não está inicializado')
+  }
   return storage
 }
 

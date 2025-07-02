@@ -25,7 +25,9 @@ export default function ImageUpload({
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      return;
+    }
 
     // Validar tipo de arquivo
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
