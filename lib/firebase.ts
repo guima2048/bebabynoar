@@ -1,3 +1,4 @@
+// --- CLIENTE (browser) ---
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app'
 import { getAuth, Auth } from 'firebase/auth'
 import { getFirestore, Firestore, collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, orderBy, limit, serverTimestamp } from 'firebase/firestore'
@@ -26,54 +27,52 @@ const isFirebaseConfigured = () => {
   )
 }
 
-// Initialize Firebase only if configured and not during build time
+// --- CLIENTE ---
 let app: FirebaseApp | null = null
 let db: Firestore | null = null
 let storage: FirebaseStorage | null = null
 let auth: Auth | null = null
 let analytics: Analytics | null = null
 
-// Only initialize if configured and not during build time
-if (isFirebaseConfigured() && (typeof window !== 'undefined' || process.env.NODE_ENV === 'production')) {
+// Inicializar Firebase apenas uma vez
+if (typeof window !== 'undefined') {
+  if (getApps().length === 0) {
+    app = initializeApp(firebaseConfig)
+  } else {
+    app = getApps()[0]
+  }
+  
+  db = getFirestore(app)
+  storage = getStorage(app)
+  auth = getAuth(app)
+  
+  // Analytics só funciona no browser
   try {
-    app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0]
-    db = getFirestore(app)
-    storage = getStorage(app)
-    auth = getAuth(app)
-    
-    if (typeof window !== 'undefined') {
-      analytics = getAnalytics(app)
-    }
+    analytics = getAnalytics(app)
   } catch (error) {
-    console.warn('Firebase initialization failed:', error)
+    console.log('Analytics não disponível:', error)
   }
 }
 
-// Helper function to check if Firebase is initialized
-export const isFirebaseInitialized = () => {
-  return db !== null && storage !== null && auth !== null
-}
-
-// Export Firebase services - sempre disponível
+// Helpers para CLIENTE
 export { db, storage, auth, analytics }
-
-// Export Firestore functions for convenience
 export { collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, orderBy, limit, serverTimestamp }
 
-// Função helper para garantir que o db está inicializado
+// Funções para compatibilidade (só funcionam no client)
 export function getFirestoreDB() {
-  if (!db) {
-    throw new Error('Firebase Firestore não está inicializado');
+  if (typeof window === 'undefined') {
+    throw new Error('getFirestoreDB só pode ser usado no client. Use getAdminFirestore() no server.')
   }
-  return db;
+  if (!db) throw new Error('Firebase Firestore não está inicializado')
+  return db
 }
 
-// Função helper para verificar se o storage está inicializado
 export function getFirebaseStorage() {
-  if (!storage) {
-    throw new Error('Firebase Storage não está inicializado');
+  if (typeof window === 'undefined') {
+    throw new Error('getFirebaseStorage só pode ser usado no client. Use getAdminStorage() no server.')
   }
-  return storage;
+  if (!storage) throw new Error('Firebase Storage não está inicializado')
+  return storage
 }
 
 export default app 

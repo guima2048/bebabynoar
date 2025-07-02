@@ -1,99 +1,74 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getFirestoreDB, getFirebaseStorage } from '@/lib/firebase';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { doc, getDoc, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
-import { photoUploadSchema, validateAndSanitize, createErrorResponse } from '@/lib/schemas';
+import { getAdminFirestore, getAdminStorage } from '@/lib/firebase-admin';
 
 export async function POST(request: NextRequest) {
   try {
-    const db = getFirestoreDB()
-    const storage = getFirebaseStorage()
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const userId = formData.get('userId') as string;
-    const type = formData.get('type') as 'profile' | 'gallery';
+    const photoType = formData.get('photoType') as string || 'public';
 
-    if (!file || !userId || !type) {
-      return NextResponse.json({ error: 'Dados obrigatórios faltando' }, { status: 400 });
+    if (!file || !userId) {
+      return NextResponse.json(
+        { error: 'Arquivo e ID do usuário são obrigatórios' },
+        { status: 400 }
+      );
     }
 
-    // Validações
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-
-    if (file.size > maxSize) {
-      return NextResponse.json({ error: 'Arquivo muito grande. Máximo 5MB.' }, { status: 400 });
-    }
-
-    if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json({ error: 'Tipo de arquivo não suportado' }, { status: 400 });
-    }
+    const db = getAdminFirestore();
+    const bucket = getAdminStorage();
 
     // Verificar se o usuário existe
-    const userRef = doc(db, 'users', userId);
-    const userDoc = await getDoc(userRef);
-    
-    if (!userDoc.exists()) {
-      return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
+    const userDoc = await db.collection('users').doc(userId).get();
+    if (!userDoc.exists) {
+      return NextResponse.json(
+        { error: 'Usuário não encontrado' },
+        { status: 404 }
+      );
     }
 
-    // Criar nome único para o arquivo
-    const timestamp = Date.now();
-    const fileName = `${timestamp}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-    const storageRef = ref(storage, `users/${userId}/${type}/${fileName}`);
+    // Gerar nome único para o arquivo
+    const fileExtension = file.name.split('.').pop();
+    const fileName = `users/${userId}/photos/${Date.now()}.${fileExtension}`;
 
     // Converter File para Buffer
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    const bytes = await file.arrayBuffer();
+    const buffer = Buffer.from(bytes);
 
-    // Upload para Firebase Storage
-    const snapshot = await uploadBytes(storageRef, buffer, {
-      contentType: file.type,
-      customMetadata: {
-        uploadedBy: userId,
-        uploadedAt: new Date().toISOString(),
-        originalName: file.name,
-      }
+    // Upload para o Firebase Storage
+    const fileUpload = bucket.file(fileName);
+    await fileUpload.save(buffer, {
+      metadata: {
+        contentType: file.type,
+      },
     });
 
-    // Obter URL de download
-    const downloadURL = await getDownloadURL(snapshot.ref);
-
-    // Atualizar documento do usuário
-    const updateData: any = {};
-    
-    if (type === 'profile') {
-      // Remover foto de perfil anterior se existir
-      const userData = userDoc.data();
-      if (userData.profilePhoto) {
-        try {
-          const oldPhotoRef = ref(storage, userData.profilePhoto);
-          await deleteObject(oldPhotoRef);
-        } catch (error) {
-          console.warn('Erro ao deletar foto anterior:', error);
-        }
-      }
-      updateData.profilePhoto = downloadURL;
-    } else if (type === 'gallery') {
-      const userData = userDoc.data();
-      const existingPhotos = userData.photos || [];
-      updateData.photos = [...existingPhotos, downloadURL];
-    }
-
-    await updateDoc(userRef, {
-      ...updateData,
-      lastPhotoUpdate: new Date(),
+    // Gerar URL pública
+    const [url] = await fileUpload.getSignedUrl({
+      action: 'read',
+      expires: '03-01-2500', // URL válida por muito tempo
     });
+
+    // Salvar referência no Firestore
+    const photoData = {
+      url,
+      fileName,
+      type: photoType,
+      uploadedAt: new Date(),
+      userId,
+    };
+
+    const photoRef = await db.collection('photos').add(photoData);
 
     return NextResponse.json({
       success: true,
-      url: downloadURL,
-      fileName: fileName,
-      message: 'Foto enviada com sucesso'
+      photoId: photoRef.id,
+      url,
+      message: 'Foto enviada com sucesso',
     });
 
   } catch (error) {
-    console.error('Erro no upload de foto:', error);
+    console.error('Erro ao fazer upload da foto:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
@@ -103,43 +78,58 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const db = getFirestoreDB()
-    const storage = getFirebaseStorage()
+    const db = getAdminFirestore()
+    const storage = getAdminStorage()
     const { userId, photoUrl } = await request.json();
 
     if (!userId || !photoUrl) {
-      return NextResponse.json({ error: 'Parâmetros obrigatórios faltando' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'ID do usuário e URL da foto são obrigatórios' },
+        { status: 400 }
+      );
     }
 
     // Verificar se o usuário existe
-    const userRef = doc(db, 'users', userId);
-    const userDoc = await getDoc(userRef);
+    const userRef = db.collection('users').doc(userId);
+    const userDoc = await userRef.get();
     
-    if (!userDoc.exists()) {
-      return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
+    if (!userDoc.exists) {
+      return NextResponse.json(
+        { error: 'Usuário não encontrado' },
+        { status: 404 }
+      );
+    }
+
+    const userData = userDoc.data();
+    if (!userData) {
+      return NextResponse.json(
+        { error: 'Dados do usuário não encontrados' },
+        { status: 404 }
+      );
     }
 
     // Deletar do Storage
     try {
-      const photoRef = ref(storage, photoUrl);
-      await deleteObject(photoRef);
+      const photoRef = storage.file(photoUrl);
+      await photoRef.delete();
     } catch (error) {
       console.warn('Erro ao deletar foto do storage:', error);
     }
 
-    // Atualizar documento do usuário
-    const updateData: any = {};
-    
-    const userData = userDoc.data();
-    if (userData.photos) {
-      updateData.photos = arrayRemove(photoUrl);
-    }
+    // Remover da lista de fotos do usuário
+    const photos = userData.photos || [];
+    const updatedPhotos = photos.filter((photo: string) => photo !== photoUrl);
 
-    await updateDoc(userRef, updateData);
+    const updateData = {
+      photos: updatedPhotos,
+      lastPhotoUpdate: new Date(),
+    };
+
+    await userRef.update(updateData);
 
     return NextResponse.json({
       success: true,
-      message: 'Foto removida com sucesso'
+      message: 'Foto deletada com sucesso'
     });
 
   } catch (error) {

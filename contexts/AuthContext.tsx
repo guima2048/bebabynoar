@@ -2,7 +2,6 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { 
-  getAuth, 
   onAuthStateChanged, 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
@@ -18,7 +17,7 @@ import {
   updateDoc, 
   serverTimestamp 
 } from 'firebase/firestore'
-import { getFirestoreDB } from '@/lib/firebase'
+import { getFirestoreDB, auth } from '@/lib/firebase'
 
 interface User {
   id: string
@@ -55,9 +54,14 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
-  const auth = getAuth()
 
   useEffect(() => {
+    if (!auth) {
+      console.error('Firebase Auth não está inicializado')
+      setLoading(false)
+      return
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
@@ -114,6 +118,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const signIn = async (email: string, password: string): Promise<void> => {
+    if (!auth) throw new Error('Firebase Auth não está inicializado')
     try {
       await signInWithEmailAndPassword(auth, email, password)
       // Não retorna nada
@@ -123,6 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signUp = async (email: string, password: string, userData: any): Promise<void> => {
+    if (!auth) throw new Error('Firebase Auth não está inicializado')
     const userCredential = await createUserWithEmailAndPassword(auth, email, password)
     const user = userCredential.user
     const db = getFirestoreDB()
@@ -150,6 +156,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const logout = async () => {
+    if (!auth) throw new Error('Firebase Auth não está inicializado')
     try {
       await signOut(auth)
     } catch (error: any) {
@@ -173,6 +180,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const resetPassword = async (email: string) => {
+    if (!auth) throw new Error('Firebase Auth não está inicializado')
     try {
       await sendPasswordResetEmail(auth, email)
     } catch (error: any) {

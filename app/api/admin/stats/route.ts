@@ -1,26 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getFirestoreDB } from '@/lib/firebase'
-import { collection, getDocs, query, where, orderBy, limit, serverTimestamp } from 'firebase/firestore'
+import { getAdminFirestore } from '@/lib/firebase-admin'
 
 export async function GET(request: NextRequest) {
   try {
-    const db = getFirestoreDB()
+    const db = getAdminFirestore()
     
     // Buscar estatísticas gerais
-    const usersQuery = query(collection(db, 'users'))
-    const usersSnap = await getDocs(usersQuery)
+    const usersSnap = await db.collection('users').get()
     
-    const premiumUsersQuery = query(
-      collection(db, 'users'),
-      where('premium', '==', true)
-    )
-    const premiumSnap = await getDocs(premiumUsersQuery)
+    const premiumSnap = await db.collection('users')
+      .where('premium', '==', true)
+      .get()
     
-    const reportsQuery = query(
-      collection(db, 'reports'),
-      where('status', '==', 'pending')
-    )
-    const reportsSnap = await getDocs(reportsQuery)
+    const reportsSnap = await db.collection('reports')
+      .where('status', '==', 'pending')
+      .get()
     
     const stats = {
       totalUsers: usersSnap.size,

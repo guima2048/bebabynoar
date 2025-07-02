@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import DynamicImage from '@/components/DynamicImage'
 import { 
   Heart, 
   Star, 
@@ -21,63 +22,44 @@ import {
   Camera
 } from 'lucide-react'
 
-// Componente para carregar imagens em múltiplos formatos
-const MultiFormatImage = ({ 
-  baseName, 
-  alt, 
-  className, 
-  fill = false,
-  width,
-  height,
-  priority = false
-}: {
-  baseName: string
-  alt: string
-  className?: string
-  fill?: boolean
-  width?: number
-  height?: number
-  priority?: boolean
-}) => {
-  const [currentFormatIndex, setCurrentFormatIndex] = useState(0)
-  const [imageError, setImageError] = useState(false)
-  
-  const formats = ['webp', 'png', 'jpg', 'jpeg']
-  const currentSrc = `/landing/${baseName}.${formats[currentFormatIndex]}`
-  
-  const handleError = () => {
-    if (currentFormatIndex < formats.length - 1) {
-      setCurrentFormatIndex(prev => prev + 1)
-    } else {
-      setImageError(true)
-    }
-  }
-  
-  if (imageError) {
-    return (
-      <div className={`bg-gray-200 flex items-center justify-center ${className}`}>
-        <Camera className="w-6 h-6 text-gray-400" />
-      </div>
-    )
-  }
-  
-  return (
-    <Image
-      src={currentSrc}
-      alt={alt}
-      className={className}
-      fill={fill}
-      width={width}
-      height={height}
-      priority={priority}
-      onError={handleError}
-    />
-  )
+
+
+interface Testimonial {
+  id: string;
+  name: string;
+  location: string;
+  story: string;
+  rating: number;
+  photo: string;
+  isActive: boolean;
+}
+
+interface ProfileCard {
+  id: string;
+  name: string;
+  location: string;
+  profession: string;
+  photo: string;
+  isActive: boolean;
+}
+
+interface LandingSettings {
+  bannerImageURL: string;
+  bannerTitle: string;
+  bannerSubtitle: string;
+  bannerDescription: string;
+  primaryButtonText: string;
+  primaryButtonLink: string;
+  secondaryButtonText: string;
+  secondaryButtonLink: string;
+  testimonials: Testimonial[];
+  sugarBabies: ProfileCard[];
+  sugarDaddies: ProfileCard[];
 }
 
 export default function HomePage() {
   const [currentSlide, setCurrentSlide] = useState(0)
-  const [landingSettings, setLandingSettings] = useState({
+  const [landingSettings, setLandingSettings] = useState<LandingSettings>({
     bannerImageURL: '',
     bannerTitle: 'A Maior Rede Sugar do Brasil',
     bannerSubtitle: 'Mulheres Lindas, Homens Ricos',
@@ -85,7 +67,10 @@ export default function HomePage() {
     primaryButtonText: 'Cadastre-se Grátis',
     primaryButtonLink: '/register',
     secondaryButtonText: 'Explorar Perfis',
-    secondaryButtonLink: '/explore'
+    secondaryButtonLink: '/explore',
+    testimonials: [],
+    sugarBabies: [],
+    sugarDaddies: []
   })
   const [loading, setLoading] = useState(true)
 
@@ -114,83 +99,10 @@ export default function HomePage() {
     loadLandingSettings()
   }, [])
 
-  const testimonials = [
-    {
-      name: "Isabella, 24",
-      location: "São Paulo",
-      story: "Conheci meu Sugar Daddy há 2 anos. Hoje viajamos pelo mundo juntos e tenho uma vida que sempre sonhei.",
-      rating: 5,
-      photo: "testimonial-1"
-    },
-    {
-      name: "Roberto, 45",
-      location: "Rio de Janeiro", 
-      story: "O Bebaby App me conectou com pessoas incríveis. A verificação de perfis me dá total segurança.",
-      rating: 5,
-      photo: "testimonial-2"
-    },
-    {
-      name: "Camila, 26",
-      location: "Brasília",
-      story: "Em apenas 3 meses, encontrei meu parceiro ideal. A plataforma é realmente exclusiva e segura.",
-      rating: 5,
-      photo: "testimonial-3"
-    }
-  ]
-
-  const sugarBabies = [
-    {
-      name: "Ana, 23",
-      location: "São Paulo",
-      profession: "Secretária",
-      photo: "baby-1"
-    },
-    {
-      name: "Maria, 20",
-      location: "Belo Horizonte",
-      profession: "Universitária",
-      photo: "baby-2"
-    },
-    {
-      name: "Julia, 25",
-      location: "Florianópolis",
-      profession: "Estudante",
-      photo: "baby-3"
-    },
-    {
-      name: "Sofia, 22",
-      location: "Rio de Janeiro",
-      profession: "Recepcionista",
-      photo: "baby-4"
-    }
-  ]
-
-  const sugarDaddies = [
-    {
-      name: "Carlos, 45",
-      location: "São Paulo",
-      profession: "Empresário",
-      photo: "daddy-1"
-    },
-    {
-      name: "Roberto, 52",
-      location: "Rio de Janeiro",
-      profession: "Advogado",
-      photo: "daddy-2"
-    },
-    {
-      name: "Dr. Paulo, 48",
-      location: "Brasília",
-      profession: "Médico",
-      photo: "daddy-3"
-    },
-    {
-      name: "Marcos, 50",
-      location: "Belo Horizonte",
-      profession: "Executivo",
-      photo: "daddy-4"
-    }
-  ]
+  // Filtrar apenas itens ativos
+  const activeTestimonials = landingSettings.testimonials?.filter(t => t.isActive) || []
+  const activeSugarBabies = landingSettings.sugarBabies?.filter(b => b.isActive) || []
+  const activeSugarDaddies = landingSettings.sugarDaddies?.filter(d => d.isActive) || []
 
   return (
     <div className="min-h-screen bg-white">
@@ -265,8 +177,8 @@ export default function HomePage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-white rounded-xl p-4 shadow-sm">
                     <div className="relative w-16 h-16 mx-auto mb-3">
-                      <MultiFormatImage
-                        baseName="hero-baby-1"
+                      <DynamicImage
+                        src="hero-baby-1"
                         alt="Sugar Baby"
                         fill
                         className="rounded-full object-cover"
@@ -276,8 +188,8 @@ export default function HomePage() {
                   </div>
                   <div className="bg-white rounded-xl p-4 shadow-sm">
                     <div className="relative w-16 h-16 mx-auto mb-3">
-                      <MultiFormatImage
-                        baseName="hero-daddy-1"
+                      <DynamicImage
+                        src="hero-daddy-1"
                         alt="Sugar Daddy"
                         fill
                         className="rounded-full object-cover"
@@ -287,8 +199,8 @@ export default function HomePage() {
                   </div>
                   <div className="bg-white rounded-xl p-4 shadow-sm">
                     <div className="relative w-16 h-16 mx-auto mb-3">
-                      <MultiFormatImage
-                        baseName="hero-baby-2"
+                      <DynamicImage
+                        src="hero-baby-2"
                         alt="Sugar Baby"
                         fill
                         className="rounded-full object-cover"
@@ -298,8 +210,8 @@ export default function HomePage() {
                   </div>
                   <div className="bg-white rounded-xl p-4 shadow-sm">
                     <div className="relative w-16 h-16 mx-auto mb-3">
-                      <MultiFormatImage
-                        baseName="hero-daddy-2"
+                      <DynamicImage
+                        src="hero-daddy-2"
                         alt="Sugar Daddy"
                         fill
                         className="rounded-full object-cover"
@@ -383,11 +295,11 @@ export default function HomePage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-4">
-                {sugarBabies.slice(0, 2).map((baby, index) => (
+                {activeSugarBabies.slice(0, 2).map((baby, index) => (
                   <div key={index} className="bg-white rounded-xl p-4 shadow-sm">
                     <div className="relative w-20 h-20 mx-auto mb-3">
-                      <MultiFormatImage
-                        baseName={baby.photo}
+                      <DynamicImage
+                        src={baby.photo}
                         alt={baby.name}
                         fill
                         className="rounded-full object-cover"
@@ -399,11 +311,11 @@ export default function HomePage() {
                 ))}
               </div>
               <div className="space-y-4 mt-8">
-                {sugarBabies.slice(2, 4).map((baby, index) => (
+                {activeSugarBabies.slice(2, 4).map((baby, index) => (
                   <div key={index} className="bg-white rounded-xl p-4 shadow-sm">
                     <div className="relative w-20 h-20 mx-auto mb-3">
-                      <MultiFormatImage
-                        baseName={baby.photo}
+                      <DynamicImage
+                        src={baby.photo}
                         alt={baby.name}
                         fill
                         className="rounded-full object-cover"
@@ -426,11 +338,11 @@ export default function HomePage() {
             <div className="order-2 lg:order-1">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-4">
-                  {sugarDaddies.slice(0, 2).map((daddy, index) => (
+                  {activeSugarDaddies.slice(0, 2).map((daddy, index) => (
                     <div key={index} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
                       <div className="relative w-20 h-20 mx-auto mb-3">
-                        <MultiFormatImage
-                          baseName={daddy.photo}
+                        <DynamicImage
+                          src={daddy.photo}
                           alt={daddy.name}
                           fill
                           className="rounded-full object-cover"
@@ -442,11 +354,11 @@ export default function HomePage() {
                   ))}
                 </div>
                 <div className="space-y-4 mt-8">
-                  {sugarDaddies.slice(2, 4).map((daddy, index) => (
+                  {activeSugarDaddies.slice(2, 4).map((daddy, index) => (
                     <div key={index} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
                       <div className="relative w-20 h-20 mx-auto mb-3">
-                        <MultiFormatImage
-                          baseName={daddy.photo}
+                        <DynamicImage
+                          src={daddy.photo}
                           alt={daddy.name}
                           fill
                           className="rounded-full object-cover"
@@ -551,28 +463,38 @@ export default function HomePage() {
           <div className="bg-gradient-to-br from-pink-50 to-purple-50 rounded-2xl p-8">
             <div className="flex items-center justify-center mb-6">
               <div className="relative w-16 h-16 mr-4">
-                <MultiFormatImage
-                  baseName={testimonials[currentSlide].photo}
-                  alt={testimonials[currentSlide].name}
-                  fill
-                  className="rounded-full object-cover"
-                />
+                {activeTestimonials.length > 0 && activeTestimonials[currentSlide] && (
+                  <DynamicImage
+                    src={activeTestimonials[currentSlide].photo}
+                    alt={activeTestimonials[currentSlide].name}
+                    fill
+                    className="rounded-full object-cover"
+                  />
+                )}
               </div>
               <div className="text-left">
-                <p className="font-semibold text-gray-900">{testimonials[currentSlide].name}</p>
-                <p className="text-gray-600">{testimonials[currentSlide].location}</p>
+                {activeTestimonials.length > 0 && activeTestimonials[currentSlide] && (
+                  <>
+                    <p className="font-semibold text-gray-900">{activeTestimonials[currentSlide].name}</p>
+                    <p className="text-gray-600">{activeTestimonials[currentSlide].location}</p>
+                  </>
+                )}
               </div>
             </div>
             <div className="flex justify-center mb-6">
-              {[...Array(testimonials[currentSlide].rating)].map((_, index) => (
-                <Star 
-                  key={index} 
-                  className="w-6 h-6 text-yellow-400 fill-current" 
-                />
-              ))}
+              {activeTestimonials.length > 0 && activeTestimonials[currentSlide] && (
+                [...Array(activeTestimonials[currentSlide].rating)].map((_, index) => (
+                  <Star 
+                    key={index} 
+                    className="w-5 h-5 text-yellow-400 fill-yellow-400 inline-block" 
+                  />
+                ))
+              )}
             </div>
             <p className="text-lg text-gray-700 italic text-center">
-              &quot;{testimonials[currentSlide].story}&quot;
+              {activeTestimonials.length > 0 && activeTestimonials[currentSlide] && (
+                <>"{activeTestimonials[currentSlide].story}"</>
+              )}
             </p>
           </div>
         </div>
