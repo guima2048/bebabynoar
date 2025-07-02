@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, isFirebaseInitialized } from '@/lib/firebase';
+import { db } from '@/lib/firebase';
 import { collection, getDocs, query, where, orderBy, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 
 export async function GET(request: NextRequest) {
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Verificar se o Firebase está inicializado
-    if (!isFirebaseInitialized() || !db) {
+    if (!db) {
       return NextResponse.json({ error: 'Firebase não inicializado' }, { status: 500 });
     }
 

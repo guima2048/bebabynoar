@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db, storage, isFirebaseInitialized } from '@/lib/firebase'
+import { db } from '@/lib/firebase'
 import { doc, updateDoc, deleteDoc, serverTimestamp, query, where, getDocs, collection, getDoc, addDoc, orderBy } from 'firebase/firestore'
 import { ref, deleteObject } from 'firebase/storage'
 
@@ -33,7 +33,7 @@ async function sendEmail({ to, subject, htmlContent }: { to: string, subject: st
 export async function PUT(req: NextRequest) {
   try {
     // Verificar se o Firebase está inicializado
-    if (!isFirebaseInitialized() || !db) {
+    if (!db) {
       return NextResponse.json({ error: 'Firebase não inicializado' }, { status: 500 })
     }
 
@@ -187,7 +187,7 @@ export async function PUT(req: NextRequest) {
 export async function GET(req: NextRequest) {
   try {
     // Verificar se o Firebase está inicializado
-    if (!isFirebaseInitialized() || !db) {
+    if (!db) {
       return NextResponse.json({ error: 'Firebase não inicializado' }, { status: 500 })
     }
 
