@@ -8,27 +8,12 @@ import { differenceInYears } from 'date-fns'
 import { Search, Heart, ChevronLeft, ChevronRight, Star, TrendingUp, Users, Crown } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { filterVisibleUsers, getUserTypeDisplayName, getUserTypeColor, getUserTypeAbbreviation, User } from '@/lib/user-matching'
-
-
-interface Profile {
-  id: string
-  username: string
-  birthdate: string
-  city: string
-  state: string
-  userType: string
-  gender?: string
-  lookingFor?: string
-  photoURL?: string
-  about?: string
-  isPremium?: boolean
-  isVerified?: boolean
-}
+import { mockProfiles, MockProfile } from '@/lib/mock-data'
 
 export default function ExplorePage() {
-  const { user, loading, getAuthToken } = useAuth()
+  const { user, loading } = useAuth()
   const router = useRouter()
-  const [profiles, setProfiles] = useState<Profile[]>([])
+  const [profiles, setProfiles] = useState<MockProfile[]>([])
   const [loadingProfiles, setLoadingProfiles] = useState(true)
 
   // Verificar autenticação
@@ -44,35 +29,21 @@ export default function ExplorePage() {
     
     try {
       setLoadingProfiles(true)
-      // Obter token de autenticação
-      const token = await getAuthToken()
       
-      if (!token) {
-        toast.error('Erro de autenticação')
-        return
+      // Usar dados mockados em vez da API
+      let allProfiles = mockProfiles
+      
+      // Aplicar filtro baseado na lógica de matching
+      const currentUser: User = {
+        id: user.id,
+        userType: user.userType as any,
+        gender: user.gender as any || 'female',
+        lookingFor: user.lookingFor as any || 'male',
+        username: user.name
       }
       
-      const response = await fetch('/api/explore', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      if (response.ok) {
-        const data = await response.json()
-        let allProfiles = data.profiles
-        
-        // Aplicar filtro baseado na lógica de matching
-        const currentUser: User = {
-          id: user.id,
-          userType: user.userType as any,
-          gender: user.gender as any || 'female',
-          lookingFor: user.lookingFor as any || 'male',
-          username: user.name
-        }
-        
-        const visibleProfiles = filterVisibleUsers(currentUser, allProfiles as User[])
-        setProfiles(visibleProfiles as Profile[])
-      }
+      const visibleProfiles = filterVisibleUsers(currentUser, allProfiles as User[])
+      setProfiles(visibleProfiles as MockProfile[])
     } catch (err) {
       toast.error('Erro ao carregar perfis')
     } finally {
@@ -174,7 +145,6 @@ export default function ExplorePage() {
     <div className="w-full min-h-screen flex flex-col items-center bg-[#18181b]">
       <div className="w-full lg:max-w-[35vw] lg:mx-auto flex flex-col">
 
-
         {/* Banner Carrossel */}
         {profiles.length > 0 && (
           <div className="w-full px-6 py-6">
@@ -208,7 +178,7 @@ export default function ExplorePage() {
   )
 }
 
-function BannerCarousel({ profiles, getAge }: { profiles: Profile[]; getAge: (birthdate: string) => number }) {
+function BannerCarousel({ profiles, getAge }: { profiles: MockProfile[]; getAge: (birthdate: string) => number }) {
   const containerRef = React.useRef<HTMLDivElement>(null)
 
   const scroll = (direction: 'left' | 'right') => {
@@ -228,96 +198,63 @@ function BannerCarousel({ profiles, getAge }: { profiles: Profile[]; getAge: (bi
       <div className="absolute right-0 top-0 flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
         <button
           onClick={() => scroll('left')}
-          className="p-3 bg-black/50 hover:bg-black/70 rounded-full transition-colors"
+          className="p-2 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors"
         >
-          <ChevronLeft className="w-6 h-6 text-white" />
+          <ChevronLeft className="w-5 h-5" />
         </button>
         <button
           onClick={() => scroll('right')}
-          className="p-3 bg-black/50 hover:bg-black/70 rounded-full transition-colors"
+          className="p-2 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors"
         >
-          <ChevronRight className="w-6 h-6 text-white" />
+          <ChevronRight className="w-5 h-5" />
         </button>
       </div>
 
-      {/* Container de Cards */}
+      {/* Carrossel */}
       <div 
         ref={containerRef}
         className="flex gap-4 overflow-x-auto scrollbar-hide pb-4"
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {profiles.map((profile) => (
-          <BannerCard 
-            key={profile.id} 
-            profile={profile} 
-            getAge={getAge}
-          />
+          <BannerCard key={profile.id} profile={profile} getAge={getAge} />
         ))}
       </div>
     </div>
   )
 }
 
-function BannerCard({ profile, getAge }: { profile: Profile; getAge: (birthdate: string) => number }) {
+function BannerCard({ profile, getAge }: { profile: MockProfile; getAge: (birthdate: string) => number }) {
   return (
-    <Link href={`/profile/${profile.id}`} className="group flex-shrink-0">
-      <div className="relative w-48 h-64 bg-white/5 hover:bg-white/10 rounded-2xl overflow-hidden transition-all duration-300 hover:scale-105 border border-white/10">
-        {/* Imagem 3x4 */}
-        <img
-          src={profile.photoURL || '/avatar.png'}
-          alt={profile.username}
-          className="w-full h-full object-cover"
+    <Link href={`/profile/${profile.id}`} className="flex-shrink-0">
+      <div className="relative w-64 h-80 rounded-2xl overflow-hidden group cursor-pointer">
+        {/* Imagem de fundo */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${profile.photoURL})` }}
         />
         
-        {/* Overlay com gradiente igual ao perfil */}
-        <div className="absolute inset-0 pointer-events-none"
-          style={{
-            background: 'linear-gradient(to bottom, rgba(0,0,0,0) 35%, #18181b 100%)',
-            borderBottomLeftRadius: '1rem',
-            borderBottomRightRadius: '1rem',
-          }}
-        />
+        {/* Overlay gradiente */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
         
-        {/* Informações alinhadas à direita */}
-        <div className="absolute right-4 bottom-4 flex flex-col gap-1 z-10">
-          {/* Nome */}
-          <div className="text-right">
-            <span className="text-xl font-extrabold text-white drop-shadow-lg leading-tight">
-              {profile.username}
-            </span>
-          </div>
-          
-          {/* Idade, cidade, estado */}
-          <div className="text-right">
-            <span className="text-pink-600 text-base font-bold leading-tight">
-              {getAge(profile.birthdate)} anos
-              {profile.city && `, ${profile.city}`}
-              {profile.state && `, ${profile.state}`}
-            </span>
-          </div>
-        </div>
-
-        {/* Badges */}
-        <div className="absolute top-4 left-4 flex gap-2">
-          {profile.isPremium && (
-            <div className="px-2 py-1 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full text-xs font-bold text-white">
-              Premium
-            </div>
-          )}
-          {profile.isVerified && (
-            <div className="px-2 py-1 bg-gradient-to-r from-green-500 to-teal-500 rounded-full text-xs font-bold text-white">
-              ✓
-            </div>
-          )}
-          <div className={`px-2 py-1 bg-gradient-to-r ${getUserTypeColor(profile.userType as any)} rounded-full text-xs font-bold text-white`}>
-            {getUserTypeAbbreviation(profile.userType as any)}
+        {/* Conteúdo */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 text-right">
+          <h3 className="text-white font-bold text-lg mb-1">{profile.username}</h3>
+          <p className="text-white/80 text-sm mb-2">
+            {getAge(profile.birthdate)} anos • {profile.city}, {profile.state}
+          </p>
+          <div className="flex justify-end gap-2">
+            {profile.isPremium && (
+              <span className="px-2 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs rounded-full">
+                Premium
+              </span>
+            )}
+            {profile.isVerified && (
+              <span className="px-2 py-1 bg-gradient-to-r from-green-500 to-teal-500 text-white text-xs rounded-full">
+                Verificado
+              </span>
+            )}
           </div>
         </div>
-
-        {/* Botão de Like */}
-        <button className="absolute top-4 right-4 p-2 bg-white/20 hover:bg-white/30 rounded-full transition-colors">
-          <Heart className="w-5 h-5 text-white" />
-        </button>
       </div>
     </Link>
   )
@@ -325,12 +262,11 @@ function BannerCard({ profile, getAge }: { profile: Profile; getAge: (birthdate:
 
 function CategoryRow({ category, getAge }: { category: any; getAge: (birthdate: string) => number }) {
   const containerRef = React.useRef<HTMLDivElement>(null)
-  if (category.profiles.length === 0) return null
 
   const scroll = (direction: 'left' | 'right') => {
     if (!containerRef.current) return
     const container = containerRef.current
-    const scrollAmount = 280
+    const scrollAmount = 200
     if (direction === 'left') {
       container.scrollBy({ left: -scrollAmount, behavior: 'smooth' })
     } else {
@@ -338,42 +274,40 @@ function CategoryRow({ category, getAge }: { category: any; getAge: (birthdate: 
     }
   }
 
+  if (category.profiles.length === 0) return null
+
   return (
-    <div className="relative group">
-      {/* Título da Categoria */}
-      <div className="flex items-center gap-4 mb-6">
-        <div className={`p-3 rounded-xl bg-gradient-to-r ${category.color}`}>
-          {category.icon}
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className={`p-2 rounded-lg bg-gradient-to-r ${category.color}`}>
+            {category.icon}
+          </div>
+          <h3 className="text-xl font-bold text-white">{category.title}</h3>
+          <span className="text-white/60 text-sm">({category.profiles.length})</span>
         </div>
-        <div>
-          <h2 className="text-xl font-bold text-white">{category.title}</h2>
-          <span className="text-gray-400 text-sm">{category.profiles.length} perfis</span>
+        
+        <div className="flex gap-2">
+          <button
+            onClick={() => scroll('left')}
+            className="p-2 bg-white/10 rounded-lg text-white hover:bg-white/20 transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => scroll('right')}
+            className="p-2 bg-white/10 rounded-lg text-white hover:bg-white/20 transition-colors"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
         </div>
       </div>
 
-      {/* Botões de Navegação */}
-      <div className="absolute right-0 top-2 flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-        <button
-          onClick={() => scroll('left')}
-          className="p-3 bg-black/50 hover:bg-black/70 rounded-full transition-colors"
-        >
-          <ChevronLeft className="w-6 h-6 text-white" />
-        </button>
-        <button
-          onClick={() => scroll('right')}
-          className="p-3 bg-black/50 hover:bg-black/70 rounded-full transition-colors"
-        >
-          <ChevronRight className="w-6 h-6 text-white" />
-        </button>
-      </div>
-
-      {/* Container de Cards */}
       <div 
         ref={containerRef}
         className="flex gap-4 overflow-x-auto scrollbar-hide pb-4"
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
-        {category.profiles.map((profile: Profile) => (
+        {category.profiles.map((profile: MockProfile) => (
           <ProfileCard 
             key={profile.id} 
             profile={profile} 
@@ -386,56 +320,47 @@ function CategoryRow({ category, getAge }: { category: any; getAge: (birthdate: 
   )
 }
 
-function ProfileCard({ profile, getAge, categoryColor }: { profile: Profile; getAge: (birthdate: string) => number; categoryColor: string }) {
+function ProfileCard({ profile, getAge, categoryColor }: { profile: MockProfile; getAge: (birthdate: string) => number; categoryColor: string }) {
   return (
-    <Link href={`/profile/${profile.id}`} className="group flex-shrink-0">
-      <div className="w-64 bg-white/5 hover:bg-white/10 rounded-2xl overflow-hidden transition-all duration-300 hover:scale-105 border border-white/10 flex flex-col">
-        {/* Imagem */}
-        <div className="relative h-80">
-          <img
-            src={profile.photoURL || '/avatar.png'}
-            alt={profile.username}
-            className="w-full h-full object-cover"
-          />
-          {/* Overlay com gradiente */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-          
-          {/* Badges */}
-          <div className="absolute top-4 right-4 flex gap-2">
-            {profile.isPremium && (
-              <div className="px-3 py-1 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full text-xs font-bold text-white">
-                Premium
-              </div>
-            )}
-            {profile.isVerified && (
-              <div className="px-3 py-1 bg-gradient-to-r from-green-500 to-teal-500 rounded-full text-xs font-bold text-white">
-                ✓
-              </div>
-            )}
-            <div className={`px-3 py-1 bg-gradient-to-r ${getUserTypeColor(profile.userType as any)} rounded-full text-xs font-bold text-white`}>
-              {getUserTypeAbbreviation(profile.userType as any)}
-            </div>
-          </div>
-
-          {/* Botão de Like */}
-          <button className="absolute bottom-4 right-4 p-3 bg-white/20 hover:bg-white/30 rounded-full transition-colors">
-            <Heart className="w-6 h-6 text-white" />
-          </button>
-        </div>
-
-        {/* Informações */}
-        <div className="p-4 flex-1 flex flex-col">
-          <h3 className="font-bold text-lg mb-2 group-hover:text-white transition-colors text-white">
-            {profile.username}
-          </h3>
-          <p className="text-gray-400 text-sm mb-3">
-            {getAge(profile.birthdate)} anos • {profile.city}, {profile.state}
-          </p>
-          {profile.about && (
-            <p className="text-gray-300 text-sm line-clamp-2 leading-relaxed">
-              {profile.about}
-            </p>
+    <Link href={`/profile/${profile.id}`} className="flex-shrink-0">
+      <div className="relative w-48 h-64 rounded-2xl overflow-hidden group cursor-pointer">
+        {/* Imagem de fundo */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center group-hover:scale-110 transition-transform duration-300"
+          style={{ backgroundImage: `url(${profile.photoURL})` }}
+        />
+        
+        {/* Overlay gradiente */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+        
+        {/* Badges */}
+        <div className="absolute top-3 left-3 flex gap-2">
+          {profile.isPremium && (
+            <span className="px-2 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs rounded-full">
+              Premium
+            </span>
           )}
+          {profile.isVerified && (
+            <span className="px-2 py-1 bg-gradient-to-r from-green-500 to-teal-500 text-white text-xs rounded-full">
+              ✓
+            </span>
+          )}
+        </div>
+        
+        {/* Conteúdo */}
+        <div className="absolute bottom-0 left-0 right-0 p-4">
+          <h3 className="text-white font-bold text-base mb-1">{profile.username}</h3>
+          <p className="text-white/80 text-sm mb-2">
+            {getAge(profile.birthdate)} anos • {profile.city}
+          </p>
+          <div className="flex items-center gap-2">
+                         <span className={`px-2 py-1 bg-gradient-to-r ${categoryColor} text-white text-xs rounded-full`}>
+               {getUserTypeAbbreviation(profile.userType as any)}
+             </span>
+            <button className="p-2 bg-white/20 rounded-full text-white hover:bg-white/30 transition-colors">
+              <Heart className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
     </Link>

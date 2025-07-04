@@ -8,25 +8,13 @@ import { differenceInYears } from 'date-fns'
 import { Search, Filter, Heart, ArrowLeft, MapPin } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { filterVisibleUsers, User } from '@/lib/user-matching'
-
-interface Profile {
-  id: string
-  username: string
-  birthdate: string
-  city: string
-  state: string
-  userType: string
-  photoURL?: string
-  about?: string
-  isPremium?: boolean
-  isVerified?: boolean
-}
+import { mockProfiles, MockProfile } from '@/lib/mock-data'
 
 export default function BuscarPage() {
-  const { user, loading, getAuthToken } = useAuth()
+  const { user, loading } = useAuth()
   const router = useRouter()
-  const [profiles, setProfiles] = useState<Profile[]>([])
-  const [filteredProfiles, setFilteredProfiles] = useState<Profile[]>([])
+  const [profiles, setProfiles] = useState<MockProfile[]>([])
+  const [filteredProfiles, setFilteredProfiles] = useState<MockProfile[]>([])
   const [loadingProfiles, setLoadingProfiles] = useState(true)
   
   // Estados de busca e filtros
@@ -49,36 +37,22 @@ export default function BuscarPage() {
     
     try {
       setLoadingProfiles(true)
-      // Obter token de autenticação
-      const token = await getAuthToken()
       
-      if (!token) {
-        toast.error('Erro de autenticação')
-        return
+      // Usar dados mockados em vez da API
+      let allProfiles = mockProfiles.filter((profile: MockProfile) => profile.id !== user.id)
+      
+      // Aplicar regras de matching
+      const currentUser: User = {
+        id: user.id,
+        userType: user.userType as any,
+        gender: user.gender as any || 'female',
+        lookingFor: user.lookingFor as any || 'male',
+        username: user.name
       }
       
-      const response = await fetch('/api/explore', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      })
-      if (response.ok) {
-        const data = await response.json()
-        let allProfiles = data.profiles.filter((profile: Profile) => profile.id !== user.id)
-        
-        // Aplicar regras de matching
-        const currentUser: User = {
-          id: user.id,
-          userType: user.userType as any,
-          gender: user.gender as any || 'female',
-          lookingFor: user.lookingFor as any || 'male',
-          username: user.name
-        }
-        
-        const visibleProfiles = filterVisibleUsers(currentUser, allProfiles as User[])
-        setProfiles(visibleProfiles as unknown as Profile[])
-        setFilteredProfiles(visibleProfiles as unknown as Profile[])
-      }
+      const visibleProfiles = filterVisibleUsers(currentUser, allProfiles as User[])
+      setProfiles(visibleProfiles as unknown as MockProfile[])
+      setFilteredProfiles(visibleProfiles as unknown as MockProfile[])
     } catch (err) {
       toast.error('Erro ao carregar perfis')
     } finally {
@@ -126,6 +100,7 @@ export default function BuscarPage() {
       </div>
     )
   }
+  
   if (!user) {
     return (
       <div className="w-full min-h-screen flex items-center justify-center bg-[#18181b]">
@@ -137,9 +112,11 @@ export default function BuscarPage() {
       </div>
     )
   }
+
   function getAge(birthdate: string) {
     return differenceInYears(new Date(), new Date(birthdate))
   }
+
   return (
     <div className="w-full min-h-screen flex flex-col items-center bg-[#18181b]">
       <div className="w-full lg:max-w-[35vw] lg:mx-auto flex flex-col">
@@ -239,52 +216,33 @@ export default function BuscarPage() {
                   <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                   <input
                     type="text"
-                    placeholder="Cidade ou estado..."
+                    placeholder="Digite uma cidade ou estado..."
                     className="w-full bg-white/10 border border-white/20 rounded-xl pl-12 pr-4 py-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 text-base"
                     value={locationFilter}
                     onChange={(e) => setLocationFilter(e.target.value)}
                   />
                 </div>
               </div>
-
-              {/* Limpar Filtros */}
-              <div>
-                <button
-                  onClick={() => {
-                    setSearchTerm('')
-                    setUserTypeFilter('all')
-                    setAgeRange({ min: 18, max: 80 })
-                    setLocationFilter('')
-                  }}
-                  className="w-full px-6 py-4 bg-red-500 hover:bg-red-600 rounded-xl transition-colors text-base font-semibold text-white"
-                >Limpar Filtros</button>
-              </div>
             </div>
           </div>
         )}
 
-        {/* Resultados */}
+        {/* Lista de Perfis */}
         <div className="w-full px-6 py-8">
-          <div className="mb-6 text-gray-400 text-base">{filteredProfiles.length} perfil{filteredProfiles.length !== 1 ? 's' : ''} encontrado{filteredProfiles.length !== 1 ? 's' : ''}{searchTerm && ` para "${searchTerm}"`}</div>
-          
           {loadingProfiles ? (
             <div className="text-center py-12">
               <div className="text-white text-xl">Carregando perfis...</div>
             </div>
-          ) : filteredProfiles.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-gray-400 text-xl mb-4">Nenhum perfil encontrado</div>
-              <p className="text-gray-500 text-base">Tente ajustar os filtros ou termos de busca</p>
+          ) : filteredProfiles.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredProfiles.map((profile) => (
+                <ProfileCard key={profile.id} profile={profile} getAge={getAge} />
+              ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-6">
-              {filteredProfiles.map((profile) => (
-                <ProfileCard 
-                  key={profile.id} 
-                  profile={profile} 
-                  getAge={getAge}
-                />
-              ))}
+            <div className="text-center py-12">
+              <div className="text-white text-xl mb-4">Nenhum perfil encontrado</div>
+              <p className="text-gray-400">Tente ajustar os filtros de busca</p>
             </div>
           )}
         </div>
@@ -293,12 +251,12 @@ export default function BuscarPage() {
   )
 }
 
-function ProfileCard({ profile, getAge }: { profile: Profile; getAge: (birthdate: string) => number }) {
+function ProfileCard({ profile, getAge }: { profile: MockProfile; getAge: (birthdate: string) => number }) {
   return (
-    <Link href={`/profile/${profile.id}`} className="group">
-      <div className="bg-white/5 hover:bg-white/10 rounded-2xl overflow-hidden transition-all duration-300 hover:scale-105 border border-white/10 flex flex-col">
+    <Link href={`/profile/${profile.id}`} className="block">
+      <div className="bg-white/5 hover:bg-white/10 rounded-2xl overflow-hidden transition-all duration-300 hover:scale-105 border border-white/10">
         {/* Imagem */}
-        <div className="relative h-80">
+        <div className="relative h-64">
           <img
             src={profile.photoURL || '/avatar.png'}
             alt={profile.username}
@@ -306,27 +264,39 @@ function ProfileCard({ profile, getAge }: { profile: Profile; getAge: (birthdate
           />
           {/* Overlay com gradiente */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+          
           {/* Badges */}
           <div className="absolute top-4 right-4 flex gap-2">
             {profile.isPremium && (
-              <div className="px-3 py-1 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full text-xs font-bold text-white">Premium</div>
+              <div className="px-3 py-1 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full text-xs font-bold text-white">
+                Premium
+              </div>
             )}
             {profile.isVerified && (
-              <div className="px-3 py-1 bg-gradient-to-r from-green-500 to-teal-500 rounded-full text-xs font-bold text-white">✓</div>
+              <div className="px-3 py-1 bg-gradient-to-r from-green-500 to-teal-500 rounded-full text-xs font-bold text-white">
+                ✓
+              </div>
             )}
-            <div className={`px-3 py-1 bg-gradient-to-r ${profile.userType === 'sugar_baby' ? 'from-pink-500 to-purple-500' : 'from-blue-500 to-indigo-500'} rounded-full text-xs font-bold text-white`}>{profile.userType === 'sugar_baby' ? 'SB' : 'SD'}</div>
           </div>
+
           {/* Botão de Like */}
           <button className="absolute bottom-4 right-4 p-3 bg-white/20 hover:bg-white/30 rounded-full transition-colors">
             <Heart className="w-6 h-6 text-white" />
           </button>
         </div>
+        
         {/* Informações */}
-        <div className="p-6 flex-1 flex flex-col">
-          <h3 className="font-bold text-xl mb-3 group-hover:text-white transition-colors text-white">{profile.username}</h3>
-          <p className="text-gray-400 text-base mb-4">{getAge(profile.birthdate)} anos • {profile.city}, {profile.state}</p>
+        <div className="p-4">
+          <h3 className="font-bold text-lg mb-2 group-hover:text-white transition-colors text-white">
+            {profile.username}
+          </h3>
+          <p className="text-gray-400 text-sm mb-3">
+            {getAge(profile.birthdate)} anos • {profile.city}, {profile.state}
+          </p>
           {profile.about && (
-            <p className="text-gray-300 text-base line-clamp-3 leading-relaxed">{profile.about}</p>
+            <p className="text-gray-300 text-sm line-clamp-2 leading-relaxed">
+              {profile.about}
+            </p>
           )}
         </div>
       </div>
