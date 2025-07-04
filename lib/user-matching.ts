@@ -49,7 +49,17 @@ export function canUsersSeeEachOther(user1: User, user2: User): boolean {
 
 // Função para filtrar usuários que um usuário específico pode ver
 export function filterVisibleUsers(currentUser: User, allUsers: User[]): User[] {
-  return allUsers.filter(user => canUsersSeeEachOther(currentUser, user))
+  console.log('🔍 Debug Matching - Iniciando filtro para usuário:', currentUser.username)
+  console.log('🔍 Debug Matching - Total de usuários para filtrar:', allUsers.length)
+  
+  const visibleUsers = allUsers.filter(user => {
+    const canSee = canUsersSeeEachOther(currentUser, user)
+    console.log(`🔍 Debug Matching - ${currentUser.username} pode ver ${user.username}? ${canSee}`)
+    return canSee
+  })
+  
+  console.log('🔍 Debug Matching - Usuários visíveis encontrados:', visibleUsers.length)
+  return visibleUsers
 }
 
 // Função para obter o nome amigável do tipo de usuário

@@ -33,6 +33,16 @@ export default function ExplorePage() {
       // Usar dados mockados em vez da API
       let allProfiles = mockProfiles
       
+      console.log('🔍 Debug Explore - Dados do usuário atual:', {
+        id: user.id,
+        userType: user.userType,
+        gender: user.gender,
+        lookingFor: user.lookingFor,
+        username: user.name
+      })
+      
+      console.log('🔍 Debug Explore - Total de perfis mockados:', allProfiles.length)
+      
       // Aplicar filtro baseado na lógica de matching
       const currentUser: User = {
         id: user.id,
@@ -42,9 +52,16 @@ export default function ExplorePage() {
         username: user.name
       }
       
+      console.log('🔍 Debug Explore - Usuário convertido para matching:', currentUser)
+      
       const visibleProfiles = filterVisibleUsers(currentUser, allProfiles as User[])
+      
+      console.log('🔍 Debug Explore - Perfis visíveis após filtro:', visibleProfiles.length)
+      console.log('🔍 Debug Explore - Perfis visíveis:', visibleProfiles.map(p => ({ id: p.id, username: p.username, userType: p.userType })))
+      
       setProfiles(visibleProfiles as MockProfile[])
     } catch (err) {
+      console.error('❌ Erro no fetchProfiles:', err)
       toast.error('Erro ao carregar perfis')
     } finally {
       setLoadingProfiles(false)
