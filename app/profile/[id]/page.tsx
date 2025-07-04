@@ -505,7 +505,7 @@ export default function ProfileViewPage() {
             <div className="grid grid-cols-3 gap-3 sm:gap-4">
               {galleryPrivate.slice(0, 6).map((url, i) => (
                 <div key={url || i} className="aspect-[3/4] w-full bg-[#232326] rounded-lg overflow-hidden flex items-center justify-center border-2 border-neutral-700 relative">
-                  <img src={url} alt="Foto privada" className={allPhotos[carouselIndex].isPrivate ? 'w-full h-full object-cover blur-[96px] brightness-30' : 'w-full h-full object-cover'} />
+                  <img src={url} alt="Foto privada" className="w-full h-full object-cover blur-[96px] brightness-30" />
                   <span className="absolute inset-0 flex items-center justify-center text-white font-bold text-xs sm:text-sm bg-black/30">Foto privada</span>
                 </div>
               ))}
