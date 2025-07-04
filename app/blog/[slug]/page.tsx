@@ -2,8 +2,7 @@ import React from 'react'
 import Link from 'next/link'
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { getFirestoreDB } from '@/lib/firebase'
-import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore'
+import { getAdminFirestore } from '@/lib/firebase-admin'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Calendar, Clock, User, ArrowLeft, Share2, Heart, MessageCircle } from 'lucide-react'
@@ -43,21 +42,16 @@ function BlogError({ error }: { error: string }) {
 
 async function getBlogPost(slug: string): Promise<BlogPost | null | { error: string }> {
   try {
-    const db = getFirestoreDB()
-    console.log('[DEBUG-BLOG] Buscando post com slug:', slug)
-    const q = query(
-      collection(db, 'blog'),
-      where('slug', '==', slug),
-      where('status', '==', 'published')
-    )
-    const snap = await getDocs(q)
-    console.log('[DEBUG-BLOG] Resultado da query:', snap.empty ? 'Nenhum post encontrado' : `${snap.size} post(s) encontrado(s)`);
+    const db = getAdminFirestore()
+    const snap = await db.collection('blog')
+      .where('slug', '==', slug)
+      .where('status', '==', 'published')
+      .get()
     if (snap.empty) {
       return { error: `[404] Nenhum post encontrado para o slug: ${slug}` }
     }
     const doc = snap.docs[0]
     const data = doc.data()
-    console.log('[DEBUG-BLOG] Dados do post retornado:', data);
     return {
       id: doc.id,
       ...data
@@ -69,22 +63,17 @@ async function getBlogPost(slug: string): Promise<BlogPost | null | { error: str
 
 async function getRelatedPosts(currentPost: BlogPost): Promise<BlogPost[]> {
   try {
-    const db = getFirestoreDB()
-    const q = query(
-      collection(db, 'blog'),
-      where('status', '==', 'published')
-    )
-    const snap = await getDocs(q)
-    
+    const db = getAdminFirestore()
+    const snap = await db.collection('blog')
+      .where('status', '==', 'published')
+      .get()
     const allPosts = snap.docs
       .map(doc => ({ id: doc.id, ...doc.data() } as BlogPost))
       .filter(post => post.id !== currentPost.id)
-    
     // Filtra posts relacionados por tags
     const relatedPosts = allPosts.filter(post => 
-      post.tags.some(tag => currentPost.tags.includes(tag))
+      post.tags && currentPost.tags && post.tags.some(tag => currentPost.tags.includes(tag))
     )
-    
     return relatedPosts.slice(0, 3)
   } catch (err) {
     return []
@@ -96,30 +85,63 @@ function isBlogPost(obj: any): obj is BlogPost {
   return obj && typeof obj === 'object' && 'title' in obj && 'slug' in obj && 'status' in obj;
 }
 
+function parseFirestoreDate(date: any): Date | null {
+  if (!date) return null;
+  if (typeof date === 'string' || typeof date === 'number') {
+    const d = new Date(date);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  if (typeof date === 'object') {
+    if ('seconds' in date) return new Date(date.seconds * 1000);
+    if ('_seconds' in date) return new Date(date._seconds * 1000);
+    if (typeof date.toDate === 'function') return date.toDate();
+  }
+  return null;
+}
+
 export default async function BlogPostPage({ params }: PageProps) {
   const result = await getBlogPost(params.slug)
-  if (!result || (typeof result === 'object' && 'error' in result)) {
-    return <BlogError error={result && typeof result === 'object' && 'error' in result ? result.error : 'Post não encontrado'} />
+  if (!result) {
+    return <BlogError error={"[ERRO] Nenhum resultado retornado de getBlogPost"} />
+  }
+  if (typeof result === 'object' && 'error' in result) {
+    return <BlogError error={result.error} />
   }
   const post = result as BlogPost
-  
-  console.log('Post recuperado:', post);
-  if (
-    !post ||
-    !post.title ||
-    !post.content ||
-    !post.author ||
-    !post.publishedAt ||
-    !Array.isArray(post.tags) ||
-    post.status !== 'published'
-  ) {
-    return <BlogError error="Post inválido ou ausente" />
+
+  if (!post) {
+    return <BlogError error="[ERRO] post está undefined ou null" />
+  }
+  if (!post.title) {
+    return <BlogError error="[ERRO] post.title ausente" />
+  }
+  if (!post.content) {
+    return <BlogError error="[ERRO] post.content ausente" />
+  }
+  if (!post.author) {
+    return <BlogError error="[ERRO] post.author ausente" />
+  }
+  if (!post.publishedAt) {
+    return <BlogError error="[ERRO] post.publishedAt ausente" />
+  }
+  if (!Array.isArray(post.tags)) {
+    post.tags = [];
+  }
+  if (post.status !== 'published') {
+    return <BlogError error={`[ERRO] post.status não é 'published' (status: ${post.status})`} />
   }
 
-  const pubDate = new Date(post.publishedAt);
+  const pubDate = parseFirestoreDate(post.publishedAt);
+  console.log('[DEBUG] post.publishedAt:', post.publishedAt, '-> pubDate:', pubDate);
   const now = new Date();
-  if (isNaN(pubDate.getTime()) || pubDate > now) {
-    return <BlogError error="Data de publicação inválida" />
+  if (!pubDate) {
+    return <BlogError error="[ERRO] pubDate é null ou inválido" />
+  }
+  if (isNaN(pubDate.getTime())) {
+    return <BlogError error="[ERRO] pubDate.getTime() é NaN" />
+  }
+  if (pubDate > now) {
+    return <BlogError error="[ERRO] pubDate está no futuro" />
   }
 
   const relatedPosts = await getRelatedPosts(post)
@@ -165,7 +187,7 @@ export default async function BlogPostPage({ params }: PageProps) {
             </div>
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
-              <span>{format(new Date(post.publishedAt), 'dd MMM yyyy', { locale: ptBR })}</span>
+              <span>{pubDate ? format(pubDate, 'dd MMM yyyy', { locale: ptBR }) : 'Data inválida'}</span>
             </div>
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4" />

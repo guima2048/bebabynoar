@@ -1,17 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getFirestoreDB } from '@/lib/firebase'
-import { collection, addDoc, updateDoc, doc, deleteDoc, serverTimestamp, getDocs, query, where, orderBy } from 'firebase/firestore'
+import { getAdminFirestore } from '@/lib/firebase-admin'
 
 export async function GET(req: NextRequest) {
   try {
-    const db = getFirestoreDB()
+    const db = getAdminFirestore()
     const { searchParams } = new URL(req.url)
     const status = searchParams.get('status')
     
-    const q = query(collection(db, 'blog'), orderBy('createdAt', 'desc'))
-    
     // Buscar todos os posts (published e scheduled)
-    const snapshot = await getDocs(q)
+    const snapshot = await db.collection('blog').orderBy('createdAt', 'desc').get()
     const now = Date.now();
     let posts = snapshot.docs.map((doc: any) => ({
       id: doc.id,
@@ -44,8 +41,8 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const db = getFirestoreDB()
-    const { title, content, excerpt, status, scheduledFor } = await req.json()
+    const db = getAdminFirestore()
+    const { title, content, excerpt, status, scheduledFor, featuredImage } = await req.json()
     if (!title || !content) {
       return NextResponse.json({ error: 'Título e conteúdo são obrigatórios' }, { status: 400 })
     }
@@ -57,8 +54,7 @@ export async function POST(req: NextRequest) {
       .replace(/-+/g, '-')
       .trim()
     // Validação de unicidade do slug
-    const slugQuery = query(collection(db, 'blog'), where('slug', '==', slug));
-    const slugSnap = await getDocs(slugQuery);
+    const slugSnap = await db.collection('blog').where('slug', '==', slug).get();
     if (!slugSnap.empty) {
       return NextResponse.json({ error: 'Já existe um post com esse slug.' }, { status: 400 });
     }
@@ -81,17 +77,19 @@ export async function POST(req: NextRequest) {
       content,
       excerpt: excerpt || '',
       status: status || 'draft',
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
       readTime: Math.ceil(content.split(/\s+/).length / 200),
       author: 'Admin',
+      tags: [],
+      featuredImage: featuredImage || '',
     }
     if (status === 'published') {
-      postData.publishedAt = serverTimestamp();
+      postData.publishedAt = new Date();
     } else if (status === 'scheduled' && scheduledFor) {
       postData.scheduledFor = scheduledFor;
     }
-    const docRef = await addDoc(collection(db, 'blog'), postData)
+    const docRef = await db.collection('blog').add(postData)
     return NextResponse.json({ id: docRef.id, ...postData })
   } catch (error) {
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
@@ -100,7 +98,7 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    const db = getFirestoreDB()
+    const db = getAdminFirestore()
     const { id, title, content, excerpt, slug, featuredImage, metaTitle, metaDescription, status, publishedAt, scheduledFor } = await req.json()
     if (!id || !title || !content || !slug) {
       return NextResponse.json({ error: 'ID, título, conteúdo e slug são obrigatórios' }, { status: 400 })
@@ -117,16 +115,17 @@ export async function PUT(req: NextRequest) {
       metaDescription,
       status,
       readTime,
-      updatedAt: serverTimestamp(),
+      updatedAt: new Date(),
+      tags: [],
     }
     if (status === 'published') {
-      updateData.publishedAt = serverTimestamp();
+      updateData.publishedAt = new Date();
       updateData.scheduledFor = null;
     } else if (status === 'scheduled' && scheduledFor) {
       updateData.scheduledFor = scheduledFor;
       updateData.publishedAt = null;
     }
-    await updateDoc(doc(db, 'blog', id), updateData)
+    await db.collection('blog').doc(id).update(updateData)
     return NextResponse.json({ success: true, message: 'Post atualizado com sucesso!' })
   } catch (err) {
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
@@ -135,14 +134,14 @@ export async function PUT(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const db = getFirestoreDB()
+    const db = getAdminFirestore()
     const { id } = await req.json()
     
     if (!id) {
       return NextResponse.json({ error: 'ID do post é obrigatório' }, { status: 400 })
     }
 
-    await deleteDoc(doc(db, 'blog', id))
+    await db.collection('blog').doc(id).delete()
     
     return NextResponse.json({ 
       success: true,

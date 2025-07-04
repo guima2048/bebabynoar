@@ -55,6 +55,10 @@ interface LandingSettings {
   testimonials: Testimonial[];
   sugarBabies: ProfileCard[];
   sugarDaddies: ProfileCard[];
+  heroBaby1Image?: string;
+  heroDaddy1Image?: string;
+  heroBaby2Image?: string;
+  heroDaddy2Image?: string;
 }
 
 export default function HomePage() {
@@ -70,7 +74,11 @@ export default function HomePage() {
     secondaryButtonLink: '/explore',
     testimonials: [],
     sugarBabies: [],
-    sugarDaddies: []
+    sugarDaddies: [],
+    heroBaby1Image: '',
+    heroDaddy1Image: '',
+    heroBaby2Image: '',
+    heroDaddy2Image: ''
   })
   const [loading, setLoading] = useState(true)
 
@@ -178,7 +186,7 @@ export default function HomePage() {
                   <div className="bg-white rounded-xl p-4 shadow-sm">
                     <div className="relative w-16 h-16 mx-auto mb-3">
                       <DynamicImage
-                        src="hero-baby-1"
+                        src={landingSettings.heroBaby1Image || 'hero-baby-1'}
                         alt="Sugar Baby"
                         fill
                         className="rounded-full object-cover"
@@ -189,7 +197,7 @@ export default function HomePage() {
                   <div className="bg-white rounded-xl p-4 shadow-sm">
                     <div className="relative w-16 h-16 mx-auto mb-3">
                       <DynamicImage
-                        src="hero-daddy-1"
+                        src={landingSettings.heroDaddy1Image || 'hero-daddy-1'}
                         alt="Sugar Daddy"
                         fill
                         className="rounded-full object-cover"
@@ -200,7 +208,7 @@ export default function HomePage() {
                   <div className="bg-white rounded-xl p-4 shadow-sm">
                     <div className="relative w-16 h-16 mx-auto mb-3">
                       <DynamicImage
-                        src="hero-baby-2"
+                        src={landingSettings.heroBaby2Image || 'hero-baby-2'}
                         alt="Sugar Baby"
                         fill
                         className="rounded-full object-cover"
@@ -211,7 +219,7 @@ export default function HomePage() {
                   <div className="bg-white rounded-xl p-4 shadow-sm">
                     <div className="relative w-16 h-16 mx-auto mb-3">
                       <DynamicImage
-                        src="hero-daddy-2"
+                        src={landingSettings.heroDaddy2Image || 'hero-daddy-2'}
                         alt="Sugar Daddy"
                         fill
                         className="rounded-full object-cover"

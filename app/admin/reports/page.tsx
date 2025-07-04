@@ -25,40 +25,21 @@ export default function AdminReportsPage() {
 
   const fetchReports = async () => {
     try {
-      // Simular dados de denúncias
-      const mockReports: Report[] = [
-        {
-          id: '1',
-          denunciadorNome: 'Maria123',
-          denunciadoNome: 'João456',
-          motivo: 'Conteúdo Inapropriado',
-          descricao: 'Usuário enviou fotos inadequadas',
-          status: 'Pendente',
-          dataDenuncia: '2024-01-15T10:30:00Z',
-          revisado: false
-        },
-        {
-          id: '2',
-          denunciadorNome: 'Ana789',
-          denunciadoNome: 'Pedro321',
-          motivo: 'Perfil Falso',
-          descricao: 'Usuário usando fotos de outra pessoa',
-          status: 'Em Revisão',
-          dataDenuncia: '2024-01-14T15:45:00Z',
-          revisado: true
-        },
-        {
-          id: '3',
-          denunciadorNome: 'Carlos654',
-          denunciadoNome: 'Julia987',
-          motivo: 'Assédio',
-          descricao: 'Mensagens inadequadas e persistentes',
-          status: 'Resolvida',
-          dataDenuncia: '2024-01-13T09:20:00Z',
-          revisado: true
-        }
-      ]
-      setReports(mockReports)
+      const response = await fetch('/api/reports')
+      if (!response.ok) throw new Error('Erro ao buscar denúncias')
+      const data = await response.json()
+      // Adaptar para o formato esperado pela interface Report
+      const realReports: Report[] = (data.reports || []).map((r: any) => ({
+        id: r.id,
+        denunciadorNome: r.reporterName || r.reporterId || 'Desconhecido',
+        denunciadoNome: r.reportedUserName || r.reportedUserId || 'Desconhecido',
+        motivo: r.reason || r.motivo || '',
+        descricao: r.description || r.descricao || '',
+        status: r.status || '',
+        dataDenuncia: r.createdAt ? (typeof r.createdAt === 'string' ? r.createdAt : new Date(r.createdAt).toISOString()) : '',
+        revisado: r.revisado !== undefined ? r.revisado : (r.status === 'resolved' || r.status === 'Resolvida')
+      }))
+      setReports(realReports)
     } catch (error) {
       console.error('Erro ao buscar denúncias:', error)
       toast.error('Erro ao carregar denúncias')

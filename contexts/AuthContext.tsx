@@ -56,6 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    console.log('[AuthContext] useEffect disparado');
     if (!auth) {
       console.error('Firebase Auth não está inicializado')
       setLoading(false)
@@ -63,6 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      console.log('[AuthContext] onAuthStateChanged:', user)
       if (user) {
         try {
           const db = getFirestoreDB()
@@ -71,8 +73,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             return
           }
           const userDoc = await getDoc(doc(db, 'users', user.uid))
+          console.log('[AuthContext] userDoc.exists:', userDoc.exists())
           if (userDoc.exists()) {
             const userData = userDoc.data()
+            console.log('[AuthContext] Dados do usuário no Firestore:', userData)
             setUser({
               id: user.uid,
               email: user.email || '',
@@ -84,6 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               isAdmin: userData.isAdmin || false,
             })
           } else {
+            console.warn('[AuthContext] Documento do usuário não existe no Firestore!')
             setUser({
               id: user.uid,
               email: user.email || '',
@@ -96,7 +101,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             })
           }
         } catch (error) {
-          console.error('Erro ao carregar dados do usuário:', error)
+          console.error('[AuthContext] Erro ao carregar dados do usuário:', error)
           setUser({
             id: user.uid,
             email: user.email || '',
@@ -109,9 +114,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           })
         }
       } else {
+        console.log('[AuthContext] Usuário não autenticado')
         setUser(null)
       }
       setLoading(false)
+      console.log('[AuthContext] loading:', false)
     })
 
     return () => unsubscribe()
@@ -120,7 +127,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = async (email: string, password: string): Promise<void> => {
     if (!auth) throw new Error('Firebase Auth não está inicializado')
     try {
-      await signInWithEmailAndPassword(auth, email, password)
+      const userCredential = await signInWithEmailAndPassword(auth, email, password)
+      
+      // Registrar IP de login
+      try {
+        await fetch('/api/record-login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            userId: userCredential.user.uid
+          })
+        })
+      } catch (error) {
+        console.error('Erro ao registrar IP de login:', error)
+        // Não falha o login se não conseguir registrar o IP
+      }
+      
       // Não retorna nada
     } catch (error: any) {
       throw error
@@ -231,3 +255,5 @@ export function useAuth() {
   }
   return context
 } 
+
+export default AuthContext 

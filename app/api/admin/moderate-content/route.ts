@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/firebase'
-import { doc, updateDoc, deleteDoc, serverTimestamp, query, where, getDocs, collection, getDoc, addDoc, orderBy } from 'firebase/firestore'
-import { ref, deleteObject } from 'firebase/storage'
+import { getAdminFirestore } from '@/lib/firebase-admin'
+import { cookies } from 'next/headers'
 
 // Função para enviar e-mail
 async function sendEmail({ to, subject, htmlContent }: { to: string, subject: string, htmlContent: string }) {
@@ -32,11 +31,15 @@ async function sendEmail({ to, subject, htmlContent }: { to: string, subject: st
 
 export async function PUT(req: NextRequest) {
   try {
-    // Verificar se o Firebase está inicializado
-    if (!db) {
-      return NextResponse.json({ error: 'Firebase não inicializado' }, { status: 500 })
+    // Verificar se é uma requisição administrativa
+    const cookieStore = cookies();
+    const adminSession = cookieStore.get('admin_session');
+    
+    if (!adminSession || adminSession.value !== 'authenticated') {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
 
+    const db = getAdminFirestore();
     const { contentId, contentType, action, adminNotes } = await req.json()
     
     if (!contentId || !contentType || !action) {
@@ -58,65 +61,65 @@ export async function PUT(req: NextRequest) {
     }
 
     // Buscar o conteúdo pendente
-    const contentRef = doc(db, 'pendingContent', contentId)
-    const contentSnap = await getDoc(contentRef)
+    const contentRef = db.collection('pendingContent').doc(contentId)
+    const contentSnap = await contentRef.get()
     
-    if (!contentSnap.exists()) {
+    if (!contentSnap.exists) {
       return NextResponse.json({ error: 'Conteúdo não encontrado' }, { status: 404 })
     }
 
     const contentData = contentSnap.data()
-    const userId = contentData.userId
+    const userId = contentData?.userId
 
     if (action === 'approve') {
       // Aprovar conteúdo
       if (contentType === 'photo') {
         // Adicionar foto ao perfil do usuário
-        const userRef = doc(db, 'users', userId)
-        const userSnap = await getDoc(userRef)
+        const userRef = db.collection('users').doc(userId)
+        const userSnap = await userRef.get()
         
-        if (userSnap.exists()) {
+        if (userSnap.exists) {
           const userData = userSnap.data()
-          const photos = userData.photos || []
+          const photos = userData?.photos || []
           
           const newPhoto = {
             id: contentId,
-            url: contentData.photoURL,
-            isPrivate: contentData.isPrivate,
+            url: contentData?.photoURL,
+            isPrivate: contentData?.isPrivate,
             approvedAt: new Date().toISOString(),
-            uploadedAt: contentData.uploadedAt
+            uploadedAt: contentData?.uploadedAt
           }
           
-          await updateDoc(userRef, {
+          await userRef.update({
             photos: [...photos, newPhoto],
-            updatedAt: serverTimestamp()
+            updatedAt: new Date()
           })
         }
       } else if (contentType === 'text') {
         // Atualizar texto do perfil
-        const userRef = doc(db, 'users', userId)
+        const userRef = db.collection('users').doc(userId)
         const updateData: any = {
-          updatedAt: serverTimestamp()
+          updatedAt: new Date()
         }
         
-        if (contentData.field === 'about') {
-          updateData.about = contentData.content
-        } else if (contentData.field === 'lookingFor') {
-          updateData.lookingFor = contentData.content
+        if (contentData?.field === 'about') {
+          updateData.about = contentData?.content
+        } else if (contentData?.field === 'lookingFor') {
+          updateData.lookingFor = contentData?.content
         }
         
-        await updateDoc(userRef, updateData)
+        await userRef.update(updateData)
       }
 
       // Enviar e-mail de aprovação
       try {
         await sendEmail({
-          to: contentData.userEmail,
+          to: contentData?.userEmail,
           subject: 'Seu conteúdo foi aprovado! 🎉',
           htmlContent: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
               <h2 style="color: #ec4899;">Conteúdo Aprovado!</h2>
-              <p>Olá ${contentData.userName},</p>
+              <p>Olá ${contentData?.userName},</p>
               <p>Seu ${contentType === 'photo' ? 'foto' : 'texto'} foi aprovado e já está visível no seu perfil!</p>
               <p><strong>Notas do administrador:</strong> ${adminNotes || 'Nenhuma'}</p>
               <p>Continue compartilhando conteúdo de qualidade!</p>
@@ -138,12 +141,12 @@ export async function PUT(req: NextRequest) {
       // Enviar e-mail de rejeição
       try {
         await sendEmail({
-          to: contentData.userEmail,
+          to: contentData?.userEmail,
           subject: 'Seu conteúdo precisa de ajustes',
           htmlContent: `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
               <h2 style="color: #dc2626;">Conteúdo Não Aprovado</h2>
-              <p>Olá ${contentData.userName},</p>
+              <p>Olá ${contentData?.userName},</p>
               <p>Infelizmente seu ${contentType === 'photo' ? 'foto' : 'texto'} não foi aprovado.</p>
               <p><strong>Motivo:</strong> ${adminNotes || 'Não segue as diretrizes da comunidade'}</p>
               <p>Por favor, revise as diretrizes da comunidade e tente novamente.</p>
@@ -157,17 +160,17 @@ export async function PUT(req: NextRequest) {
     }
 
     // Remover do conteúdo pendente
-    await deleteDoc(contentRef)
+    await contentRef.delete()
 
     // Registrar ação de moderação
-    await addDoc(collection(db, 'moderationLog'), {
+    await db.collection('moderationLog').add({
       contentId,
       contentType,
       action,
       adminNotes,
       userId,
-      userName: contentData.userName,
-      moderatedAt: serverTimestamp()
+      userName: contentData?.userName,
+      moderatedAt: new Date()
     })
 
     return NextResponse.json({
@@ -186,22 +189,26 @@ export async function PUT(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    // Verificar se o Firebase está inicializado
-    if (!db) {
-      return NextResponse.json({ error: 'Firebase não inicializado' }, { status: 500 })
+    // Verificar se é uma requisição administrativa
+    const cookieStore = cookies();
+    const adminSession = cookieStore.get('admin_session');
+    
+    if (!adminSession || adminSession.value !== 'authenticated') {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
 
+    const db = getAdminFirestore();
     const { searchParams } = new URL(req.url)
     const contentType = searchParams.get('type') // 'photo' ou 'text'
     
-    let q = query(collection(db, 'pendingContent'), orderBy('uploadedAt', 'desc'))
+    let q = db.collection('pendingContent').orderBy('uploadedAt', 'desc')
     
     if (contentType) {
-      q = query(q, where('contentType', '==', contentType))
+      q = q.where('contentType', '==', contentType)
     }
     
-    const snapshot = await getDocs(q)
-    const pendingContent = snapshot.docs.map(doc => ({
+    const snapshot = await q.get()
+    const pendingContent = snapshot.docs.map((doc: any) => ({
       id: doc.id,
       ...doc.data()
     }))

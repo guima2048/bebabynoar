@@ -68,6 +68,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false)
   const [cidades, setCidades] = useState<string[]>([])
   const [loadingCidades, setLoadingCidades] = useState(false)
+  const [signupIp, setSignupIp] = useState<string>('')
   const { register, handleSubmit, formState: { errors }, setError, watch, setValue } = useForm<FormData>({
     resolver: zodResolver(schema),
   })
@@ -107,6 +108,14 @@ export default function RegisterPage() {
       setValue('city', '')
     }
   }, [selectedState, setValue])
+
+  useEffect(() => {
+    // Captura o IP público do usuário
+    fetch('https://api.ipify.org?format=json')
+      .then(res => res.json())
+      .then(data => setSignupIp(data.ip))
+      .catch(() => setSignupIp(''));
+  }, []);
 
   async function onSubmit(data: FormData) {
     setLoading(true)
@@ -167,6 +176,7 @@ export default function RegisterPage() {
         createdAt: new Date().toISOString(),
         status: 'active',
         premium: false,
+        signupIp: signupIp || '',
       }
       console.log('Dados do usuário:', userData)
       
@@ -199,37 +209,34 @@ export default function RegisterPage() {
       <h1 className="text-3xl font-bold mb-6 text-center">Criar Conta</h1>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
-          <label className="block mb-1 font-medium">Nome de Usuário</label>
-          <input type="text" className="input-field" {...register('username')} autoComplete="off" />
+          <label className="block mb-1 font-medium" htmlFor="username">Nome de Usuário</label>
+          <input id="username" type="text" className="input-field" {...register('username')} autoComplete="off" />
           {errors.username && <span className="text-red-500 text-sm">{errors.username.message}</span>}
         </div>
         <div>
-          <label className="block mb-1 font-medium">Data de Nascimento</label>
-          <input type="date" className="input-field" {...register('birthdate')} />
+          <label className="block mb-1 font-medium" htmlFor="birthdate">Data de Nascimento</label>
+          <input id="birthdate" type="date" className="input-field" {...register('birthdate')} />
           {errors.birthdate && <span className="text-red-500 text-sm">{errors.birthdate.message}</span>}
         </div>
         <div>
-          <label className="block mb-1 font-medium">E-mail</label>
-          <input type="email" className="input-field" {...register('email')} autoComplete="off" />
+          <label className="block mb-1 font-medium" htmlFor="email">E-mail</label>
+          <input id="email" type="email" className="input-field" {...register('email')} autoComplete="off" />
           {errors.email && <span className="text-red-500 text-sm">{errors.email.message}</span>}
         </div>
         <div>
-          <label className="block mb-1 font-medium">Confirme o E-mail</label>
-          <input type="email" className="input-field" {...register('emailConfirm')} autoComplete="off" />
+          <label className="block mb-1 font-medium" htmlFor="emailConfirm">Confirme o E-mail</label>
+          <input id="emailConfirm" type="email" className="input-field" {...register('emailConfirm')} autoComplete="off" />
           {errors.emailConfirm && <span className="text-red-500 text-sm">{errors.emailConfirm.message}</span>}
         </div>
         <div>
-          <label className="block mb-1 font-medium">Senha</label>
-          <input type="password" className="input-field" {...register('password')} autoComplete="new-password" />
+          <label className="block mb-1 font-medium" htmlFor="password">Senha</label>
+          <input id="password" type="password" className="input-field" {...register('password')} autoComplete="new-password" />
           {errors.password && <span className="text-red-500 text-sm">{errors.password.message}</span>}
         </div>
         <div className="flex gap-2">
           <div className="flex-1">
-            <label className="block mb-1 font-medium">Estado</label>
-            <select 
-              className="input-field w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
-              {...register('state')}
-            >
+            <label className="block mb-1 font-medium" htmlFor="state">Estado</label>
+            <select id="state" className="input-field w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" {...register('state')}>
               <option value="">Selecione o estado</option>
               {estados.map((estado) => (
                 <option key={estado.sigla} value={estado.sigla}>{estado.nome}</option>
@@ -238,16 +245,12 @@ export default function RegisterPage() {
             {errors.state && <span className="text-red-500 text-sm">{errors.state.message}</span>}
           </div>
           <div className="flex-1">
-            <label className="block mb-1 font-medium">Cidade</label>
-            <select 
-              className={`input-field w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                !selectedState || loadingCidades 
-                  ? 'border-gray-200 bg-gray-50 text-gray-500' 
-                  : 'border-gray-300'
-              }`}
-              {...register('city')} 
-              disabled={!selectedState || loadingCidades}
-            >
+            <label className="block mb-1 font-medium" htmlFor="city">Cidade</label>
+            <select id="city" className={`input-field w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+              !selectedState || loadingCidades 
+                ? 'border-gray-200 bg-gray-50 text-gray-500' 
+                : 'border-gray-300'
+            }`} {...register('city')} disabled={!selectedState || loadingCidades}>
               <option value="">
                 {loadingCidades ? 'Carregando...' : selectedState ? 'Selecione a cidade' : 'Selecione um estado primeiro'}
               </option>
@@ -259,21 +262,21 @@ export default function RegisterPage() {
           </div>
         </div>
         <div>
-          <label className="block mb-1 font-medium">Tipo de Usuário</label>
+          <label className="block mb-1 font-medium" htmlFor="userType">Tipo de Usuário</label>
           <div className="flex gap-4">
-            <label className="flex items-center gap-2">
-              <input type="radio" value="sugar_baby" {...register('userType')} /> Sugar Baby
+            <label className="flex items-center gap-2" htmlFor="userType-sugar_baby">
+              <input id="userType-sugar_baby" type="radio" value="sugar_baby" {...register('userType')} /> Sugar Baby
             </label>
-            <label className="flex items-center gap-2">
-              <input type="radio" value="sugar_daddy" {...register('userType')} /> Sugar Daddy
+            <label className="flex items-center gap-2" htmlFor="userType-sugar_daddy">
+              <input id="userType-sugar_daddy" type="radio" value="sugar_daddy" {...register('userType')} /> Sugar Daddy
             </label>
           </div>
           {errors.userType && <span className="text-red-500 text-sm">{errors.userType.message}</span>}
         </div>
         <div className="flex items-center gap-2">
-          <input type="checkbox" {...register('terms')} />
+          <label className="block mb-1 font-medium" htmlFor="terms">Aceito os</label>
+          <input id="terms" type="checkbox" {...register('terms')} />
           <span>
-            Aceito os
             <Link href="/terms" className="underline ml-1" target="_blank">Termos de Uso</Link>
             e a
             <Link href="/privacy" className="underline ml-1" target="_blank">Política de Privacidade</Link>

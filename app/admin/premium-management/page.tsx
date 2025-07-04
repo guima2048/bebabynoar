@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 
 interface PremiumUser {
   id: string;
@@ -12,16 +13,54 @@ interface PremiumUser {
   createdAt: string;
 }
 
+const PREMIUM_FEATURES = [
+  { key: 'messagesPerDay', label: 'Mensagens por dia', hasLimit: true },
+  { key: 'selfDestructMessages', label: 'Mensagens autodestrutivas' },
+  { key: 'sendFiles', label: 'Enviar arquivos no chat' },
+  { key: 'privateStories', label: 'Enviar stories privados' },
+  { key: 'invisibleMode', label: 'Modo invisível' },
+  { key: 'profileViews', label: 'Ver quem visitou seu perfil' },
+  { key: 'profileLikes', label: 'Ver quem curtiu/favoritou seu perfil' },
+  { key: 'onlineStatus', label: 'Ver status online/último acesso' },
+  { key: 'hideOnlineStatus', label: 'Ocultar seu status online/último acesso' },
+  { key: 'requestSocialAccess', label: 'Solicitar acesso a redes sociais privadas' },
+  { key: 'grantSocialAccess', label: 'Liberar acesso às redes sociais privadas' },
+  { key: 'secretCrush', label: 'Crush secreto (ver quem te deu crush)' },
+  { key: 'advancedFilters', label: 'Filtros avançados de busca' },
+  { key: 'profileHighlight', label: 'Destaque de perfil' },
+  { key: 'exploreHighlight', label: 'Destaque na busca/explore' },
+  { key: 'internationalProfiles', label: 'Ver perfis internacionais' },
+  { key: 'privatePhotos', label: 'Solicitar/ver fotos privadas' },
+  { key: 'premiumBlog', label: 'Acesso a blog premium/conteúdos exclusivos' },
+  { key: 'exclusiveEvents', label: 'Acesso a eventos exclusivos' },
+  { key: 'earlyAccess', label: 'Acesso antecipado a novidades' },
+  { key: 'travelMode', label: 'Modo viagem' },
+  { key: 'scheduleEvents', label: 'Agendar encontros/eventos' },
+  { key: 'prioritySupport', label: 'Suporte prioritário' },
+  { key: 'blockLimit', label: 'Limite maior de bloqueios' },
+  { key: 'pauseProfile', label: 'Possibilidade de pausar o perfil' },
+  { key: 'vipBadge', label: 'Badge de verificação VIP/Premium' },
+  { key: 'profileStats', label: 'Ver estatísticas do perfil' },
+];
+
 export default function PremiumManagementPage() {
   const [users, setUsers] = useState<PremiumUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState<'all' | 'premium' | 'non-premium'>('all');
+  const [activeTab, setActiveTab] = useState<'users' | 'features'>('users');
+  const [featureConfig, setFeatureConfig] = useState<any>({});
   const router = useRouter();
 
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'features') {
+      fetchFeatureConfig();
+    }
+  }, [activeTab]);
 
   const fetchUsers = async () => {
     try {
@@ -34,6 +73,35 @@ export default function PremiumManagementPage() {
       console.error('Erro ao buscar usuários:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchFeatureConfig = async () => {
+    try {
+      const res = await fetch('/api/admin/premium-settings');
+      if (res.ok) {
+        const data = await res.json();
+        setFeatureConfig(data.features || {});
+      }
+    } catch (e) {
+      toast.error('Erro ao carregar configurações premium');
+    }
+  };
+
+  const saveFeatureConfig = async () => {
+    try {
+      const res = await fetch('/api/admin/premium-settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(featureConfig),
+      });
+      if (res.ok) {
+        toast.success('Configurações salvas com sucesso!');
+      } else {
+        toast.error('Erro ao salvar configurações');
+      }
+    } catch (e) {
+      toast.error('Erro ao salvar configurações');
     }
   };
 
@@ -94,6 +162,24 @@ export default function PremiumManagementPage() {
           </div>
         </div>
 
+        {/* Tabs */}
+        <div className="flex gap-4 mb-8 border-b">
+          <button
+            className={`px-4 py-2 font-semibold ${activeTab === 'users' ? 'border-b-2 border-pink-600 text-pink-700' : 'text-gray-600'}`}
+            onClick={() => setActiveTab('users')}
+          >
+            Usuários Premium
+          </button>
+          <button
+            className={`px-4 py-2 font-semibold ${activeTab === 'features' ? 'border-b-2 border-pink-600 text-pink-700' : 'text-gray-600'}`}
+            onClick={() => setActiveTab('features')}
+          >
+            Funções
+          </button>
+        </div>
+
+        {activeTab === 'users' && (
+          <div>
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 px-4 sm:px-0">
           <div className="bg-white rounded-lg shadow p-6">
@@ -203,47 +289,32 @@ export default function PremiumManagementPage() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredUsers.map((user) => (
-                    <tr key={user.id} className="hover:bg-gray-50">
+                        <tr key={user.id}>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10">
-                            <div className="h-10 w-10 rounded-full bg-pink-100 flex items-center justify-center">
-                              <span className="text-sm font-medium text-pink-600">
-                                {user.name.charAt(0).toUpperCase()}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                            <div className="text-sm text-gray-500">{user.email}</div>
-                          </div>
+                            <div className="flex flex-col">
+                              <span className="font-bold text-gray-900">{user.name}</span>
+                              <span className="text-xs text-gray-500 mt-1">{user.email}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          user.isPremium
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {user.isPremium ? 'Premium' : 'Gratuito'}
-                        </span>
+                            {user.isPremium ? (
+                              <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">Premium</span>
+                            ) : (
+                              <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">Gratuito</span>
+                            )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <td className="px-6 py-4 whitespace-nowrap">
                         {user.premiumExpiry ? new Date(user.premiumExpiry).toLocaleDateString('pt-BR') : '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <td className="px-6 py-4 whitespace-nowrap">
                         {new Date(user.createdAt).toLocaleDateString('pt-BR')}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <td className="px-6 py-4 whitespace-nowrap">
                         <button
                           onClick={() => togglePremiumStatus(user.id, user.isPremium)}
-                          className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                            user.isPremium
-                              ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                              : 'bg-green-100 text-green-700 hover:bg-green-200'
-                          }`}
+                              className={`text-xs px-3 py-1 rounded-md ${user.isPremium ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'}`}
                         >
-                          {user.isPremium ? 'Remover Premium' : 'Ativar Premium'}
+                              {user.isPremium ? 'Remover Premium' : 'Tornar Premium'}
                         </button>
                       </td>
                     </tr>
@@ -267,6 +338,74 @@ export default function PremiumManagementPage() {
             )}
           </div>
         </div>
+          </div>
+        )}
+
+        {activeTab === 'features' && (
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-2xl font-bold mb-6 text-gray-900">Configuração de Funções Premium/VIP</h2>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Função</th>
+                    <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">Gratuito</th>
+                    <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">Premium</th>
+                    <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">VIP</th>
+                    <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">Limite</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {PREMIUM_FEATURES.map((feature) => (
+                    <tr key={feature.key}>
+                      <td className="px-4 py-2 font-medium text-gray-900">{feature.label}</td>
+                      <td className="px-4 py-2 text-center">
+                        <input
+                          type="radio"
+                          name={`${feature.key}-access`}
+                          checked={featureConfig[feature.key] === 'free'}
+                          onChange={() => setFeatureConfig((prev: any) => ({ ...prev, [feature.key]: 'free' }))}
+                        />
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        <input
+                          type="radio"
+                          name={`${feature.key}-access`}
+                          checked={featureConfig[feature.key] === 'premium'}
+                          onChange={() => setFeatureConfig((prev: any) => ({ ...prev, [feature.key]: 'premium' }))}
+                        />
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        <input
+                          type="radio"
+                          name={`${feature.key}-access`}
+                          checked={featureConfig[feature.key] === 'vip'}
+                          onChange={() => setFeatureConfig((prev: any) => ({ ...prev, [feature.key]: 'vip' }))}
+                        />
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        {feature.hasLimit && (
+                          <input
+                            type="number"
+                            min={0}
+                            className="w-20 px-2 py-1 border rounded"
+                            value={featureConfig[feature.key + '_limit'] || ''}
+                            onChange={e => setFeatureConfig((prev: any) => ({ ...prev, [feature.key + '_limit']: e.target.value }))}
+                          />
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="mt-6 flex justify-end">
+              <button className="bg-pink-600 hover:bg-pink-700 text-white px-6 py-2 rounded-lg font-semibold shadow" onClick={saveFeatureConfig}>
+                Salvar configurações
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

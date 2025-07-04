@@ -1,478 +1,187 @@
-'use client'
+"use client"
 
-import React, { useEffect, useState } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
-import { getFirestoreDB } from '@/lib/firebase'
-import { doc, getDoc, updateDoc } from 'firebase/firestore'
-import { useRouter } from 'next/navigation'
-import toast from 'react-hot-toast'
-import { Save, ArrowLeft } from 'lucide-react'
-import Link from 'next/link'
-import PhotoUpload from '@/components/PhotoUpload'
-import PhotoGallery from '@/components/PhotoGallery'
+import React, { useEffect, useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { getFirestoreDB } from '@/lib/firebase';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 
-interface ProfileForm {
-  username: string
-  birthdate: string
-  city: string
-  state: string
-  userType: string
-  about: string
-  lookingFor: string
-  interests: string[]
-  height: string
-  weight: string
-  education: string
-  occupation: string
-  income: string
-  relationshipStatus: string
-  children: string
-  smoking: string
-  drinking: string
-  languages: string[]
-}
-
-const interests = [
-  'Viagens', 'Música', 'Cinema', 'Literatura', 'Esportes', 'Culinária', 
-  'Arte', 'Tecnologia', 'Moda', 'Fitness', 'Dança', 'Fotografia',
-  'Jogos', 'Natureza', 'Voluntariado', 'Negócios', 'Investimentos'
-]
-
-const languages = [
-  'Português', 'Inglês', 'Espanhol', 'Francês', 'Italiano', 'Alemão', 'Chinês', 'Japonês'
-]
+const campos = [
+  { name: 'username', label: 'Nome de usuário', type: 'text', max: 30 },
+  { name: 'about', label: 'Sobre mim', type: 'textarea', max: 250 },
+  { name: 'lookingFor', label: 'O que busco', type: 'textarea', max: 250 },
+  { name: 'city', label: 'Cidade', type: 'text', max: 40 },
+  { name: 'state', label: 'Estado', type: 'text', max: 40 },
+  { name: 'relationshipType', label: 'Relacionamento', type: 'text', max: 40 },
+  { name: 'height', label: 'Altura', type: 'text', max: 10 },
+  { name: 'weight', label: 'Peso', type: 'text', max: 10 },
+  { name: 'hasChildren', label: 'Filhos', type: 'select', options: ['Sim', 'Não'] },
+  { name: 'smokes', label: 'Fuma', type: 'select', options: ['Sim', 'Não'] },
+  { name: 'drinks', label: 'Bebe', type: 'select', options: ['Sim', 'Não'] },
+  { name: 'education', label: 'Educação', type: 'text', max: 40 },
+  { name: 'profession', label: 'Profissão', type: 'text', max: 40 },
+  { name: 'gender', label: 'Gênero', type: 'select', options: ['homem', 'mulher'] },
+];
 
 export default function EditProfilePage() {
-  const { user, loading } = useAuth()
-  const [formData, setFormData] = useState<ProfileForm>({
-    username: '',
-    birthdate: '',
-    city: '',
-    state: '',
-    userType: '',
-    about: '',
-    lookingFor: '',
-    interests: [],
-    height: '',
-    weight: '',
-    education: '',
-    occupation: '',
-    income: '',
-    relationshipStatus: '',
-    children: '',
-    smoking: '',
-    drinking: '',
-    languages: []
-  })
-  const [profilePhoto, setProfilePhoto] = useState<string>('')
-  const [galleryPhotos, setGalleryPhotos] = useState<string[]>([])
-  const [saving, setSaving] = useState(false)
-  const router = useRouter()
+  const { user } = useAuth();
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [profile, setProfile] = useState<any>({});
 
   useEffect(() => {
     if (!user) {
-      router.push('/login')
-      return
+      router.push("/login");
+      return;
     }
-
-    fetchProfile()
-  }, [user, router])
-
-  const fetchProfile = async () => {
-    if (!user) { return }
-
-    try {
-      const db = getFirestoreDB()
-      if (!db) {
-        toast.error('Erro de configuração do banco de dados')
-        return
+    const fetchProfile = async () => {
+      setLoading(true);
+      try {
+        const db = getFirestoreDB();
+        const userRef = doc(db, "users", user.id);
+        const snap = await getDoc(userRef);
+        if (snap.exists()) {
+          setProfile(snap.data());
+        }
+      } catch (e) {
+        toast.error("Erro ao carregar perfil");
+      } finally {
+        setLoading(false);
       }
-      const docRef = doc(db, 'users', user?.id)
-      const docSnap = await getDoc(docRef)
-      
-      if (docSnap.exists()) {
-        const data = docSnap.data()
-        setFormData({
-          username: data.username || '',
-          birthdate: data.birthdate || '',
-          city: data.city || '',
-          state: data.state || '',
-          userType: data.userType || '',
-          about: data.about || '',
-          lookingFor: data.lookingFor || '',
-          interests: data.interests || [],
-          height: data.height || '',
-          weight: data.weight || '',
-          education: data.education || '',
-          occupation: data.occupation || '',
-          income: data.income || '',
-          relationshipStatus: data.relationshipStatus || '',
-          children: data.children || '',
-          smoking: data.smoking || '',
-          drinking: data.drinking || '',
-          languages: data.languages || []
-        })
-        setProfilePhoto(data.profilePhoto || '')
-        setGalleryPhotos(data.photos || [])
-      }
-    } catch (error) {
-      toast.error('Erro ao carregar perfil')
-    }
-  }
+    };
+    fetchProfile();
+  }, [user, router]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
-  }
-
-  const handleCheckboxChange = (field: 'interests' | 'languages', value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: prev[field].includes(value)
-        ? prev[field].filter(item => item !== value)
-        : [...prev[field], value]
-    }))
-  }
-
-  const handleProfilePhotoUpload = (urls: string[]) => {
-    if (urls.length > 0) {
-      setProfilePhoto(urls[0])
-    }
-  }
-
-  const handleGalleryPhotoUpload = (urls: string[]) => {
-    setGalleryPhotos(prev => [...prev, ...urls])
-  }
-
-  const handlePhotoDelete = (photoUrl: string) => {
-    setGalleryPhotos(prev => prev.filter(url => url !== photoUrl))
-  }
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    setProfile((prev: any) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
 
   const handleSave = async () => {
-    if (!user) { return }
-
+    if (!user) return;
+    setSaving(true);
     try {
-      const db = getFirestoreDB()
-      if (!db) {
-        toast.error('Erro de configuração do banco de dados')
-        return
-      }
-      setSaving(true)
-      const userRef = doc(db, 'users', user?.id)
+      const db = getFirestoreDB();
+      const userRef = doc(db, "users", user.id);
       await updateDoc(userRef, {
-        ...formData,
-        profilePhoto,
-        photos: galleryPhotos,
-        updatedAt: new Date().toISOString()
-      })
-      
-      toast.success('Perfil atualizado com sucesso!')
-      router.push('/profile')
-    } catch (error) {
-      toast.error('Erro ao salvar perfil')
+        name: profile.name || "",
+        username: profile.username || "",
+        city: profile.city || "",
+        state: profile.state || "",
+        about: profile.about || "",
+        lookingFor: profile.lookingFor || "",
+        relationshipType: profile.relationshipType || "",
+        height: profile.height || "",
+        weight: profile.weight || "",
+        hasChildren: profile.hasChildren === "Sim",
+        smokes: profile.smokes === "Sim",
+        drinks: profile.drinks === "Sim",
+        education: profile.education || "",
+        profession: profile.profession || "",
+        gender: profile.gender || "",
+        availableForTravel: profile.availableForTravel || "",
+      });
+      toast.success("Perfil atualizado!");
+      router.push("/profile");
+    } catch (e) {
+      toast.error("Erro ao salvar perfil");
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   if (loading) {
-    return (
-      <div className="max-w-4xl mx-auto py-12 px-4">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-48 mb-8"></div>
-          <div className="space-y-4">
-            <div className="h-4 bg-gray-200 rounded w-full"></div>
-            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  if (!user) {
-    return null
+    return <div className="w-full min-h-screen flex items-center justify-center bg-[#18181b] text-white">Carregando...</div>;
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-12 px-4">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center space-x-4">
-          <Link
-            href="/profile"
-            className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            <span>Voltar ao Perfil</span>
-          </Link>
-        </div>
-        
+    <div className="w-full min-h-screen flex flex-col items-center bg-[#18181b] px-4 py-8">
+      <div className="w-full max-w-md mx-auto bg-[#232326] rounded-2xl p-6 shadow-lg">
         <button
+          className="mb-6 text-pink-400 font-bold text-base hover:underline"
+          onClick={() => router.push("/profile")}
+        >
+          ← Voltar
+        </button>
+        <h2 className="text-2xl font-extrabold text-white mb-6">Editar perfil</h2>
+        <div className="flex flex-col gap-4">
+          {/* Sobre mim */}
+          <textarea name="about" value={profile.about || ""} onChange={handleChange} placeholder="Sobre mim (até 250 caracteres)" maxLength={250} className="rounded-lg px-4 py-2 bg-neutral-900 text-white placeholder:text-neutral-500 resize-none" rows={3} />
+          {/* O que busco */}
+          <textarea name="lookingFor" value={profile.lookingFor || ""} onChange={handleChange} placeholder="O que busco (até 250 caracteres)" maxLength={250} className="rounded-lg px-4 py-2 bg-neutral-900 text-white placeholder:text-neutral-500 resize-none" rows={3} />
+          {/* Relacionamento */}
+          <select name="relationshipType" value={profile.relationshipType || ""} onChange={handleChange} className="rounded-lg px-4 py-2 bg-neutral-900 text-white">
+            <option value="">Tipo de relacionamento</option>
+            <option value="On line">On line</option>
+            <option value="Presencial">Presencial</option>
+            <option value="Ambos">Ambos</option>
+          </select>
+          {/* Altura */}
+          <select name="height" value={profile.height || ""} onChange={handleChange} className="rounded-lg px-4 py-2 bg-neutral-900 text-white">
+            <option value="">Altura</option>
+            {Array.from({ length: 112 }, (_, i) => {
+              const val = (1.39 + i * 0.01).toFixed(2).replace('.', ',');
+              return <option key={val} value={`${val}m`}>{val} m</option>;
+            })}
+          </select>
+          {/* Peso */}
+          <select name="weight" value={profile.weight || ""} onChange={handleChange} className="rounded-lg px-4 py-2 bg-neutral-900 text-white">
+            <option value="">Peso</option>
+            {Array.from({ length: 106 }, (_, i) => {
+              const val = 45 + i;
+              return <option key={val} value={`${val}kg`}>{val} kg</option>;
+            })}
+          </select>
+          {/* Filhos */}
+          <select name="hasChildren" value={profile.hasChildren === true ? "Sim" : profile.hasChildren === false ? "Não" : ""} onChange={handleChange} className="rounded-lg px-4 py-2 bg-neutral-900 text-white">
+            <option value="">Filhos?</option>
+            <option value="Sim">Sim</option>
+            <option value="Não">Não</option>
+          </select>
+          {/* Fuma */}
+          <select name="smokes" value={profile.smokes === true ? "Sim" : profile.smokes === false ? "Não" : ""} onChange={handleChange} className="rounded-lg px-4 py-2 bg-neutral-900 text-white">
+            <option value="">Fuma?</option>
+            <option value="Sim">Sim</option>
+            <option value="Não">Não</option>
+          </select>
+          {/* Bebe */}
+          <select name="drinks" value={profile.drinks === true ? "Sim" : profile.drinks === false ? "Não" : ""} onChange={handleChange} className="rounded-lg px-4 py-2 bg-neutral-900 text-white">
+            <option value="">Bebe?</option>
+            <option value="Sim">Sim</option>
+            <option value="Não">Não</option>
+          </select>
+          {/* Educação */}
+          <select name="education" value={profile.education || ""} onChange={handleChange} className="rounded-lg px-4 py-2 bg-neutral-900 text-white">
+            <option value="">Educação</option>
+            <option value="Ensino Fundamental">Ensino Fundamental</option>
+            <option value="Ensino Médio">Ensino Médio</option>
+            <option value="Ensino Superior">Ensino Superior</option>
+            <option value="Pós-graduação">Pós-graduação</option>
+            <option value="Mestrado/Doutorado">Mestrado/Doutorado</option>
+          </select>
+          {/* Gênero */}
+          <select name="gender" value={profile.gender || ""} onChange={handleChange} className="rounded-lg px-4 py-2 bg-neutral-900 text-white">
+            <option value="">Gênero</option>
+            <option value="homem">Homem</option>
+            <option value="mulher">Mulher</option>
+          </select>
+          {/* Disponível para viagem */}
+          <select name="availableForTravel" value={profile.availableForTravel || ""} onChange={handleChange} className="rounded-lg px-4 py-2 bg-neutral-900 text-white">
+            <option value="">Disponível para viagem?</option>
+            <option value="Sim">Sim</option>
+            <option value="Não">Não</option>
+            <option value="Depende">Depende</option>
+          </select>
+        </div>
+        <button
+          className="mt-8 w-full py-3 rounded-lg bg-pink-500 text-white font-bold text-lg hover:bg-pink-600 transition"
           onClick={handleSave}
           disabled={saving}
-          className="flex items-center space-x-2 bg-pink-600 hover:bg-pink-700 disabled:bg-gray-400 text-white px-6 py-2 rounded-lg transition-colors"
         >
-          <Save className="w-4 h-4" />
-          <span>{saving ? 'Salvando...' : 'Salvar Perfil'}</span>
+          {saving ? "Salvando..." : "Salvar"}
         </button>
       </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Coluna Esquerda - Informações Básicas */}
-        <div className="space-y-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Foto de Perfil</h2>
-            
-            {profilePhoto && (
-              <div className="mb-4">
-                <img
-                  src={profilePhoto}
-                  alt="Foto de perfil"
-                  className="w-32 h-32 object-cover rounded-full mx-auto"
-                />
-              </div>
-            )}
-            
-            <PhotoUpload
-              userId={user.id}
-              type="profile"
-              onUploadComplete={handleProfilePhotoUpload}
-              maxFiles={1}
-            />
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Informações Básicas</h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nome de usuário</label>
-                <input
-                  type="text"
-                  name="username"
-                  value={formData.username}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Data de nascimento</label>
-                <input
-                  type="date"
-                  name="birthdate"
-                  value={formData.birthdate}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Cidade</label>
-                <input
-                  type="text"
-                  name="city"
-                  value={formData.city}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
-                <input
-                  type="text"
-                  name="state"
-                  value={formData.state}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de usuário</label>
-                <select
-                  name="userType"
-                  value={formData.userType}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                >
-                  <option value="">Selecione...</option>
-                  <option value="sugar-baby">Sugar Baby</option>
-                  <option value="sugar-daddy">Sugar Daddy</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Altura</label>
-                <input
-                  type="text"
-                  name="height"
-                  value={formData.height}
-                  onChange={handleInputChange}
-                  placeholder="Ex: 1.70m"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Sobre mim</h2>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Biografia</label>
-                <textarea
-                  name="about"
-                  value={formData.about}
-                  onChange={handleInputChange}
-                  rows={4}
-                  placeholder="Conte um pouco sobre você..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">O que procuro</label>
-                <textarea
-                  name="lookingFor"
-                  value={formData.lookingFor}
-                  onChange={handleInputChange}
-                  rows={3}
-                  placeholder="Descreva o que você está procurando..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Coluna Direita - Informações Adicionais */}
-        <div className="space-y-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Galeria de Fotos</h2>
-            
-            <PhotoUpload
-              userId={user.id}
-              type="gallery"
-              onUploadComplete={handleGalleryPhotoUpload}
-              maxFiles={10}
-            />
-            
-            {galleryPhotos.length > 0 && (
-              <div className="mt-6">
-                <PhotoGallery
-                  photos={galleryPhotos}
-                  userId={user.id}
-                  isOwner={true}
-                  onPhotoDelete={handlePhotoDelete}
-                />
-              </div>
-            )}
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Informações Profissionais</h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Educação</label>
-                <input
-                  type="text"
-                  name="education"
-                  value={formData.education}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Profissão</label>
-                <input
-                  type="text"
-                  name="occupation"
-                  value={formData.occupation}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Renda</label>
-                <select
-                  name="income"
-                  value={formData.income}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                >
-                  <option value="">Selecione...</option>
-                  <option value="low">Até R$ 3.000</option>
-                  <option value="medium">R$ 3.000 - R$ 10.000</option>
-                  <option value="high">R$ 10.000 - R$ 50.000</option>
-                  <option value="very-high">Acima de R$ 50.000</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Estado civil</label>
-                <select
-                  name="relationshipStatus"
-                  value={formData.relationshipStatus}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                >
-                  <option value="">Selecione...</option>
-                  <option value="single">Solteiro(a)</option>
-                  <option value="divorced">Divorciado(a)</option>
-                  <option value="widowed">Viúvo(a)</option>
-                  <option value="complicated">Complicado</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Interesses</h2>
-            
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {interests.map((interest) => (
-                <label key={interest} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={formData.interests.includes(interest)}
-                    onChange={() => handleCheckboxChange('interests', interest)}
-                    className="rounded border-gray-300 text-pink-600 focus:ring-pink-500"
-                  />
-                  <span className="text-sm text-gray-700">{interest}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Idiomas</h2>
-            
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {languages.map((language) => (
-                <label key={language} className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    checked={formData.languages.includes(language)}
-                    onChange={() => handleCheckboxChange('languages', language)}
-                    className="rounded border-gray-300 text-pink-600 focus:ring-pink-500"
-                  />
-                  <span className="text-sm text-gray-700">{language}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
-  )
+  );
 } 

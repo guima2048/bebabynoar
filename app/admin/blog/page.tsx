@@ -65,17 +65,21 @@ export default function AdminBlogPage() {
   }, [])
 
   const fetchPosts = async () => {
+    console.log('[DEBUG] Chamando fetchPosts...')
     try {
       const response = await fetch('/api/blog')
       
       if (response.ok) {
         const posts = await response.json()
         setPosts(posts)
+        console.log('[DEBUG] Posts carregados:', posts)
       } else {
         const errorText = await response.text()
+        console.error('[DEBUG] Erro ao carregar posts (response not ok):', errorText)
         toast.error('Erro ao carregar posts')
       }
     } catch (error) {
+      console.error('[DEBUG] Erro ao carregar posts (catch):', error)
       toast.error('Erro ao carregar posts')
     } finally {
       setLoading(false)
@@ -122,7 +126,12 @@ export default function AdminBlogPage() {
         resetForm()
         toast.success('Post criado com sucesso')
       } else {
-        toast.error('Erro ao criar post')
+        let errorMsg = 'Erro ao criar post';
+        try {
+          const errorData = await response.json();
+          if (errorData && errorData.error) errorMsg = errorData.error;
+        } catch {}
+        toast.error(errorMsg)
       }
     } catch (error) {
       console.error('Erro:', error)
@@ -204,6 +213,7 @@ export default function AdminBlogPage() {
   }
 
   const handleEditPost = (post: BlogPost) => {
+    console.log('[DEBUG] Editando post:', post)
     setEditingPost(post)
     setFormData({
       title: post.title,
@@ -214,7 +224,7 @@ export default function AdminBlogPage() {
       featuredImage: post.featuredImage || '',
       author: post.author || ''
     })
-    setImagePreview(post.featuredImage || null)
+    setImagePreview(post.featuredImage && typeof post.featuredImage === 'string' && post.featuredImage.length > 0 ? post.featuredImage : null)
     setShowForm(true)
   }
 
@@ -272,8 +282,14 @@ export default function AdminBlogPage() {
         setImagePreview(result.url)
         toast.success('Imagem enviada com sucesso!')
       } else {
-        const error = await response.json()
-        toast.error(error.error || 'Erro ao enviar imagem')
+        let errorMsg = 'Erro ao enviar imagem';
+        try {
+          const error = await response.json();
+          errorMsg = `[${response.status}] ${error.error || error.message || errorMsg}`;
+        } catch (e) {
+          errorMsg = `[${response.status}] Erro desconhecido do servidor`;
+        }
+        toast.error(errorMsg);
       }
     } catch (error) {
       console.error('Erro no upload:', error)
@@ -434,26 +450,20 @@ export default function AdminBlogPage() {
                 <p className="text-xs text-gray-500 mt-1">
                   Formatos aceitos: JPG, PNG, WebP, GIF. Máximo 10MB.
                 </p>
-              </div>
-
-              {/* Ou inserir URL */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Ou inserir URL da imagem
-                </label>
-                <input
-                  type="url"
-                  value={formData.featuredImage}
-                  onChange={(e) => {
-                    setFormData(prev => ({ ...prev, featuredImage: e.target.value }))
-                    setImagePreview(e.target.value)
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-                  placeholder="https://exemplo.com/imagem.jpg"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  URL da imagem que será exibida como capa do post
-                </p>
+                {imagePreview ? (
+                  <div className="mt-2 relative">
+                    <img src={imagePreview} alt="Preview" className="h-32 rounded shadow border object-contain" />
+                    <button
+                      type="button"
+                      onClick={removeImage}
+                      className="absolute top-1 right-1 bg-white border border-gray-300 rounded-full p-1 text-gray-600 hover:text-red-600"
+                    >
+                      Remover
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-400 mt-2">Nenhuma imagem selecionada para este post.</p>
+                )}
               </div>
             </div>
 

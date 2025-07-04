@@ -46,6 +46,10 @@ interface LandingSettings {
   testimonials: Testimonial[];
   sugarBabies: ProfileCard[];
   sugarDaddies: ProfileCard[];
+  heroBaby1Image?: string;
+  heroDaddy1Image?: string;
+  heroBaby2Image?: string;
+  heroDaddy2Image?: string;
 }
 
 export default function LandingSettingsPage() {
@@ -64,7 +68,11 @@ export default function LandingSettingsPage() {
     secondaryButtonLink: '/explore',
     testimonials: [],
     sugarBabies: [],
-    sugarDaddies: []
+    sugarDaddies: [],
+    heroBaby1Image: '',
+    heroDaddy1Image: '',
+    heroBaby2Image: '',
+    heroDaddy2Image: ''
   })
 
   // Carregar configurações do Firebase
@@ -248,7 +256,8 @@ export default function LandingSettingsPage() {
           { id: 'banner', label: 'Banner Principal' },
           { id: 'testimonials', label: 'Depoimentos' },
           { id: 'sugar-babies', label: 'Sugar Babies' },
-          { id: 'sugar-daddies', label: 'Sugar Daddies' }
+          { id: 'sugar-daddies', label: 'Sugar Daddies' },
+          { id: 'fotos', label: 'Fotos dos Cards' }
         ].map(tab => (
           <button
             key={tab.id}
@@ -373,6 +382,41 @@ export default function LandingSettingsPage() {
                     onImageRemove={() => setFormData({ ...formData, bannerImageURL: '' })}
                     label="Imagem do Banner"
                   />
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+                  <div>
+                    <ImageUpload
+                      currentImageUrl={formData.heroBaby1Image}
+                      onImageUpload={url => setFormData(prev => ({ ...prev, heroBaby1Image: url }))}
+                      onImageRemove={() => setFormData(prev => ({ ...prev, heroBaby1Image: '' }))}
+                      label="Hero Sugar Baby 1"
+                    />
+                  </div>
+                  <div>
+                    <ImageUpload
+                      currentImageUrl={formData.heroDaddy1Image}
+                      onImageUpload={url => setFormData(prev => ({ ...prev, heroDaddy1Image: url }))}
+                      onImageRemove={() => setFormData(prev => ({ ...prev, heroDaddy1Image: '' }))}
+                      label="Hero Sugar Daddy 1"
+                    />
+                  </div>
+                  <div>
+                    <ImageUpload
+                      currentImageUrl={formData.heroBaby2Image}
+                      onImageUpload={url => setFormData(prev => ({ ...prev, heroBaby2Image: url }))}
+                      onImageRemove={() => setFormData(prev => ({ ...prev, heroBaby2Image: '' }))}
+                      label="Hero Sugar Baby 2"
+                    />
+                  </div>
+                  <div>
+                    <ImageUpload
+                      currentImageUrl={formData.heroDaddy2Image}
+                      onImageUpload={url => setFormData(prev => ({ ...prev, heroDaddy2Image: url }))}
+                      onImageRemove={() => setFormData(prev => ({ ...prev, heroDaddy2Image: '' }))}
+                      label="Hero Sugar Daddy 2"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -518,6 +562,7 @@ export default function LandingSettingsPage() {
                           type="text"
                           value={baby.name}
                           onChange={(e) => updateSugarBaby(index, 'name', e.target.value)}
+                          placeholder="Nome (opcional)"
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                         />
                       </div>
@@ -527,19 +572,10 @@ export default function LandingSettingsPage() {
                           type="text"
                           value={baby.location}
                           onChange={(e) => updateSugarBaby(index, 'location', e.target.value)}
+                          placeholder="Localização (opcional)"
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                         />
                       </div>
-                    </div>
-                    
-                    <div className="mt-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Profissão</label>
-                      <input
-                        type="text"
-                        value={baby.profession}
-                        onChange={(e) => updateSugarBaby(index, 'profession', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                      />
                     </div>
                     
                     <div className="mt-4">
@@ -600,6 +636,7 @@ export default function LandingSettingsPage() {
                           type="text"
                           value={daddy.name}
                           onChange={(e) => updateSugarDaddy(index, 'name', e.target.value)}
+                          placeholder="Nome (opcional)"
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                         />
                       </div>
@@ -609,19 +646,10 @@ export default function LandingSettingsPage() {
                           type="text"
                           value={daddy.location}
                           onChange={(e) => updateSugarDaddy(index, 'location', e.target.value)}
+                          placeholder="Localização (opcional)"
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                         />
                       </div>
-                    </div>
-                    
-                    <div className="mt-4">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Profissão</label>
-                      <input
-                        type="text"
-                        value={daddy.profession}
-                        onChange={(e) => updateSugarDaddy(index, 'profession', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                      />
                     </div>
                     
                     <div className="mt-4">
@@ -632,6 +660,38 @@ export default function LandingSettingsPage() {
                         label="Foto do Sugar Daddy"
                       />
                     </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Fotos dos Cards */}
+          {activeTab === 'fotos' && (
+            <div className="mt-8">
+              <h3 className="text-lg font-semibold mb-4">Fotos dos Cards</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                {[...formData.sugarBabies, ...formData.sugarDaddies].map((card, i) => (
+                  <div key={card.id} className="flex flex-col items-center bg-gray-50 rounded-lg p-4 shadow-sm">
+                    <ImageUpload
+                      currentImageUrl={card.photo}
+                      onImageUpload={url => {
+                        if (i < formData.sugarBabies.length) {
+                          updateSugarBaby(i, 'photo', url)
+                        } else {
+                          updateSugarDaddy(i - formData.sugarBabies.length, 'photo', url)
+                        }
+                      }}
+                      onImageRemove={() => {
+                        if (i < formData.sugarBabies.length) {
+                          updateSugarBaby(i, 'photo', '')
+                        } else {
+                          updateSugarDaddy(i - formData.sugarBabies.length, 'photo', '')
+                        }
+                      }}
+                      label={i < formData.sugarBabies.length ? 'Sugar Baby' : 'Sugar Daddy'}
+                    />
+                    {card.name && <span className="mt-2 text-sm text-gray-700 font-medium">{card.name}</span>}
                   </div>
                 ))}
               </div>
@@ -726,8 +786,7 @@ export default function LandingSettingsPage() {
                     {formData.sugarBabies.filter(b => b.isActive).slice(0, 4).map((baby, index) => (
                       <div key={index} className="bg-white rounded p-2 text-center">
                         <div className="w-8 h-8 bg-pink-100 rounded-full mx-auto mb-1"></div>
-                        <p className="text-xs font-medium">{baby.name}</p>
-                        <p className="text-xs text-gray-500">{baby.profession}</p>
+                        {baby.name && <p className="text-xs font-medium">{baby.name}</p>}
                       </div>
                     ))}
                   </div>
@@ -742,8 +801,7 @@ export default function LandingSettingsPage() {
                     {formData.sugarDaddies.filter(d => d.isActive).slice(0, 4).map((daddy, index) => (
                       <div key={index} className="bg-white rounded p-2 text-center">
                         <div className="w-8 h-8 bg-blue-100 rounded-full mx-auto mb-1"></div>
-                        <p className="text-xs font-medium">{daddy.name}</p>
-                        <p className="text-xs text-gray-500">{daddy.profession}</p>
+                        {daddy.name && <p className="text-xs font-medium">{daddy.name}</p>}
                       </div>
                     ))}
                   </div>

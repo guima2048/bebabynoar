@@ -38,7 +38,7 @@ if (!admin.apps.length && process.env.NODE_ENV !== 'production' && !process.env.
     
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
-      storageBucket: 'bebaby-56627.firebasestorage.app', // Seu bucket real
+      storageBucket: 'bebaby-56627.firebasestorage.app',
       projectId: 'bebaby-56627',
     })
   } catch (error) {

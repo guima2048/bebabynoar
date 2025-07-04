@@ -33,48 +33,35 @@ export default function AdminPendingContentPage() {
 
   const fetchPendingContent = async () => {
     try {
-      // Simular dados de fotos pendentes
-      const mockPhotos: PendingPhoto[] = [
-        {
-          id: '1',
-          userId: 'user1',
-          userName: 'Maria123',
-          photoURL: 'https://via.placeholder.com/300x400',
-          uploadedAt: '2024-01-15T10:30:00Z',
-          isPrivate: false
-        },
-        {
-          id: '2',
-          userId: 'user2',
-          userName: 'João456',
-          photoURL: 'https://via.placeholder.com/300x400',
-          uploadedAt: '2024-01-14T15:45:00Z',
-          isPrivate: true
-        }
-      ]
+      const response = await fetch('/api/admin/pending-content')
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(`Erro ao buscar conteúdo pendente: ${errorData.error || response.statusText}`)
+      }
+      
+      const data = await response.json()
+      
+      // Converter dados da API para o formato esperado
+      const photos: PendingPhoto[] = (data.photos || []).map((photo: any) => ({
+        id: photo.id,
+        userId: photo.userId,
+        userName: photo.userName,
+        photoURL: photo.photoURL,
+        uploadedAt: photo.uploadedAt ? (typeof photo.uploadedAt === 'string' ? photo.uploadedAt : photo.uploadedAt.toISOString()) : new Date().toISOString(),
+        isPrivate: photo.isPrivate || false
+      }))
 
-      // Simular dados de textos pendentes
-      const mockTexts: PendingText[] = [
-        {
-          id: '1',
-          userId: 'user1',
-          userName: 'Maria123',
-          field: 'about',
-          content: 'Sou uma pessoa muito interessante e gosto de...',
-          updatedAt: '2024-01-15T10:30:00Z'
-        },
-        {
-          id: '2',
-          userId: 'user2',
-          userName: 'João456',
-          field: 'lookingFor',
-          content: 'Busco alguém especial para...',
-          updatedAt: '2024-01-14T15:45:00Z'
-        }
-      ]
+      const texts: PendingText[] = (data.texts || []).map((text: any) => ({
+        id: text.id,
+        userId: text.userId,
+        userName: text.userName,
+        field: text.field || 'about',
+        content: text.content,
+        updatedAt: text.updatedAt ? (typeof text.updatedAt === 'string' ? text.updatedAt : text.updatedAt.toISOString()) : new Date().toISOString()
+      }))
 
-      setPendingPhotos(mockPhotos)
-      setPendingTexts(mockTexts)
+      setPendingPhotos(photos)
+      setPendingTexts(texts)
     } catch (error) {
       console.error('Erro ao buscar conteúdo pendente:', error)
       toast.error('Erro ao carregar conteúdo pendente')

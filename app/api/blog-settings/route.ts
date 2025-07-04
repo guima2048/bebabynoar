@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getFirestoreDB } from '@/lib/firebase';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { getAdminFirestore } from '@/lib/firebase-admin';
 
 // Interface para as configurações do blog
 interface BlogSettings {
@@ -79,14 +78,14 @@ const defaultSettings: BlogSettings = {
 
 export async function GET() {
   try {
-    const db = getFirestoreDB()
-    const settingsDoc = await getDoc(doc(db, 'blog-settings', 'main'));
+    const db = getAdminFirestore()
+    const settingsDoc = await db.collection('blog-settings').doc('main').get();
     
-    if (settingsDoc.exists()) {
+    if (settingsDoc.exists) {
       return NextResponse.json(settingsDoc.data());
     } else {
       // Criar configurações padrão se não existirem
-      await setDoc(doc(db, 'blog-settings', 'main'), defaultSettings);
+      await db.collection('blog-settings').doc('main').set(defaultSettings);
       return NextResponse.json(defaultSettings);
     }
   } catch (error) {
@@ -97,13 +96,13 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const db = getFirestoreDB()
+    const db = getAdminFirestore()
     const settings: Partial<BlogSettings> = await request.json();
     
     // Adicionar timestamp de atualização
     settings.updatedAt = new Date().toISOString();
     
-    await updateDoc(doc(db, 'blog-settings', 'main'), settings);
+    await db.collection('blog-settings').doc('main').update(settings);
     
     return NextResponse.json({ success: true, message: 'Configurações atualizadas com sucesso' });
   } catch (error) {

@@ -6,6 +6,7 @@ import toast from 'react-hot-toast'
 interface User {
   id: string
   username: string
+  name?: string
   email: string
   userType: string
   birthdate: string
@@ -14,6 +15,8 @@ interface User {
   ativo: boolean
   premium: boolean
   createdAt: string
+  signupIp?: string
+  ipLocation?: string
 }
 
 export default function AdminUsersPage() {
@@ -28,46 +31,29 @@ export default function AdminUsersPage() {
 
   const fetchUsers = async () => {
     try {
-      // Simular dados de usuários
-      const mockUsers: User[] = [
-        {
-          id: '1',
-          username: 'Maria123',
-          email: 'maria@email.com',
-          userType: 'sugar_baby',
-          birthdate: '1995-03-15',
-          city: 'São Paulo',
-          state: 'SP',
-          ativo: true,
-          premium: false,
-          createdAt: '2024-01-15'
-        },
-        {
-          id: '2',
-          username: 'João456',
-          email: 'joao@email.com',
-          userType: 'sugar_daddy',
-          birthdate: '1980-07-22',
-          city: 'Rio de Janeiro',
-          state: 'RJ',
-          ativo: true,
-          premium: true,
-          createdAt: '2024-01-10'
-        },
-        {
-          id: '3',
-          username: 'Ana789',
-          email: 'ana@email.com',
-          userType: 'sugar_baby',
-          birthdate: '1998-11-08',
-          city: 'Belo Horizonte',
-          state: 'MG',
-          ativo: false,
-          premium: false,
-          createdAt: '2024-01-05'
-        }
-      ]
-      setUsers(mockUsers)
+      const response = await fetch('/api/admin/premium-users')
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(`Erro ao buscar usuários: ${errorData.error || response.statusText}`)
+      }
+      const data = await response.json()
+      // Adaptar para o formato esperado pela interface User
+      const realUsers: User[] = (data.users || []).map((u: any) => ({
+        id: u.id,
+        username: u.username || 'Usuário',
+        name: u.name,
+        email: u.email || '',
+        userType: u.userType || 'sugar_baby',
+        birthdate: u.birthdate || '',
+        city: u.city || '',
+        state: u.state || '',
+        ativo: u.ativo !== undefined ? u.ativo : true,
+        premium: u.isPremium || u.premium || false,
+        createdAt: u.createdAt ? (typeof u.createdAt === 'string' ? u.createdAt : new Date(u.createdAt).toISOString()) : '',
+        signupIp: u.signupIp,
+        ipLocation: u.ipLocation
+      }))
+      setUsers(realUsers)
     } catch (error) {
       console.error('Erro ao buscar usuários:', error)
       toast.error('Erro ao carregar usuários')
@@ -103,28 +89,62 @@ export default function AdminUsersPage() {
   }
 
   const handleTogglePremium = async (userId: string, currentPremium: boolean) => {
+    if (!currentPremium) {
+      // Se for ativar premium, pedir quantidade de dias
+      const diasStr = prompt('Quantos dias de premium? (ex: 30)');
+      if (!diasStr) return;
+      const dias = parseInt(diasStr, 10);
+      if (isNaN(dias) || dias <= 0) {
+        toast.error('Digite um número válido de dias.');
+        return;
+      }
     try {
       const response = await fetch('/api/admin/manage-user', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId,
-          action: currentPremium ? 'deactivate_premium' : 'activate_premium',
-          adminNotes: currentPremium ? 'Premium desativado por admin' : 'Premium ativado por admin'
+            action: 'activate_premium',
+            adminNotes: 'Premium ativado por admin',
+            days: dias,
+          })
+        });
+        if (response.ok) {
+          setUsers(prev => prev.map(user => 
+            user.id === userId ? { ...user, premium: true } : user
+          ));
+          toast.success('Status premium ativado com sucesso');
+        } else {
+          toast.error('Erro ao alterar status premium');
+        }
+      } catch (error) {
+        console.error('Erro:', error);
+        toast.error('Erro ao alterar status premium');
+      }
+    } else {
+      // Desativar premium normalmente
+      try {
+        const response = await fetch('/api/admin/manage-user', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId,
+            action: 'deactivate_premium',
+            adminNotes: 'Premium desativado por admin'
         })
-      })
-
+        });
       if (response.ok) {
         setUsers(prev => prev.map(user => 
-          user.id === userId ? { ...user, premium: !currentPremium } : user
-        ))
-        toast.success(`Status premium ${currentPremium ? 'desativado' : 'ativado'} com sucesso`)
+            user.id === userId ? { ...user, premium: false } : user
+          ));
+          toast.success('Status premium desativado com sucesso');
       } else {
-        toast.error('Erro ao alterar status premium')
+          toast.error('Erro ao alterar status premium');
       }
     } catch (error) {
-      console.error('Erro:', error)
-      toast.error('Erro ao alterar status premium')
+        console.error('Erro:', error);
+        toast.error('Erro ao alterar status premium');
+      }
     }
   }
 
@@ -179,9 +199,20 @@ export default function AdminUsersPage() {
 
   return (
     <div>
-      <div className="mb-8">
+      <div className="mb-8 flex items-center justify-between">
+        <div>
         <h1 className="text-3xl font-bold text-gray-900">Gerenciar Usuários</h1>
         <p className="text-gray-600 mt-2">Gerencie todos os usuários da plataforma</p>
+        </div>
+        <button
+          onClick={() => window.location.href = '/admin/search-users'}
+          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-2"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          Buscar TONYY
+        </button>
       </div>
 
       {/* Filtros e Busca */}
@@ -223,6 +254,15 @@ export default function AdminUsersPage() {
                   Usuário
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Email
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  IP Cadastro
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Localização do IP
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Tipo
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -243,10 +283,28 @@ export default function AdminUsersPage() {
               {filteredUsers.map((user) => (
                 <tr key={user.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">{user.username}</div>
-                      <div className="text-sm text-gray-500">{user.email}</div>
+                    <div className="flex flex-col">
+                      <a 
+                        href={`/profile/${user.id}`}
+                        className="font-bold text-blue-600 hover:text-blue-800 hover:underline"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        @{user.username}
+                      </a>
+                      {user.name && (
+                        <span className="text-xs text-gray-500 mt-1">{user.name}</span>
+                      )}
                     </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {user.email}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {user.signupIp || '-'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {user.ipLocation || <IpLocationLoader ip={user.signupIp} userId={user.id} />}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
@@ -306,6 +364,12 @@ export default function AdminUsersPage() {
                       >
                         Excluir
                       </button>
+                      <button
+                        onClick={() => window.location.href = `/admin/users/${user.id}`}
+                        className="text-xs px-3 py-1 rounded-md bg-blue-100 text-blue-700 hover:bg-blue-200"
+                      >
+                        Editar
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -326,4 +390,28 @@ export default function AdminUsersPage() {
       </div>
     </div>
   )
+}
+
+function IpLocationLoader({ ip, userId }: { ip?: string, userId: string }) {
+  const [location, setLocation] = useState<string>('');
+
+  useEffect(() => {
+    if (!ip) return;
+    fetch(`https://ipapi.co/${ip}/json/`)
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.city && data.region && data.country_name) {
+          setLocation(`${data.city}, ${data.region}, ${data.country_name}`);
+        } else if (data && data.country_name) {
+          setLocation(data.country_name);
+        } else {
+          setLocation('Desconhecido');
+        }
+      })
+      .catch(() => setLocation('Desconhecido'));
+  }, [ip]);
+
+  if (!ip) return <span>-</span>;
+  if (!location) return <span className="text-gray-400">Carregando...</span>;
+  return <span>{location}</span>;
 } 

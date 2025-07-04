@@ -1,9 +1,20 @@
 // --- CLIENTE (browser) ---
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app'
-import { getAuth, Auth } from 'firebase/auth'
+import { getAuth, Auth, setPersistence, browserLocalPersistence } from 'firebase/auth'
 import { getFirestore, Firestore, collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, orderBy, limit, serverTimestamp } from 'firebase/firestore'
 import { getStorage, FirebaseStorage } from 'firebase/storage'
 import { getAnalytics, Analytics } from 'firebase/analytics'
+
+// Debug: verificar variáveis de ambiente
+console.log('🔍 Firebase Config Debug:', {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? '✅ Presente' : '❌ Ausente',
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ? '✅ Presente' : '❌ Ausente',
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ? '✅ Presente' : '❌ Ausente',
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ? '✅ Presente' : '❌ Ausente',
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ? '✅ Presente' : '❌ Ausente',
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID ? '✅ Presente' : '❌ Ausente',
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID ? '✅ Presente' : '❌ Ausente'
+});
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -36,21 +47,46 @@ let analytics: Analytics | null = null
 
 // Inicializar Firebase apenas uma vez
 if (typeof window !== 'undefined') {
+  console.log('🌐 Browser detected, initializing Firebase...');
+  
   if (getApps().length === 0) {
-    app = initializeApp(firebaseConfig)
+    console.log('🚀 Creating new Firebase app...');
+    try {
+      app = initializeApp(firebaseConfig)
+      console.log('✅ Firebase app created successfully');
+    } catch (error) {
+      console.error('❌ Error creating Firebase app:', error);
+    }
   } else {
+    console.log('🔄 Using existing Firebase app');
     app = getApps()[0]
   }
   
-  db = getFirestore(app)
-  storage = getStorage(app)
-  auth = getAuth(app)
+  if (app) {
+    console.log('📊 Initializing Firestore...');
+    db = getFirestore(app)
+    console.log('📦 Initializing Storage...');
+    storage = getStorage(app)
+    console.log('🔐 Initializing Auth...');
+    auth = getAuth(app)
+    // Adicionar persistência do login
+    if (auth) {
+      setPersistence(auth, browserLocalPersistence).catch((err) => {
+        console.error('Erro ao definir persistência do Firebase Auth:', err);
+      });
+    }
+    console.log('✅ All Firebase services initialized');
+  } else {
+    console.error('❌ No Firebase app available');
+  }
   
   // Analytics só funciona no browser
-  try {
-    analytics = getAnalytics(app)
-  } catch (error) {
-    console.log('Analytics não disponível:', error)
+  if (app) {
+    try {
+      analytics = getAnalytics(app)
+    } catch (error) {
+      console.log('Analytics não disponível:', error)
+    }
   }
 }
 

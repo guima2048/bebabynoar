@@ -1,17 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getFirestoreDB } from '@/lib/firebase'
-import { doc, updateDoc, deleteDoc, getDoc, serverTimestamp } from 'firebase/firestore'
+import { getAdminFirestore } from '@/lib/firebase-admin'
 
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const db = getFirestoreDB()
-    const docRef = doc(db, 'blog', params.id)
-    const docSnap = await getDoc(docRef)
+    const db = getAdminFirestore()
+    const docSnap = await db.collection('blog').doc(params.id).get()
     
-    if (!docSnap.exists()) {
+    if (!docSnap.exists) {
       return NextResponse.json({ error: 'Post não encontrado' }, { status: 404 })
     }
     
@@ -33,7 +31,7 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const db = getFirestoreDB()
+    const db = getAdminFirestore()
     const { title, content, excerpt, status } = await req.json()
     
     if (!title || !content) {
@@ -50,18 +48,19 @@ export async function PUT(
       .replace(/-+/g, '-')
       .trim()
 
-    const updateData = {
+    const updateData: any = {
       title,
       slug,
       content,
       excerpt: excerpt || '',
       status,
-      updatedAt: serverTimestamp(),
-      ...(status === 'published' && { publishedAt: serverTimestamp() })
+      updatedAt: new Date(),
+    }
+    if (status === 'published') {
+      updateData.publishedAt = new Date();
     }
 
-    const docRef = doc(db, 'blog', params.id)
-    await updateDoc(docRef, updateData)
+    await db.collection('blog').doc(params.id).update(updateData)
     
     return NextResponse.json({
       id: params.id,
@@ -82,9 +81,8 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const db = getFirestoreDB()
-    const docRef = doc(db, 'blog', params.id)
-    await deleteDoc(docRef)
+    const db = getAdminFirestore()
+    await db.collection('blog').doc(params.id).delete()
     
     return NextResponse.json({
       success: true,

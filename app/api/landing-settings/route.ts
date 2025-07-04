@@ -38,6 +38,12 @@ interface LandingSettings {
   sugarBabies: ProfileCard[];
   sugarDaddies: ProfileCard[];
   
+  // Novos campos para imagens do Hero
+  heroBaby1Image?: string;
+  heroDaddy1Image?: string;
+  heroBaby2Image?: string;
+  heroDaddy2Image?: string;
+  
   // Configurações Gerais
   isActive: boolean;
   updatedAt: string;
@@ -185,7 +191,11 @@ export async function GET() {
           }
         ],
         isActive: true,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
+        heroBaby1Image: '',
+        heroDaddy1Image: '',
+        heroBaby2Image: '',
+        heroDaddy2Image: ''
       });
     }
   } catch (error: any) {

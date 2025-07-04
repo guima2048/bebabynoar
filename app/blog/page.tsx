@@ -6,6 +6,7 @@ import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Calendar, Clock, ArrowRight } from 'lucide-react'
 import Image from 'next/image'
+import HamburgerMenu from '../../components/HamburgerMenu'
 
 interface BlogPost {
   id: string
@@ -169,8 +170,13 @@ function parseFirestoreDate(date: any): Date | null {
     const d = new Date(date);
     return isNaN(d.getTime()) ? null : d;
   }
-  if (typeof date === 'object' && 'seconds' in date) {
-    return new Date(date.seconds * 1000);
+  if (typeof date === 'object') {
+    if ('seconds' in date) {
+      return new Date(date.seconds * 1000);
+    }
+    if ('_seconds' in date) {
+      return new Date(date._seconds * 1000);
+    }
   }
   return null;
 }
@@ -291,11 +297,9 @@ export default function BlogPage() {
   });
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: settings.backgroundColor }}>
-      {/* Seções Configuráveis */}
-      {/* Remover todo o bloco que faz uso de settings.sections.filter(...).map(...) */}
-      {/* Manter apenas o layout do blog, hero, posts, etc, sem seções configuráveis. */}
-
+    <div className="min-h-screen bg-[#18181b]">
+      <HamburgerMenu />
+      
       {/* Posts do Blog */}
       <section className="py-16 px-4 bg-white">
         <div className="max-w-6xl mx-auto">
