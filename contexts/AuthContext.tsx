@@ -47,6 +47,7 @@ interface AuthContextType {
   logout: () => Promise<void>
   updateUserProfile: (data: Partial<User>) => Promise<void>
   resetPassword: (email: string) => Promise<void>
+  getAuthToken: () => Promise<string | null>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -85,6 +86,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               premium: userData.premium || false,
               verified: userData.verified || false,
               userType: userData.userType || 'user',
+              gender: userData.gender || '',
+              lookingFor: userData.lookingFor || '',
               isAdmin: userData.isAdmin || false,
             })
           } else {
@@ -212,6 +215,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const getAuthToken = async (): Promise<string | null> => {
+    if (!auth?.currentUser) return null
+    try {
+      return await auth.currentUser.getIdToken()
+    } catch (error) {
+      console.error('Erro ao obter token:', error)
+      return null
+    }
+  }
+
   const getErrorMessage = (errorCode: string): string => {
     switch (errorCode) {
       case 'auth/user-not-found':
@@ -238,7 +251,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signUp,
     logout,
     updateUserProfile,
-    resetPassword
+    resetPassword,
+    getAuthToken
   }
 
   return (

@@ -4,6 +4,23 @@ import type { NextRequest } from 'next/server'
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
+  // Proteção de autenticação para rotas que precisam de login
+  const protectedRoutes = ['/explore', '/explore/buscar']
+  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))
+  
+  if (isProtectedRoute) {
+    // Verificar se há token de autenticação
+    const authToken = request.cookies.get('auth-token')?.value || 
+                     request.headers.get('authorization')?.replace('Bearer ', '')
+    
+    if (!authToken) {
+      // Redirecionar para login se não estiver autenticado
+      const loginUrl = new URL('/login', request.url)
+      loginUrl.searchParams.set('redirect', pathname)
+      return NextResponse.redirect(loginUrl)
+    }
+  }
+
   // Headers de segurança para todas as rotas
   const response = NextResponse.next()
   

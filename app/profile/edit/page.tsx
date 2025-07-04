@@ -76,7 +76,6 @@ export default function EditProfilePage() {
         city: profile.city || "",
         state: profile.state || "",
         about: profile.about || "",
-        lookingFor: profile.lookingFor || "",
         relationshipType: profile.relationshipType || "",
         height: profile.height || "",
         weight: profile.weight || "",
@@ -84,8 +83,11 @@ export default function EditProfilePage() {
         smokes: profile.smokes === "Sim",
         drinks: profile.drinks === "Sim",
         education: profile.education || "",
-        profession: profile.profession || "",
+        userType: profile.userType || "",
         gender: profile.gender || "",
+        lookingFor: profile.lookingFor || "",
+        profession: profile.profession || "",
+
         availableForTravel: profile.availableForTravel || "",
       });
       toast.success("Perfil atualizado!");
@@ -166,12 +168,31 @@ export default function EditProfilePage() {
             <option value="Pós-graduação">Pós-graduação</option>
             <option value="Mestrado/Doutorado">Mestrado/Doutorado</option>
           </select>
+
+          {/* Tipo de Usuário */}
+          <select name="userType" value={profile.userType || ""} onChange={handleChange} className="rounded-lg px-4 py-2 bg-neutral-900 text-white">
+            <option value="">Tipo de Usuário</option>
+            <option value="sugar_baby">Sugar Baby</option>
+            <option value="sugar_daddy">Sugar Daddy</option>
+            <option value="sugar_mommy">Sugar Mommy</option>
+            <option value="sugar_babyboy">Sugar Babyboy</option>
+          </select>
+          
           {/* Gênero */}
           <select name="gender" value={profile.gender || ""} onChange={handleChange} className="rounded-lg px-4 py-2 bg-neutral-900 text-white">
             <option value="">Gênero</option>
-            <option value="homem">Homem</option>
-            <option value="mulher">Mulher</option>
+            <option value="male">Masculino</option>
+            <option value="female">Feminino</option>
           </select>
+          
+          {/* Procuro */}
+          <select name="lookingFor" value={profile.lookingFor || ""} onChange={handleChange} className="rounded-lg px-4 py-2 bg-neutral-900 text-white">
+            <option value="">Procuro</option>
+            <option value="male">Homens</option>
+            <option value="female">Mulheres</option>
+            <option value="both">Ambos</option>
+          </select>
+
           {/* Disponível para viagem */}
           <select name="availableForTravel" value={profile.availableForTravel || ""} onChange={handleChange} className="rounded-lg px-4 py-2 bg-neutral-900 text-white">
             <option value="">Disponível para viagem?</option>

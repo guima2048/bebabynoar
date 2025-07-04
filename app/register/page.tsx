@@ -55,7 +55,9 @@ const schema = z.object({
   password: z.string().min(8, 'Mínimo 8 caracteres').regex(/[A-Z]/, '1 maiúscula').regex(/[a-z]/, '1 minúscula').regex(/[0-9]/, '1 número').regex(/[^A-Za-z0-9]/, '1 caractere especial'),
   state: z.string().refine((val) => estados.some(e => e.sigla === val), { message: 'Selecione um estado válido' }),
   city: z.string().min(2, 'Informe a cidade'),
-  userType: z.enum(['sugar_baby', 'sugar_daddy'], { required_error: 'Selecione o tipo de usuário' }),
+  userType: z.enum(['sugar_baby', 'sugar_daddy', 'sugar_mommy', 'sugar_babyboy'], { required_error: 'Selecione o tipo de usuário' }),
+  gender: z.enum(['male', 'female'], { required_error: 'Selecione o gênero' }),
+  lookingFor: z.enum(['male', 'female', 'both'], { required_error: 'Selecione quem você procura' }),
   terms: z.literal(true, { errorMap: () => ({ message: 'Você deve aceitar os termos' }) }),
 }).refine((data) => data.email === data.emailConfirm, {
   message: 'Os e-mails não coincidem',
@@ -173,6 +175,8 @@ export default function RegisterPage() {
         state: data.state,
         city: data.city,
         userType: data.userType,
+        gender: data.gender,
+        lookingFor: data.lookingFor,
         createdAt: new Date().toISOString(),
         status: 'active',
         premium: false,
@@ -270,8 +274,43 @@ export default function RegisterPage() {
             <label className="flex items-center gap-2" htmlFor="userType-sugar_daddy">
               <input id="userType-sugar_daddy" type="radio" value="sugar_daddy" {...register('userType')} /> Sugar Daddy
             </label>
+            <label className="flex items-center gap-2" htmlFor="userType-sugar_mommy">
+              <input id="userType-sugar_mommy" type="radio" value="sugar_mommy" {...register('userType')} /> Sugar Mommy
+            </label>
+            <label className="flex items-center gap-2" htmlFor="userType-sugar_babyboy">
+              <input id="userType-sugar_babyboy" type="radio" value="sugar_babyboy" {...register('userType')} /> Sugar Babyboy
+            </label>
           </div>
           {errors.userType && <span className="text-red-500 text-sm">{errors.userType.message}</span>}
+        </div>
+
+        <div>
+          <label className="block mb-1 font-medium" htmlFor="gender">Gênero</label>
+          <div className="flex gap-4">
+            <label className="flex items-center gap-2" htmlFor="gender-female">
+              <input id="gender-female" type="radio" value="female" {...register('gender')} /> Feminino
+            </label>
+            <label className="flex items-center gap-2" htmlFor="gender-male">
+              <input id="gender-male" type="radio" value="male" {...register('gender')} /> Masculino
+            </label>
+          </div>
+          {errors.gender && <span className="text-red-500 text-sm">{errors.gender.message}</span>}
+        </div>
+
+        <div>
+          <label className="block mb-1 font-medium" htmlFor="lookingFor">Procuro</label>
+          <div className="flex gap-4">
+            <label className="flex items-center gap-2" htmlFor="lookingFor-male">
+              <input id="lookingFor-male" type="radio" value="male" {...register('lookingFor')} /> Homens
+            </label>
+            <label className="flex items-center gap-2" htmlFor="lookingFor-female">
+              <input id="lookingFor-female" type="radio" value="female" {...register('lookingFor')} /> Mulheres
+            </label>
+            <label className="flex items-center gap-2" htmlFor="lookingFor-both">
+              <input id="lookingFor-both" type="radio" value="both" {...register('lookingFor')} /> Ambos
+            </label>
+          </div>
+          {errors.lookingFor && <span className="text-red-500 text-sm">{errors.lookingFor.message}</span>}
         </div>
         <div className="flex items-center gap-2">
           <label className="block mb-1 font-medium" htmlFor="terms">Aceito os</label>

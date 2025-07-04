@@ -1,4 +1,4 @@
-const { getAdminFirestore } = require('./lib/firebase-admin');
+const { getAdminFirestore } = require('../lib/firebase-admin');
 
 async function testPhotos() {
   try {

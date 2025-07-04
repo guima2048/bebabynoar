@@ -2,7 +2,9 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Menu, X, User, Edit, Search, BookOpen, MessageCircle, Bell, Eye, Users, Star } from 'lucide-react';
+import { Menu, X, User, Edit, Search, BookOpen, MessageCircle, Bell, Eye, Users, Star, LogOut } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 
 const menuItems = [
   { href: '/profile', label: 'Meu Perfil', icon: <User size={20} /> },
@@ -13,11 +15,24 @@ const menuItems = [
   { href: '/notifications', label: 'Notificações', icon: <Bell size={20} /> },
   { href: '/profile/who-viewed-me', label: 'Quem viu meu perfil', icon: <Eye size={20} /> },
   { href: '/profile/requests', label: 'Solicitações', icon: <Users size={20} /> },
-  { href: '/premium', label: 'Premium', icon: <Star size={20} /> },
+  { href: '/premium', label: 'Upgrade', icon: <Star size={20} /> },
 ];
 
 export default function HamburgerMenu() {
   const [open, setOpen] = useState(false);
+  const { logout } = useAuth();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      setOpen(false);
+      router.push('/login');
+    } catch (error) {
+      alert('Erro ao sair. Tente novamente.');
+    }
+  };
+
   return (
     <>
       <button
@@ -49,6 +64,14 @@ export default function HamburgerMenu() {
                 {item.label}
               </Link>
             ))}
+            {/* Opção de sair */}
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-3 px-3 py-2 rounded-lg text-white hover:bg-red-500/80 transition font-medium text-base mt-4"
+            >
+              <LogOut size={20} />
+              Sair
+            </button>
           </nav>
         </div>
       )}

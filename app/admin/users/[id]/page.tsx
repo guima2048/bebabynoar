@@ -180,6 +180,8 @@ export default function AdminUserDetailPage() {
             name: editUser.name,
             email: editUser.email,
             userType: editUser.userType,
+            gender: editUser.gender,
+            lookingFor: editUser.lookingFor,
             city: editUser.city,
             state: editUser.state,
             about: editUser.about,
@@ -754,8 +756,11 @@ export default function AdminUserDetailPage() {
                       >
                         <option value="sugar_baby">Sugar Baby</option>
                         <option value="sugar_daddy">Sugar Daddy</option>
+                        <option value="sugar_mommy">Sugar Mommy</option>
+                        <option value="sugar_babyboy">Sugar Babyboy</option>
                       </select>
                     </div>
+
                   </div>
                   <div className="space-y-4">
                     <div>

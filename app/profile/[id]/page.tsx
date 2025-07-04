@@ -10,6 +10,8 @@ import toast from 'react-hot-toast'
 import { differenceInYears } from 'date-fns'
 import ReportUserModal from '@/components/ReportUserModal'
 import Image from 'next/image'
+import { canUsersSeeEachOther, User } from '@/lib/user-matching'
+
 
 interface ProfileData {
   username: string
@@ -176,6 +178,30 @@ export default function ProfileViewPage() {
         <Link href="/search" className="btn-primary">Voltar</Link>
       </div>
     )
+  }
+
+  // Verificar permissões de acesso
+  if (user && profile) {
+    const currentUser: User = {
+      id: user.id,
+      userType: user.userType as any,
+      gender: user.gender as any || 'female',
+      lookingFor: user.lookingFor as any || 'male',
+      username: user.name
+    }
+
+    const targetUser: User = {
+      id: id as string,
+      userType: profile.userType as any,
+      gender: profile.gender as any || 'female',
+      lookingFor: profile.lookingFor as any || 'male',
+      username: profile.username
+    }
+
+    if (!canUsersSeeEachOther(currentUser, targetUser)) {
+      router.push('/profile/access-denied')
+      return null
+    }
   }
 
   const age = profile.birthdate ? differenceInYears(new Date(), new Date(profile.birthdate)) : null
@@ -416,9 +442,10 @@ export default function ProfileViewPage() {
                 {age ? `${age} anos` : ''}
                 {profile.city ? `, ${profile.city}` : ''}
                 {profile.state ? `, ${profile.state}` : ''}
-                {profile.gender ? `, ${profile.gender === 'mulher' ? 'Mulher' : 'Homem'}` : ''}
+                {profile.gender ? `, ${profile.gender === 'female' ? 'Mulher' : 'Homem'}` : ''}
               </span>
             )}
+
             {/* Sobre mim */}
             <div className="max-w-full">
               <span className="block text-xs font-bold text-neutral-400 mb-1 uppercase tracking-widest">Sobre mim</span>
