@@ -25,17 +25,23 @@ const campos = [
 ];
 
 export default function EditProfilePage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState<any>({});
 
   useEffect(() => {
+    // Aguardar o carregamento da autenticação
+    if (authLoading) {
+      return;
+    }
+    
     if (!user) {
       router.push("/login");
       return;
     }
+    
     const fetchProfile = async () => {
       setLoading(true);
       try {
@@ -52,7 +58,7 @@ export default function EditProfilePage() {
       }
     };
     fetchProfile();
-  }, [user, router]);
+  }, [user, router, authLoading]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setProfile((prev: any) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -91,7 +97,7 @@ export default function EditProfilePage() {
     }
   };
 
-  if (loading) {
+  if (authLoading || loading) {
     return <div className="w-full min-h-screen flex items-center justify-center bg-[#18181b] text-white">Carregando...</div>;
   }
 
