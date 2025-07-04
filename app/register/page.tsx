@@ -56,7 +56,6 @@ const schema = z.object({
   state: z.string().refine((val) => estados.some(e => e.sigla === val), { message: 'Selecione um estado válido' }),
   city: z.string().min(2, 'Informe a cidade'),
   userType: z.enum(['sugar_baby', 'sugar_daddy', 'sugar_mommy', 'sugar_babyboy'], { required_error: 'Selecione o tipo de usuário' }),
-  gender: z.enum(['male', 'female'], { required_error: 'Selecione o gênero' }),
   lookingFor: z.enum(['male', 'female', 'both'], { required_error: 'Selecione quem você procura' }),
   terms: z.literal(true, { errorMap: () => ({ message: 'Você deve aceitar os termos' }) }),
 }).refine((data) => data.email === data.emailConfirm, {
@@ -168,6 +167,21 @@ export default function RegisterPage() {
       
       // Salva dados adicionais no Firestore
       console.log('Salvando dados no Firestore...')
+      
+      // Define o gênero automaticamente baseado no tipo de usuário
+      const getGenderFromUserType = (userType: string): string => {
+        switch (userType) {
+          case 'sugar_baby':
+          case 'sugar_mommy':
+            return 'female'
+          case 'sugar_daddy':
+          case 'sugar_babyboy':
+            return 'male'
+          default:
+            return 'female'
+        }
+      }
+      
       const userData = {
         username: data.username,
         birthdate: data.birthdate,
@@ -175,7 +189,7 @@ export default function RegisterPage() {
         state: data.state,
         city: data.city,
         userType: data.userType,
-        gender: data.gender,
+        gender: getGenderFromUserType(data.userType), // Gênero definido automaticamente
         lookingFor: data.lookingFor,
         createdAt: new Date().toISOString(),
         status: 'active',
@@ -282,19 +296,6 @@ export default function RegisterPage() {
             </label>
           </div>
           {errors.userType && <span className="text-red-500 text-sm">{errors.userType.message}</span>}
-        </div>
-
-        <div>
-          <label className="block mb-1 font-medium" htmlFor="gender">Gênero</label>
-          <div className="flex gap-4">
-            <label className="flex items-center gap-2" htmlFor="gender-female">
-              <input id="gender-female" type="radio" value="female" {...register('gender')} /> Feminino
-            </label>
-            <label className="flex items-center gap-2" htmlFor="gender-male">
-              <input id="gender-male" type="radio" value="male" {...register('gender')} /> Masculino
-            </label>
-          </div>
-          {errors.gender && <span className="text-red-500 text-sm">{errors.gender.message}</span>}
         </div>
 
         <div>

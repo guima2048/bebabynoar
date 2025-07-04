@@ -16,16 +16,29 @@ export default function ExplorePage() {
   const [profiles, setProfiles] = useState<MockProfile[]>([])
   const [loadingProfiles, setLoadingProfiles] = useState(true)
 
+  // Log para debug
+  console.log('🔍 Explore - Componente renderizado')
+  console.log('🔍 Explore - User:', user)
+  console.log('🔍 Explore - Loading auth:', loading)
+  console.log('🔍 Explore - Profiles state:', profiles)
+  console.log('🔍 Explore - Loading profiles:', loadingProfiles)
+
   // Verificar autenticação
   useEffect(() => {
+    console.log('🔍 Explore - useEffect auth check - user:', user, 'loading:', loading)
     if (!loading && !user) {
+      console.log('🔍 Explore - Redirecionando para login')
       router.push('/login')
       return
     }
   }, [user, loading, router])
 
   const fetchProfiles = async () => {
-    if (!user) return
+    console.log('🔍 Explore - fetchProfiles chamada')
+    if (!user) {
+      console.log('🔍 Explore - fetchProfiles: usuário não encontrado')
+      return
+    }
     
     try {
       setLoadingProfiles(true)
@@ -42,8 +55,9 @@ export default function ExplorePage() {
       })
       
       console.log('🔍 Debug Explore - Total de perfis mockados:', allProfiles.length)
+      console.log('🔍 Debug Explore - Primeiros 3 perfis:', allProfiles.slice(0, 3))
       
-      // Aplicar filtro baseado na lógica de matching
+      // Reativar filtro com lógica simplificada
       const currentUser: User = {
         id: user.id,
         userType: user.userType as any,
@@ -54,9 +68,21 @@ export default function ExplorePage() {
       
       console.log('🔍 Debug Explore - Usuário convertido para matching:', currentUser)
       
-      const visibleProfiles = filterVisibleUsers(currentUser, allProfiles as User[])
+      // LÓGICA SIMPLIFICADA: Mostrar perfis de grupos diferentes
+      const GROUP_1 = ['sugar_baby', 'sugar_babyboy']
+      const GROUP_2 = ['sugar_daddy', 'sugar_mommy']
       
-      console.log('🔍 Debug Explore - Perfis visíveis após filtro:', visibleProfiles.length)
+      const userGroup = GROUP_1.includes(currentUser.userType) ? 1 : 2
+      console.log('🔍 Debug Explore - Grupo do usuário:', userGroup)
+      
+      const visibleProfiles = allProfiles.filter(profile => {
+        const profileGroup = GROUP_1.includes(profile.userType) ? 1 : 2
+        const canSee = userGroup !== profileGroup && profile.id !== currentUser.id
+        console.log(`🔍 Debug Explore - ${currentUser.username} (grupo ${userGroup}) pode ver ${profile.username} (grupo ${profileGroup})? ${canSee}`)
+        return canSee
+      })
+      
+      console.log('🔍 Debug Explore - Perfis visíveis após filtro simplificado:', visibleProfiles.length)
       console.log('🔍 Debug Explore - Perfis visíveis:', visibleProfiles.map(p => ({ id: p.id, username: p.username, userType: p.userType })))
       
       setProfiles(visibleProfiles as MockProfile[])
@@ -69,7 +95,9 @@ export default function ExplorePage() {
   }
 
   useEffect(() => {
+    console.log('🔍 Explore - useEffect fetchProfiles - user:', user)
     if (user) {
+      console.log('🔍 Explore - Chamando fetchProfiles')
       fetchProfiles()
     }
   }, [user])
@@ -161,6 +189,20 @@ export default function ExplorePage() {
   return (
     <div className="w-full min-h-screen flex flex-col items-center bg-[#18181b]">
       <div className="w-full lg:max-w-[35vw] lg:mx-auto flex flex-col">
+
+        {/* DEBUG TEMPORÁRIO */}
+        <div className="w-full px-6 py-4 bg-red-500/20 border border-red-500/50 rounded-lg mb-4">
+          <h3 className="text-red-400 font-bold mb-2">DEBUG - Dados dos Perfis</h3>
+          <p className="text-red-300 text-sm">Total de perfis: {profiles.length}</p>
+          <p className="text-red-300 text-sm">Loading: {loadingProfiles ? 'Sim' : 'Não'}</p>
+          <div className="mt-2">
+            {profiles.slice(0, 3).map((profile, index) => (
+              <div key={index} className="text-red-300 text-xs mb-1">
+                {index + 1}. {profile.username} ({profile.userType}) - {profile.city}
+              </div>
+            ))}
+          </div>
+        </div>
 
         {/* Banner Carrossel */}
         {profiles.length > 0 && (

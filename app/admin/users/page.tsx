@@ -17,6 +17,7 @@ interface User {
   createdAt: string
   signupIp?: string
   ipLocation?: string
+  lookingFor?: string
 }
 
 export default function AdminUsersPage() {
@@ -51,7 +52,8 @@ export default function AdminUsersPage() {
         premium: u.isPremium || u.premium || false,
         createdAt: u.createdAt ? (typeof u.createdAt === 'string' ? u.createdAt : new Date(u.createdAt).toISOString()) : '',
         signupIp: u.signupIp,
-        ipLocation: u.ipLocation
+        ipLocation: u.ipLocation,
+        lookingFor: u.lookingFor
       }))
       setUsers(realUsers)
     } catch (error) {
@@ -266,6 +268,9 @@ export default function AdminUsersPage() {
                   Tipo
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Buscando
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Localização
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -310,9 +315,32 @@ export default function AdminUsersPage() {
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                       user.userType === 'sugar_baby' 
                         ? 'bg-pink-100 text-pink-800' 
-                        : 'bg-blue-100 text-blue-800'
+                        : user.userType === 'sugar_daddy'
+                        ? 'bg-blue-100 text-blue-800'
+                        : user.userType === 'sugar_mommy'
+                        ? 'bg-purple-100 text-purple-800'
+                        : 'bg-green-100 text-green-800'
                     }`}>
-                      {user.userType === 'sugar_baby' ? 'Sugar Baby' : 'Sugar Daddy'}
+                      {user.userType === 'sugar_baby' ? 'Sugar Baby' : 
+                       user.userType === 'sugar_daddy' ? 'Sugar Daddy' :
+                       user.userType === 'sugar_mommy' ? 'Sugar Mommy' :
+                       user.userType === 'sugar_babyboy' ? 'Sugar Babyboy' : user.userType}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                      user.lookingFor === 'male' 
+                        ? 'bg-blue-100 text-blue-800' 
+                        : user.lookingFor === 'female'
+                        ? 'bg-pink-100 text-pink-800'
+                        : user.lookingFor === 'both'
+                        ? 'bg-purple-100 text-purple-800'
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {user.lookingFor === 'male' ? 'Homens' : 
+                       user.lookingFor === 'female' ? 'Mulheres' :
+                       user.lookingFor === 'both' ? 'Ambos' : 
+                       user.lookingFor || 'Não informado'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
