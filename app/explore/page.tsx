@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { differenceInYears } from 'date-fns'
 import { Search, Heart, ChevronLeft, ChevronRight, Star, TrendingUp, Users, Crown } from 'lucide-react'
 import { toast } from 'react-hot-toast'
-import { filterVisibleUsers, getUserTypeDisplayName, getUserTypeColor, getUserTypeAbbreviation, User } from '@/lib/user-matching'
+import { filterVisibleUsers, getUserTypeDisplayName, getUserTypeColor, getUserTypeAbbreviation, canUsersSeeEachOther, User } from '@/lib/user-matching'
 import { mockProfiles, MockProfile } from '@/lib/mock-data'
 
 export default function ExplorePage() {
@@ -68,17 +68,20 @@ export default function ExplorePage() {
       
       console.log('🔍 Debug Explore - Usuário convertido para matching:', currentUser)
       
-      // LÓGICA SIMPLIFICADA: Mostrar perfis de grupos diferentes
-      const GROUP_1 = ['sugar_baby', 'sugar_babyboy']
-      const GROUP_2 = ['sugar_daddy', 'sugar_mommy']
-      
-      const userGroup = GROUP_1.includes(currentUser.userType) ? 1 : 2
-      console.log('🔍 Debug Explore - Grupo do usuário:', userGroup)
-      
+      // Usar a lógica completa de matching
       const visibleProfiles = allProfiles.filter(profile => {
-        const profileGroup = GROUP_1.includes(profile.userType) ? 1 : 2
-        const canSee = userGroup !== profileGroup && profile.id !== currentUser.id
-        console.log(`🔍 Debug Explore - ${currentUser.username} (grupo ${userGroup}) pode ver ${profile.username} (grupo ${profileGroup})? ${canSee}`)
+        // Converter profile para o formato User
+        const profileUser: User = {
+          id: profile.id,
+          userType: profile.userType as any,
+          gender: profile.gender as any || 'female',
+          lookingFor: profile.lookingFor as any || 'male',
+          username: profile.username
+        }
+        
+        // Usar a função de matching completa
+        const canSee = canUsersSeeEachOther(currentUser, profileUser)
+        console.log(`🔍 Debug Explore - ${currentUser.username} (${currentUser.userType}, busca: ${currentUser.lookingFor}) pode ver ${profile.username} (${profile.userType}, gênero: ${profile.gender})? ${canSee}`)
         return canSee
       })
       

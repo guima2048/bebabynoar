@@ -185,7 +185,6 @@ export default function AdminUserDetailPage() {
             city: editUser.city,
             state: editUser.state,
             about: editUser.about,
-            lookingFor: editUser.lookingFor,
             ativo: editUser.ativo,
             premium: editUser.premium,
             premiumExpiry: editUser.premiumExpiry,
@@ -760,6 +759,19 @@ export default function AdminUserDetailPage() {
                         <option value="sugar_babyboy">Sugar Babyboy</option>
                       </select>
                     </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Buscando</label>
+                      <select 
+                        value={editUser.lookingFor || ""} 
+                        onChange={e => handleEditChange("lookingFor", e.target.value)} 
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors" 
+                        disabled={saving}
+                      >
+                        <option value="male">Homens</option>
+                        <option value="female">Mulheres</option>
+                        <option value="both">Ambos</option>
+                      </select>
+                    </div>
 
                   </div>
                   <div className="space-y-4">
@@ -879,17 +891,7 @@ export default function AdminUserDetailPage() {
                       placeholder="Conte um pouco sobre você..."
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">O que busca</label>
-                    <textarea 
-                      value={editUser.lookingFor || ""} 
-                      onChange={e => handleEditChange("lookingFor", e.target.value)} 
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors resize-none" 
-                      rows={4}
-                      disabled={saving}
-                      placeholder="Descreva o que você está procurando..."
-                    />
-                  </div>
+
                 </div>
               </div>
 
