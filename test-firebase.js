@@ -7,7 +7,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyAx4P7F54DQ6Q6goN0glnTkwiem20tXFgs",
   authDomain: "bebaby-56627.firebaseapp.com",
   projectId: "bebaby-56627",
-  storageBucket: "bebaby-56627.appspot.com",
+  storageBucket: "bebaby-56627.firebasestorage.app",
   messagingSenderId: "551312783441",
   appId: "1:551312783441:web:d2db514ee6331a1767e070",
   measurementId: "G-283X7Q6YYR"
