@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { Camera } from 'lucide-react';
 
 interface DynamicImageProps {
   src: string;
@@ -19,7 +18,7 @@ interface DynamicImageProps {
 export default function DynamicImage({
   src,
   alt,
-  className,
+  className = '',
   fill = false,
   width,
   height,
@@ -28,20 +27,16 @@ export default function DynamicImage({
   quality = 75
 }: DynamicImageProps) {
   const [imageError, setImageError] = useState(false);
-  const [currentFormatIndex, setCurrentFormatIndex] = useState(0);
   
   // Se é uma URL completa (começa com http), usar diretamente
   if (src.startsWith('http')) {
     if (imageError) {
       return (
         <div className={`bg-gray-200 flex items-center justify-center ${className}`}>
-          <Camera className="w-6 h-6 text-gray-400" />
+          <span className="text-gray-400 text-sm">📷</span>
         </div>
       );
     }
-    
-    // Verificar se é uma imagem do Firebase Storage
-    const isFirebaseImage = src.includes('firebasestorage.googleapis.com') || src.includes('storage.googleapis.com');
     
     return (
       <Image
@@ -56,46 +51,29 @@ export default function DynamicImage({
         quality={quality}
         loading={priority ? 'eager' : 'lazy'}
         onError={() => setImageError(true)}
-        {...(isFirebaseImage && {
-          unoptimized: false
-        })}
       />
     );
   }
   
-  // Se não é URL, tentar como arquivo local com múltiplos formatos
-  const formats = ['webp', 'png', 'jpg', 'jpeg'];
-  const currentSrc = `/landing/${src}.${formats[currentFormatIndex]}`;
-  
-  const handleError = () => {
-    if (currentFormatIndex < formats.length - 1) {
-      setCurrentFormatIndex((prev: number) => prev + 1);
-    } else {
-      setImageError(true);
-    }
+  // Para imagens locais, usar fallback imediato
+  const getPlaceholderColor = (imageName: string) => {
+    const colors: Record<string, string> = {
+      'hero-baby-1': 'bg-pink-200',
+      'hero-baby-2': 'bg-pink-300',
+      'hero-daddy-1': 'bg-blue-200',
+      'hero-daddy-2': 'bg-blue-300',
+      'default': 'bg-gray-200'
+    };
+    return colors[imageName] || colors.default;
   };
   
-  if (imageError) {
-    return (
-      <div className={`bg-gray-200 flex items-center justify-center ${className}`}>
-        <Camera className="w-6 h-6 text-gray-400" />
-      </div>
-    );
-  }
-  
+  // Mostrar placeholder colorido para imagens locais
   return (
-    <Image
-      src={currentSrc}
-      alt={alt}
-      className={className}
-      fill={fill}
-      width={width}
-      height={height}
-      priority={priority}
-      sizes={sizes}
-      quality={quality}
-      loading={priority ? 'eager' : 'lazy'}
-      onError={handleError}
-    />
+    <div className={`${getPlaceholderColor(src)} flex items-center justify-center ${className}`}>
+      <div className="text-center">
+        <span className="text-2xl mb-2 block">📷</span>
+        <span className="text-xs text-gray-500 block">{alt}</span>
+      </div>
+    </div>
   );
 } 
