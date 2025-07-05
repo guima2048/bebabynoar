@@ -22,8 +22,6 @@ import {
   Camera
 } from 'lucide-react'
 
-
-
 interface Testimonial {
   id: string;
   name: string;
@@ -92,7 +90,11 @@ export default function HomePage() {
   useEffect(() => {
     const loadLandingSettings = async () => {
       try {
-        const response = await fetch('/api/landing-settings')
+        const response = await fetch('/api/landing-settings', {
+          headers: {
+            'Cache-Control': 'max-age=300'
+          }
+        })
         if (response.ok) {
           const data = await response.json()
           setLandingSettings(data)
@@ -150,6 +152,10 @@ export default function HomePage() {
               fill
               className="object-cover opacity-20"
               priority
+              sizes="100vw"
+              quality={75}
+              placeholder="blur"
+              blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
             />
           </div>
         )}
@@ -190,6 +196,8 @@ export default function HomePage() {
                         alt="Sugar Baby"
                         fill
                         className="rounded-full object-cover"
+                        sizes="64px"
+                        quality={75}
                       />
                     </div>
                     <p className="text-center text-sm text-gray-600">Sugar Baby</p>
@@ -201,6 +209,8 @@ export default function HomePage() {
                         alt="Sugar Daddy"
                         fill
                         className="rounded-full object-cover"
+                        sizes="64px"
+                        quality={75}
                       />
                     </div>
                     <p className="text-center text-sm text-gray-600">Sugar Daddy</p>
@@ -212,6 +222,8 @@ export default function HomePage() {
                         alt="Sugar Baby"
                         fill
                         className="rounded-full object-cover"
+                        sizes="64px"
+                        quality={75}
                       />
                     </div>
                     <p className="text-center text-sm text-gray-600">Sugar Baby</p>
@@ -223,6 +235,8 @@ export default function HomePage() {
                         alt="Sugar Daddy"
                         fill
                         className="rounded-full object-cover"
+                        sizes="64px"
+                        quality={75}
                       />
                     </div>
                     <p className="text-center text-sm text-gray-600">Sugar Daddy</p>
@@ -311,6 +325,8 @@ export default function HomePage() {
                         alt={baby.name}
                         fill
                         className="rounded-full object-cover"
+                        sizes="80px"
+                        quality={75}
                       />
                     </div>
                     <p className="text-center text-sm font-medium text-gray-900">{baby.profession}, {baby.name.split(',')[1]}</p>
@@ -327,6 +343,8 @@ export default function HomePage() {
                         alt={baby.name}
                         fill
                         className="rounded-full object-cover"
+                        sizes="80px"
+                        quality={75}
                       />
                     </div>
                     <p className="text-center text-sm font-medium text-gray-900">{baby.profession}, {baby.name.split(',')[1]}</p>
@@ -354,6 +372,8 @@ export default function HomePage() {
                           alt={daddy.name}
                           fill
                           className="rounded-full object-cover"
+                          sizes="80px"
+                          quality={75}
                         />
                       </div>
                       <p className="text-center text-sm font-medium text-gray-900">{daddy.profession}, {daddy.name.split(',')[1]}</p>
@@ -370,6 +390,8 @@ export default function HomePage() {
                           alt={daddy.name}
                           fill
                           className="rounded-full object-cover"
+                          sizes="80px"
+                          quality={75}
                         />
                       </div>
                       <p className="text-center text-sm font-medium text-gray-900">{daddy.profession}, {daddy.name.split(',')[1]}</p>
@@ -477,6 +499,8 @@ export default function HomePage() {
                     alt={activeTestimonials[currentSlide].name}
                     fill
                     className="rounded-full object-cover"
+                    sizes="64px"
+                    quality={75}
                   />
                 )}
               </div>
@@ -501,7 +525,7 @@ export default function HomePage() {
             </div>
             <p className="text-lg text-gray-700 italic text-center">
               {activeTestimonials.length > 0 && activeTestimonials[currentSlide] && (
-                <>"{activeTestimonials[currentSlide].story}"</>
+                <>&ldquo;{activeTestimonials[currentSlide].story}&rdquo;</>
               )}
             </p>
           </div>

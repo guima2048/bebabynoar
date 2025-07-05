@@ -12,6 +12,8 @@ interface DynamicImageProps {
   width?: number;
   height?: number;
   priority?: boolean;
+  sizes?: string;
+  quality?: number;
 }
 
 export default function DynamicImage({
@@ -21,7 +23,9 @@ export default function DynamicImage({
   fill = false,
   width,
   height,
-  priority = false
+  priority = false,
+  sizes,
+  quality = 75
 }: DynamicImageProps) {
   const [imageError, setImageError] = useState(false);
   const [currentFormatIndex, setCurrentFormatIndex] = useState(0);
@@ -36,6 +40,9 @@ export default function DynamicImage({
       );
     }
     
+    // Verificar se é uma imagem do Firebase Storage
+    const isFirebaseImage = src.includes('firebasestorage.googleapis.com') || src.includes('storage.googleapis.com');
+    
     return (
       <Image
         src={src}
@@ -45,7 +52,13 @@ export default function DynamicImage({
         width={width}
         height={height}
         priority={priority}
+        sizes={sizes}
+        quality={quality}
+        loading={priority ? 'eager' : 'lazy'}
         onError={() => setImageError(true)}
+        {...(isFirebaseImage && {
+          unoptimized: false
+        })}
       />
     );
   }
@@ -56,7 +69,7 @@ export default function DynamicImage({
   
   const handleError = () => {
     if (currentFormatIndex < formats.length - 1) {
-      setCurrentFormatIndex(prev => prev + 1);
+      setCurrentFormatIndex((prev: number) => prev + 1);
     } else {
       setImageError(true);
     }
@@ -79,6 +92,9 @@ export default function DynamicImage({
       width={width}
       height={height}
       priority={priority}
+      sizes={sizes}
+      quality={quality}
+      loading={priority ? 'eager' : 'lazy'}
       onError={handleError}
     />
   );

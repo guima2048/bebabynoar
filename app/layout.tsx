@@ -7,9 +7,15 @@ import { NotificationProvider } from '@/contexts/NotificationContext'
 import NotificationToast from '@/components/NotificationToast'
 import ConditionalHamburgerMenu from '@/components/ConditionalHamburgerMenu'
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ 
+  subsets: ['latin'],
+  display: 'swap',
+  preload: true,
+  fallback: ['system-ui', 'arial']
+})
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://bebaby.app'),
   title: 'Bebaby App - Conectando Sugar Babies e Sugar Daddies',
   description: 'Plataforma moderna e segura para relacionamentos sugar. Encontre sua conexão perfeita no Bebaby App.',
   keywords: 'sugar baby, sugar daddy, relacionamento, dating, app',
@@ -55,6 +61,23 @@ export default function RootLayout({
 }) {
   return (
     <html lang="pt-BR">
+      <head>
+        {/* Preconnect para domínios críticos */}
+        <link rel="preconnect" href="https://firebase.googleapis.com" />
+        <link rel="preconnect" href="https://firebaseinstallations.googleapis.com" />
+        <link rel="preconnect" href="https://bebaby-56627.firebaseapp.com" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        
+        {/* DNS prefetch para outros domínios */}
+        <link rel="dns-prefetch" href="https://www.googletagmanager.com" />
+        <link rel="dns-prefetch" href="https://www.google-analytics.com" />
+        <link rel="dns-prefetch" href="https://apis.google.com" />
+        
+        {/* Meta tags de performance */}
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+        <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+      </head>
       <body className={inter.className}>
         <AuthProvider>
           <NotificationProvider>
