@@ -1,316 +1,460 @@
 'use client'
 
 import React, { useEffect, useState, useRef } from 'react'
-import { useParams, useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { getFirestoreDB } from '@/lib/firebase'
+import { useParams, useRouter } from 'next/navigation'
 import { 
-  collection, 
-  doc, 
-  getDoc, 
-  addDoc, 
-  query, 
-  orderBy, 
-  onSnapshot,
-  serverTimestamp,
-  where,
-  getDocs
-} from 'firebase/firestore'
-import { Send, ArrowLeft, User, Shield, Crown } from 'lucide-react'
-import Link from 'next/link'
+  ArrowLeft, 
+  Send, 
+  Image as ImageIcon, 
+  Smile, 
+  MoreVertical, 
+  Phone, 
+  Video, 
+  Shield, 
+  Crown, 
+  Clock,
+  Check,
+  CheckCheck,
+  MessageCircle
+} from 'lucide-react'
+import { mockUsers, mockMessages, MockMessage, MockChatUser } from '@/lib/mock-data'
 import toast from 'react-hot-toast'
 
-interface Message {
-  id: string
-  senderId: string
-  receiverId: string
-  content: string
-  timestamp: any
-  read: boolean
-}
-
-interface ChatUser {
-  id: string
-  username: string
-  photoURL?: string
-  userType: string
-  premium: boolean
-  verified: boolean
-}
-
 export default function ChatPage() {
+  const { user, loading: authLoading } = useAuth()
   const params = useParams()
   const router = useRouter()
-  const { user } = useAuth()
-  const [messages, setMessages] = useState<Message[]>([])
-  const [chatUser, setChatUser] = useState<ChatUser | null>(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  const [chatUser, setChatUser] = useState<MockChatUser | null>(null)
+  const [messages, setMessages] = useState<MockMessage[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
-  const [canStartConversation, setCanStartConversation] = useState(false)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
-  const chatId = params.id as string
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [showUserMenu, setShowUserMenu] = useState(false)
+  const [typing, setTyping] = useState(false)
+
+  const userId = params.id as string
 
   useEffect(() => {
-    if (!user || !chatId) { return }
+    if (authLoading) return
+    
+    if (!user) {
+      router.push('/login')
+      return
+    }
 
-    // Verificar se pode iniciar conversa
-    checkConversationPermissions()
-    
-    // Carregar dados do usuário do chat
-    loadChatUser()
-    
-    // Carregar mensagens
-    loadMessages()
-  }, [user, chatId])
-
-  const checkConversationPermissions = async () => {
-    if (!user) { return }
-    
-    try {
-      const db = getFirestoreDB()
-      // Buscar dados do usuário atual
-      const currentUserDoc = await getDoc(doc(db, 'users', user.id))
-      const currentUserData = currentUserDoc.data()
+    // Simular carregamento de dados
+    setTimeout(() => {
+      const userData = mockUsers[userId]
+      const userMessages = mockMessages[userId] || []
       
-      // Buscar dados do usuário do chat
-      const chatUserDoc = await getDoc(doc(db, 'users', chatId))
-      const chatUserData = chatUserDoc.data()
-      
-      if (!currentUserData || !chatUserData) {
+      if (!userData) {
         toast.error('Usuário não encontrado')
         router.push('/messages')
         return
       }
 
-      // Verificar se são tipos diferentes (SB com SD, SD com SB)
-      const canStart = currentUserData.userType !== chatUserData.userType
-      setCanStartConversation(canStart)
-
-      if (!canStart) {
-        toast.error('Você só pode conversar com usuários do tipo oposto')
-        router.push('/messages')
-      }
-    } catch (error) {
-      toast.error('Erro ao verificar permissões')
-    }
-  }
-
-  const loadChatUser = async () => {
-    try {
-      const db = getFirestoreDB()
-      const userDoc = await getDoc(doc(db, 'users', chatId))
-      if (userDoc.exists()) {
-        setChatUser({
-          id: userDoc.id,
-          ...userDoc.data()
-        } as ChatUser)
-      }
-    } catch (error) {
-      toast.error('Erro ao carregar dados do usuário')
-    }
-  }
-
-  const loadMessages = () => {
-    if (!user || !chatId) { return }
-
-    try {
-      const db = getFirestoreDB()
-      // Criar ID único para a conversa (ordenado alfabeticamente)
-      const conversationId = [user.id, chatId].sort().join('_')
+      setChatUser(userData)
+      setMessages(userMessages)
+      setLoading(false)
       
-      const messagesQuery = query(
-        collection(db, 'conversations', conversationId, 'messages'),
-        orderBy('timestamp', 'asc')
+      // Marcar mensagens como lidas
+      const updatedMessages = userMessages.map(msg => 
+        msg.senderId !== 'currentUser' ? { ...msg, read: true } : msg
       )
+      setMessages(updatedMessages)
+    }, 1000)
+  }, [user, authLoading, userId, router])
 
-      const unsubscribe = onSnapshot(messagesQuery, (snapshot) => {
-        const messagesData = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Message[]
-        
-        setMessages(messagesData)
-        setLoading(false)
-        
-        // Scroll para a última mensagem
-        setTimeout(() => {
-          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-        }, 100)
-      })
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
 
-      return unsubscribe
-    } catch (error) {
-      toast.error('Erro ao carregar mensagens')
-    }
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  const sendMessage = async () => {
-    if (!user || !chatId || !newMessage.trim() || sending) { return }
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || sending) return
 
-    if (!canStartConversation) {
-      toast.error('Você não pode iniciar conversa com este usuário')
+    setSending(true)
+    
+    // Simular envio
+    setTimeout(() => {
+      const newMsg: MockMessage = {
+        id: `msg${Date.now()}`,
+        content: newMessage,
+        timestamp: new Date(),
+        senderId: 'currentUser',
+        type: 'text',
+        read: false
+      }
+      
+      setMessages(prev => [...prev, newMsg])
+      setNewMessage('')
+      setSending(false)
+      
+      // Simular resposta automática
+      if (Math.random() > 0.7) {
+        setTimeout(() => {
+          const responses = [
+            'Interessante! 😊',
+            'Que legal!',
+            'Adorei! 💕',
+            'Conta mais!',
+            'Muito bem! 👍'
+          ]
+          const autoResponse: MockMessage = {
+            id: `auto${Date.now()}`,
+            content: responses[Math.floor(Math.random() * responses.length)],
+            timestamp: new Date(),
+            senderId: userId,
+            type: 'text',
+            read: false
+          }
+          setMessages(prev => [...prev, autoResponse])
+        }, 2000 + Math.random() * 3000)
+      }
+    }, 500)
+  }
+
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Imagem muito grande. Máximo 5MB.')
       return
     }
 
     setSending(true)
-    try {
-      const db = getFirestoreDB()
-      const conversationId = [user.id, chatId].sort().join('_')
-      
-      // Adicionar mensagem
-      await addDoc(collection(db, 'conversations', conversationId, 'messages'), {
-        senderId: user.id,
-        receiverId: chatId,
-        content: newMessage.trim(),
-        timestamp: serverTimestamp(),
+    
+    // Simular upload
+    setTimeout(() => {
+      const newMsg: MockMessage = {
+        id: `img${Date.now()}`,
+        content: 'Imagem enviada',
+        timestamp: new Date(),
+        senderId: 'currentUser',
+        type: 'image',
+        imageURL: URL.createObjectURL(file),
         read: false
-      })
-
-      // Enviar notificação
-      await fetch('/api/send-message-notification', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          senderId: user.id,
-          receiverId: chatId,
-          message: newMessage.trim()
-        })
-      })
-
-      setNewMessage('')
-    } catch (error) {
-      toast.error('Erro ao enviar mensagem')
-    } finally {
+      }
+      
+      setMessages(prev => [...prev, newMsg])
       setSending(false)
-    }
+    }, 1000)
   }
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      sendMessage()
-    }
+  const formatTime = (timestamp: Date) => {
+    const now = new Date()
+    const diffInMinutes = (now.getTime() - timestamp.getTime()) / (1000 * 60)
+    
+    if (diffInMinutes < 1) return 'Agora'
+    if (diffInMinutes < 60) return `${Math.floor(diffInMinutes)}m`
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h`
+    return timestamp.toLocaleDateString('pt-BR')
   }
 
-  if (loading) {
+  const formatLastSeen = (lastSeen: Date) => {
+    const now = new Date()
+    const diffInMinutes = (now.getTime() - lastSeen.getTime()) / (1000 * 60)
+    
+    if (diffInMinutes < 1) return 'Agora mesmo'
+    if (diffInMinutes < 60) return `${Math.floor(diffInMinutes)} minutos atrás`
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)} horas atrás`
+    return lastSeen.toLocaleDateString('pt-BR')
+  }
+
+  // Loading state
+  if (authLoading || loading) {
     return (
-      <div className="max-w-4xl mx-auto py-12 px-4">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-48 mb-8"></div>
-          <div className="space-y-4">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="h-16 bg-gray-200 rounded"></div>
-            ))}
-          </div>
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando conversa...</p>
         </div>
       </div>
     )
   }
 
+  // User not authenticated
+  if (!user) {
+    return null
+  }
+
+  // User not found
   if (!chatUser) {
     return (
-      <div className="max-w-4xl mx-auto py-12 px-4 text-center">
-        <h2 className="text-2xl font-bold mb-4">Usuário não encontrado</h2>
-        <Link href="/messages" className="btn-primary">
-          Voltar às Mensagens
-        </Link>
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center p-4">
+        <div className="text-center max-w-sm">
+          <h2 className="text-2xl font-bold mb-4">Usuário não encontrado</h2>
+          <p className="text-gray-600 mb-6">Este usuário não existe ou foi removido</p>
+          <button 
+            onClick={() => router.push('/messages')}
+            className="btn-primary w-full"
+          >
+            Voltar às mensagens
+          </button>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="max-w-4xl mx-auto h-screen flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex flex-col">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 p-4">
-        <div className="flex items-center gap-4">
-          <Link href="/messages" className="text-gray-600 hover:text-gray-900">
-            <ArrowLeft className="w-6 h-6" />
-          </Link>
-          
+      <div className="bg-white shadow-sm border-b border-gray-200">
+        <div className="flex items-center justify-between p-4">
+          {/* Back button and user info */}
           <div className="flex items-center gap-3">
-            <img
-              src={chatUser.photoURL || '/avatar.png'}
-              alt={chatUser.username}
-              className="w-12 h-12 rounded-full object-cover"
-            />
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="font-semibold text-lg">{chatUser.username}</h2>
-                {chatUser.verified && <Shield className="w-4 h-4 text-blue-500" />}
-                {chatUser.premium && <Crown className="w-4 h-4 text-yellow-500" />}
+            <button
+              onClick={() => router.push('/messages')}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5 text-gray-600" />
+            </button>
+            
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <img
+                  src={chatUser.photoURL || '/avatar.png'}
+                  alt={chatUser.username}
+                  className="w-10 h-10 rounded-full object-cover"
+                />
+                {chatUser.online && (
+                  <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                )}
               </div>
-              <p className="text-sm text-gray-600 capitalize">
-                {chatUser.userType.replace('_', ' ')}
-              </p>
+              
+              <div className="hidden sm:block">
+                <div className="flex items-center gap-2">
+                  <h2 className="font-semibold text-gray-900">{chatUser.username}</h2>
+                  {chatUser.verified && (
+                    <Shield className="w-4 h-4 text-blue-500" />
+                  )}
+                  {chatUser.premium && (
+                    <Crown className="w-4 h-4 text-yellow-500" />
+                  )}
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-500">
+                  {chatUser.online ? (
+                    <>
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span>Online</span>
+                    </>
+                  ) : (
+                    <>
+                      <Clock className="w-3 h-3" />
+                      <span>Visto {formatLastSeen(chatUser.lastSeen!)}</span>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
+          </div>
+
+          {/* Mobile user info */}
+          <div className="sm:hidden">
+            <div className="text-center">
+              <h2 className="font-semibold text-gray-900 text-sm">{chatUser.username}</h2>
+              <div className="flex items-center justify-center gap-1 text-xs text-gray-500">
+                {chatUser.online ? (
+                  <>
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span>Online</span>
+                  </>
+                ) : (
+                  <>
+                    <Clock className="w-3 h-3" />
+                    <span>Visto {formatLastSeen(chatUser.lastSeen!)}</span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-2">
+            <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+              <Phone className="w-5 h-5 text-gray-600" />
+            </button>
+            <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+              <Video className="w-5 h-5 text-gray-600" />
+            </button>
+            <button 
+              onClick={() => setShowUserMenu(!showUserMenu)}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors relative"
+            >
+              <MoreVertical className="w-5 h-5 text-gray-600" />
+            </button>
           </div>
         </div>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 ? (
-          <div className="text-center text-gray-500 mt-8">
-            <p>Nenhuma mensagem ainda</p>
-            <p className="text-sm">Inicie uma conversa enviando uma mensagem!</p>
+          <div className="text-center py-12">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <MessageCircle className="w-8 h-8 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Nenhuma mensagem ainda
+            </h3>
+            <p className="text-gray-600">
+              Seja o primeiro a enviar uma mensagem!
+            </p>
           </div>
         ) : (
-          messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.senderId === user?.id ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                  message.senderId === user?.id
-                    ? 'bg-pink-600 text-white'
-                    : 'bg-white text-gray-900 border border-gray-200'
-                }`}
-              >
-                <p className="text-sm">{message.content}</p>
-                <p className={`text-xs mt-1 ${
-                  message.senderId === user?.id ? 'text-pink-200' : 'text-gray-500'
-                }`}>
-                  {message.timestamp?.toDate?.()?.toLocaleTimeString('pt-BR', {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  }) || 'Agora'}
-                </p>
+          messages.map((message, index) => {
+            const isOwnMessage = message.senderId === 'currentUser'
+            const showTimestamp = index === 0 || 
+              messages[index - 1].timestamp.getTime() - message.timestamp.getTime() > 5 * 60 * 1000
+
+            return (
+              <div key={message.id}>
+                {/* Timestamp */}
+                {showTimestamp && (
+                  <div className="text-center mb-4">
+                    <span className="bg-gray-100 text-gray-500 text-xs px-3 py-1 rounded-full">
+                      {formatTime(message.timestamp)}
+                    </span>
+                  </div>
+                )}
+
+                {/* Message */}
+                <div className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-xs sm:max-w-md lg:max-w-lg ${
+                    isOwnMessage ? 'order-2' : 'order-1'
+                  }`}>
+                    {!isOwnMessage && (
+                      <div className="flex items-center gap-2 mb-1">
+                        <img
+                          src={chatUser.photoURL || '/avatar.png'}
+                          alt={chatUser.username}
+                          className="w-6 h-6 rounded-full object-cover"
+                        />
+                        <span className="text-xs text-gray-500">{chatUser.username}</span>
+                      </div>
+                    )}
+                    
+                    <div className={`rounded-2xl px-4 py-2 ${
+                      isOwnMessage 
+                        ? 'bg-pink-600 text-white' 
+                        : 'bg-white text-gray-900 border border-gray-200'
+                    }`}>
+                      {message.type === 'image' ? (
+                        <img
+                          src={message.imageURL}
+                          alt="Imagem"
+                          className="rounded-lg max-w-full h-auto"
+                        />
+                      ) : (
+                        <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                      )}
+                    </div>
+                    
+                    <div className={`flex items-center gap-1 mt-1 ${
+                      isOwnMessage ? 'justify-end' : 'justify-start'
+                    }`}>
+                      <span className="text-xs text-gray-500">
+                        {message.timestamp.toLocaleTimeString('pt-BR', { 
+                          hour: '2-digit', 
+                          minute: '2-digit' 
+                        })}
+                      </span>
+                      {isOwnMessage && (
+                        <div className="flex items-center">
+                          {message.read ? (
+                            <CheckCheck className="w-3 h-3 text-blue-500" />
+                          ) : (
+                            <Check className="w-3 h-3 text-gray-400" />
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          })
+        )}
+        
+        {/* Typing indicator */}
+        {typing && (
+          <div className="flex justify-start">
+            <div className="bg-white border border-gray-200 rounded-2xl px-4 py-2">
+              <div className="flex items-center gap-1">
+                <div className="flex space-x-1">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                </div>
+                <span className="text-xs text-gray-500 ml-2">Digitando...</span>
               </div>
             </div>
-          ))
+          </div>
         )}
+        
         <div ref={messagesEndRef} />
       </div>
 
       {/* Input */}
       <div className="bg-white border-t border-gray-200 p-4">
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Digite sua mensagem..."
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-            disabled={sending || !canStartConversation}
-          />
+        <div className="flex items-center gap-3">
+          {/* Image upload */}
           <button
-            onClick={sendMessage}
-            disabled={!newMessage.trim() || sending || !canStartConversation}
-            className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            onClick={() => fileInputRef.current?.click()}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            disabled={sending}
           >
-            <Send className="w-4 h-4" />
-            {sending ? 'Enviando...' : 'Enviar'}
+            <ImageIcon className="w-5 h-5 text-gray-600" />
+          </button>
+          
+          {/* Emoji picker */}
+          <button
+            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <Smile className="w-5 h-5 text-gray-600" />
+          </button>
+          
+          {/* Message input */}
+          <div className="flex-1 relative">
+            <input
+              type="text"
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+              placeholder="Digite sua mensagem..."
+              className="w-full px-4 py-2 border border-gray-200 rounded-full focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+              disabled={sending}
+            />
+          </div>
+          
+          {/* Send button */}
+          <button
+            onClick={handleSendMessage}
+            disabled={!newMessage.trim() || sending}
+            className="p-2 bg-pink-600 text-white rounded-full hover:bg-pink-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Send className="w-5 h-5" />
           </button>
         </div>
         
-        {!canStartConversation && (
-          <p className="text-red-500 text-sm mt-2">
-            Você só pode conversar com usuários do tipo oposto
-          </p>
-        )}
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleImageUpload}
+          className="hidden"
+        />
       </div>
     </div>
   )

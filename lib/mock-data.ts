@@ -261,4 +261,395 @@ export const mockProfiles: MockProfile[] = [
       'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face'
     ]
   }
-] 
+]
+
+export interface MockConversation {
+  id: string
+  lastMessage: string
+  lastMessageTime: Date
+  unreadCount: number
+  user: {
+    id: string
+    username: string
+    photoURL?: string
+    userType: string
+    premium: boolean
+    verified: boolean
+    online: boolean
+  }
+}
+
+export const mockConversations: MockConversation[] = [
+  {
+    id: 'conv1',
+    lastMessage: 'Oi! Como você está? 😊',
+    lastMessageTime: new Date(Date.now() - 5 * 60 * 1000), // 5 minutos atrás
+    unreadCount: 2,
+    user: {
+      id: 'user1',
+      username: 'Maria Santos',
+      photoURL: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
+      userType: 'sugar_baby',
+      premium: true,
+      verified: true,
+      online: true
+    }
+  },
+  {
+    id: 'conv2',
+    lastMessage: 'Vamos sair hoje à noite? 🍷',
+    lastMessageTime: new Date(Date.now() - 30 * 60 * 1000), // 30 minutos atrás
+    unreadCount: 0,
+    user: {
+      id: 'user2',
+      username: 'Ana Costa',
+      photoURL: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
+      userType: 'sugar_baby',
+      premium: false,
+      verified: true,
+      online: false
+    }
+  },
+  {
+    id: 'conv3',
+    lastMessage: '📷 Enviou uma imagem',
+    lastMessageTime: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 horas atrás
+    unreadCount: 1,
+    user: {
+      id: 'user3',
+      username: 'Juliana Lima',
+      photoURL: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face',
+      userType: 'sugar_baby',
+      premium: true,
+      verified: false,
+      online: true
+    }
+  },
+  {
+    id: 'conv4',
+    lastMessage: 'Obrigada pelo jantar ontem! ❤️',
+    lastMessageTime: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 dia atrás
+    unreadCount: 0,
+    user: {
+      id: 'user4',
+      username: 'Fernanda Silva',
+      photoURL: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
+      userType: 'sugar_baby',
+      premium: false,
+      verified: true,
+      online: false
+    }
+  },
+  {
+    id: 'conv5',
+    lastMessage: 'Que tal irmos ao shopping? 🛍️',
+    lastMessageTime: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 dias atrás
+    unreadCount: 3,
+    user: {
+      id: 'user5',
+      username: 'Camila Oliveira',
+      photoURL: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face',
+      userType: 'sugar_baby',
+      premium: true,
+      verified: true,
+      online: true
+    }
+  },
+  {
+    id: 'conv6',
+    lastMessage: 'Boa noite! 😴',
+    lastMessageTime: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 dias atrás
+    unreadCount: 0,
+    user: {
+      id: 'user6',
+      username: 'Patrícia Santos',
+      photoURL: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&h=150&fit=crop&crop=face',
+      userType: 'sugar_baby',
+      premium: false,
+      verified: false,
+      online: false
+    }
+  },
+  {
+    id: 'conv7',
+    lastMessage: 'Vamos conversar mais? 💬',
+    lastMessageTime: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000), // 5 dias atrás
+    unreadCount: 0,
+    user: {
+      id: 'user7',
+      username: 'Roberta Almeida',
+      photoURL: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face',
+      userType: 'sugar_baby',
+      premium: true,
+      verified: true,
+      online: false
+    }
+  }
+]
+
+export const mockStats = {
+  totalConversations: mockConversations.length,
+  unreadMessages: mockConversations.reduce((sum, conv) => sum + conv.unreadCount, 0),
+  onlineUsers: mockConversations.filter(conv => conv.user.online).length
+}
+
+export interface MockMessage {
+  id: string
+  content: string
+  timestamp: Date
+  senderId: string
+  type: 'text' | 'image'
+  imageURL?: string
+  read: boolean
+}
+
+export interface MockChatUser {
+  id: string
+  username: string
+  photoURL?: string
+  userType: string
+  premium: boolean
+  verified: boolean
+  online: boolean
+  lastSeen?: Date
+}
+
+export const mockUsers: Record<string, MockChatUser> = {
+  'user1': {
+    id: 'user1',
+    username: 'Maria Santos',
+    photoURL: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
+    userType: 'sugar_baby',
+    premium: true,
+    verified: true,
+    online: true
+  },
+  'user2': {
+    id: 'user2',
+    username: 'Ana Costa',
+    photoURL: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
+    userType: 'sugar_baby',
+    premium: false,
+    verified: true,
+    online: false,
+    lastSeen: new Date(Date.now() - 30 * 60 * 1000)
+  },
+  'user3': {
+    id: 'user3',
+    username: 'Juliana Lima',
+    photoURL: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face',
+    userType: 'sugar_baby',
+    premium: true,
+    verified: false,
+    online: true
+  },
+  'user4': {
+    id: 'user4',
+    username: 'Fernanda Silva',
+    photoURL: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
+    userType: 'sugar_baby',
+    premium: false,
+    verified: true,
+    online: false,
+    lastSeen: new Date(Date.now() - 2 * 60 * 60 * 1000)
+  },
+  'user5': {
+    id: 'user5',
+    username: 'Camila Oliveira',
+    photoURL: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face',
+    userType: 'sugar_baby',
+    premium: true,
+    verified: true,
+    online: true
+  }
+}
+
+export const mockMessages: Record<string, MockMessage[]> = {
+  'user1': [
+    {
+      id: 'msg1',
+      content: 'Oi! Como você está? 😊',
+      timestamp: new Date(Date.now() - 5 * 60 * 1000),
+      senderId: 'user1',
+      type: 'text',
+      read: true
+    },
+    {
+      id: 'msg2',
+      content: 'Oi! Tudo bem sim, e você?',
+      timestamp: new Date(Date.now() - 4 * 60 * 1000),
+      senderId: 'currentUser',
+      type: 'text',
+      read: true
+    },
+    {
+      id: 'msg3',
+      content: 'Muito bem! Que tal sairmos hoje à noite? 🍷',
+      timestamp: new Date(Date.now() - 3 * 60 * 1000),
+      senderId: 'user1',
+      type: 'text',
+      read: true
+    },
+    {
+      id: 'msg4',
+      content: 'Adoraria! Que lugar você tem em mente?',
+      timestamp: new Date(Date.now() - 2 * 60 * 1000),
+      senderId: 'currentUser',
+      type: 'text',
+      read: true
+    },
+    {
+      id: 'msg5',
+      content: 'Que tal aquele restaurante italiano no centro?',
+      timestamp: new Date(Date.now() - 1 * 60 * 1000),
+      senderId: 'user1',
+      type: 'text',
+      read: false
+    }
+  ],
+  'user2': [
+    {
+      id: 'msg1',
+      content: 'Oi! Vi seu perfil e adorei! 💕',
+      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000),
+      senderId: 'user2',
+      type: 'text',
+      read: true
+    },
+    {
+      id: 'msg2',
+      content: 'Oi! Obrigada! Seu perfil também é muito interessante 😊',
+      timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000 + 5 * 60 * 1000),
+      senderId: 'currentUser',
+      type: 'text',
+      read: true
+    },
+    {
+      id: 'msg3',
+      content: 'Que tal conversarmos mais?',
+      timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000),
+      senderId: 'user2',
+      type: 'text',
+      read: true
+    }
+  ],
+  'user3': [
+    {
+      id: 'msg1',
+      content: 'Oi! Como você está?',
+      timestamp: new Date(Date.now() - 30 * 60 * 1000),
+      senderId: 'user3',
+      type: 'text',
+      read: true
+    },
+    {
+      id: 'msg2',
+      content: 'Oi! Tudo bem sim! E você?',
+      timestamp: new Date(Date.now() - 25 * 60 * 1000),
+      senderId: 'currentUser',
+      type: 'text',
+      read: true
+    },
+    {
+      id: 'msg3',
+      content: 'Muito bem! Que tal irmos ao shopping? 🛍️',
+      timestamp: new Date(Date.now() - 20 * 60 * 1000),
+      senderId: 'user3',
+      type: 'text',
+      read: true
+    },
+    {
+      id: 'msg4',
+      content: 'Adoraria! Que dia você tem livre?',
+      timestamp: new Date(Date.now() - 15 * 60 * 1000),
+      senderId: 'currentUser',
+      type: 'text',
+      read: true
+    },
+    {
+      id: 'msg5',
+      content: 'Que tal amanhã?',
+      timestamp: new Date(Date.now() - 10 * 60 * 1000),
+      senderId: 'user3',
+      type: 'text',
+      read: false
+    },
+    {
+      id: 'msg6',
+      content: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&h=300&fit=crop',
+      timestamp: new Date(Date.now() - 5 * 60 * 1000),
+      senderId: 'user3',
+      type: 'image',
+      imageURL: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&h=300&fit=crop',
+      read: false
+    }
+  ],
+  'user4': [
+    {
+      id: 'msg1',
+      content: 'Oi! Obrigada pelo jantar ontem! ❤️',
+      timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000),
+      senderId: 'user4',
+      type: 'text',
+      read: true
+    },
+    {
+      id: 'msg2',
+      content: 'Foi um prazer! Você é muito especial 😊',
+      timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000 + 10 * 60 * 1000),
+      senderId: 'currentUser',
+      type: 'text',
+      read: true
+    },
+    {
+      id: 'msg3',
+      content: 'Que tal repetirmos em breve?',
+      timestamp: new Date(Date.now() - 12 * 60 * 60 * 1000),
+      senderId: 'user4',
+      type: 'text',
+      read: true
+    }
+  ],
+  'user5': [
+    {
+      id: 'msg1',
+      content: 'Oi! Vi que você gosta de viagens também! ✈️',
+      timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+      senderId: 'user5',
+      type: 'text',
+      read: true
+    },
+    {
+      id: 'msg2',
+      content: 'Sim! Adoro conhecer lugares novos!',
+      timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 30 * 60 * 1000),
+      senderId: 'currentUser',
+      type: 'text',
+      read: true
+    },
+    {
+      id: 'msg3',
+      content: 'Que tal irmos juntos para a praia? 🏖️',
+      timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+      senderId: 'user5',
+      type: 'text',
+      read: true
+    },
+    {
+      id: 'msg4',
+      content: 'Adoraria! Qual praia você tem em mente?',
+      timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 15 * 60 * 1000),
+      senderId: 'currentUser',
+      type: 'text',
+      read: true
+    },
+    {
+      id: 'msg5',
+      content: 'Que tal Búzios? É linda lá!',
+      timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+      senderId: 'user5',
+      type: 'text',
+      read: false
+    }
+  ]
+} 
