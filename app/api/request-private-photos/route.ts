@@ -4,6 +4,9 @@ import { getFirestoreDB, collection, addDoc, serverTimestamp, doc, updateDoc, ge
 export async function POST(req: NextRequest) {
   try {
     const db = getFirestoreDB()
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de conexão com o banco de dados' }, { status: 500 })
+    }
     const { requesterId, targetUserId, message } = await req.json()
 
     if (!requesterId || !targetUserId) {
@@ -126,6 +129,9 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const db = getFirestoreDB()
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de conexão com o banco de dados' }, { status: 500 })
+    }
     const { requestId, response, message } = await req.json()
 
     if (!requestId || !response) {

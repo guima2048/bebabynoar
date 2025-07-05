@@ -14,6 +14,9 @@ interface UserData {
 export async function POST(request: NextRequest) {
   try {
     const db = getFirestoreDB()
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de conexão com o banco de dados' }, { status: 500 })
+    }
     const { title, message, targetUsers = 'all', premiumOnly = false, gender, location } = await request.json()
 
     if (!title || !message) {
@@ -132,6 +135,9 @@ export async function POST(request: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const db = getFirestoreDB()
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de conexão com o banco de dados' }, { status: 500 })
+    }
     const { userId, token, platform } = await req.json()
 
     if (!userId || !token) {
@@ -182,6 +188,9 @@ export async function PUT(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     const db = getFirestoreDB()
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de conexão com o banco de dados' }, { status: 500 })
+    }
     const { userId, token } = await req.json()
 
     if (!userId || !token) {

@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
     console.log('✅ Arquivo tornado público!')
 
     // Obter URL pública
-    const downloadURL = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+    const downloadURL = `https://firebasestorage.googleapis.com/v0/b/${bucket.name}/o/${encodeURIComponent(fileName)}?alt=media`;
     console.log('🔗 URL gerada:', downloadURL)
 
     console.log('🎉 Upload concluído com sucesso!')

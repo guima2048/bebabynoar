@@ -6,7 +6,7 @@ const serviceAccount = require('../firebase-admin.json');
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
-    storageBucket: 'bebaby-app-123456.appspot.com'
+    storageBucket: 'bebaby-56627.firebasestorage.app'
   });
 }
 

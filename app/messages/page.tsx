@@ -75,17 +75,17 @@ export default function MessagesPage() {
       const querySnapshot = await getDocs(q)
       const conversationsData: Conversation[] = []
       
-      for (const doc of querySnapshot.docs) {
-        const conversationData = doc.data()
+      for (const conversationDoc of querySnapshot.docs) {
+        const conversationData = conversationDoc.data()
         const otherUserId = conversationData.participants.find((id: string) => id !== user.id)
         
-        if (otherUserId) {
+        if (typeof otherUserId === 'string' && otherUserId) {
           // Buscar dados do outro usuário
           const userDoc = await getDoc(doc(db, 'users', otherUserId))
           if (userDoc.exists()) {
             const userData = userDoc.data()
             conversationsData.push({
-              id: doc.id,
+              id: conversationDoc.id,
               lastMessage: conversationData.lastMessage || '',
               lastMessageTime: conversationData.lastMessageTime?.toDate() || new Date(),
               unreadCount: conversationData.unreadCount?.[user.id] || 0,

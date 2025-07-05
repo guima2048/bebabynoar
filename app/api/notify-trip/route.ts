@@ -9,6 +9,9 @@ export async function POST(req: NextRequest) {
   }
   try {
     const db = getFirestoreDB()
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de conexão com o banco de dados' }, { status: 500 })
+    }
     if (!db) return NextResponse.json({ error: 'DB não configurado' }, { status: 500 })
     // Buscar todos os usuários do estado
     const usersRef = collection(db, 'users')

@@ -50,6 +50,10 @@ export async function POST(req: NextRequest) {
 async function handlePaymentSuccess(paymentIntent: any) {
   try {
     const db = getFirestoreDB()
+    if (!db) {
+      console.error('Erro de conexão com o banco de dados')
+      return
+    }
     const { customer, amount, metadata } = paymentIntent
     
     // Buscar usuário pelo customer ID
@@ -107,6 +111,10 @@ async function handlePaymentSuccess(paymentIntent: any) {
 async function handlePaymentFailure(paymentIntent: any) {
   try {
     const db = getFirestoreDB()
+    if (!db) {
+      console.error('Erro de conexão com o banco de dados')
+      return
+    }
     const { customer, last_payment_error } = paymentIntent
     
     // Buscar usuário
@@ -144,6 +152,10 @@ async function handlePaymentFailure(paymentIntent: any) {
 async function handleSubscriptionPayment(invoice: any) {
   try {
     const db = getFirestoreDB()
+    if (!db) {
+      console.error('Erro de conexão com o banco de dados')
+      return
+    }
     const { customer, subscription, amount_paid } = invoice
     
     // Buscar usuário
@@ -183,6 +195,10 @@ async function handleSubscriptionPayment(invoice: any) {
 async function handleSubscriptionCancelled(subscription: any) {
   try {
     const db = getFirestoreDB()
+    if (!db) {
+      console.error('Erro de conexão com o banco de dados')
+      return
+    }
     const { customer } = subscription
     
     // Buscar usuário

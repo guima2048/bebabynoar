@@ -5,6 +5,9 @@ import { doc, getDoc, addDoc, collection, serverTimestamp, setDoc } from 'fireba
 export async function POST(req: NextRequest) {
   try {
     const db = getFirestoreDB()
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de conexão com o banco de dados' }, { status: 500 })
+    }
     const { senderId, receiverId, initialMessage } = await req.json()
 
     if (!senderId || !receiverId) {

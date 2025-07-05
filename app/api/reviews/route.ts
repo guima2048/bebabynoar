@@ -26,6 +26,9 @@ interface ReviewWithUser extends Review {
 export async function POST(req: NextRequest) {
   try {
     const db = getFirestoreDB()
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de conexão com o banco de dados' }, { status: 500 })
+    }
     const { userId, targetUserId, rating, comment, category } = await req.json()
 
     if (!userId || !targetUserId || !rating || !category) {
@@ -126,6 +129,9 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   try {
     const db = getFirestoreDB()
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de conexão com o banco de dados' }, { status: 500 })
+    }
     const { searchParams } = new URL(req.url)
     const targetUserId = searchParams.get('targetUserId')
     const category = searchParams.get('category')
@@ -162,7 +168,6 @@ export async function GET(req: NextRequest) {
     // Buscar dados dos usuários que fizeram as avaliações
     const reviewsWithUsers = await Promise.all(
       reviews.map(async (review) => {
-        const db = getFirestoreDB()
         const userRef = doc(db, 'users', review.userId)
         const userDoc = await getDoc(userRef)
         
@@ -230,6 +235,9 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const db = getFirestoreDB()
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de conexão com o banco de dados' }, { status: 500 })
+    }
     const { reviewId, rating, comment } = await req.json()
 
     if (!reviewId || !rating) {
@@ -305,6 +313,9 @@ export async function PUT(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     const db = getFirestoreDB()
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de conexão com o banco de dados' }, { status: 500 })
+    }
     const { reviewId } = await req.json()
 
     if (!reviewId) {

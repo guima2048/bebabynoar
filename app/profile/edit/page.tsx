@@ -46,6 +46,10 @@ export default function EditProfilePage() {
       setLoading(true);
       try {
         const db = getFirestoreDB();
+        if (!db) {
+          toast.error('Serviço de banco de dados indisponível. Tente novamente mais tarde.');
+          return;
+        }
         const userRef = doc(db, "users", user.id);
         const snap = await getDoc(userRef);
         if (snap.exists()) {
@@ -69,6 +73,10 @@ export default function EditProfilePage() {
     setSaving(true);
     try {
       const db = getFirestoreDB();
+      if (!db) {
+        toast.error('Serviço de banco de dados indisponível. Tente novamente mais tarde.');
+        return;
+      }
       const userRef = doc(db, "users", user.id);
       await updateDoc(userRef, {
         name: profile.name || "",

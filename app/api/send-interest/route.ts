@@ -5,6 +5,9 @@ import { sendInterestSchema, respondInterestSchema, validateAndSanitize, createE
 export async function POST(req: NextRequest) {
   try {
     const db = getFirestoreDB()
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de conexão com o banco de dados' }, { status: 500 })
+    }
     const body = await req.json()
     
     // Validação Zod
@@ -135,6 +138,9 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const db = getFirestoreDB()
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de conexão com o banco de dados' }, { status: 500 })
+    }
     const body = await req.json()
     
     // Validação Zod

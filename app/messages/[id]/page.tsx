@@ -188,6 +188,33 @@ export default function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
+  const getOrCreateConversation = async (): Promise<string> => {
+    if (!user || !db || !userId) throw new Error('Dependências ausentes para criar conversa')
+
+    // Buscar conversa existente
+    const conversationsRef = collection(db, 'conversations')
+    const q = query(conversationsRef, where('participants', 'array-contains', user.id))
+    const querySnapshot = await getDocs(q)
+    
+    for (const doc of querySnapshot.docs) {
+      const data = doc.data()
+      if (data.participants.includes(userId)) {
+        return doc.id
+      }
+    }
+
+    // Criar nova conversa
+    const newConversation = {
+      participants: [user.id, userId],
+      lastMessage: '',
+      lastMessageTime: serverTimestamp(),
+      unreadCount: {}
+    }
+    
+    const docRef = await addDoc(collection(db, 'conversations'), newConversation)
+    return docRef.id
+  }
+
   const handleSendMessage = async () => {
     if (!newMessage.trim() || sending || !user || !db || !userId) return
 
@@ -196,7 +223,6 @@ export default function ChatPage() {
     try {
       // Buscar ou criar conversa
       const conversationId = await getOrCreateConversation()
-      
       // Adicionar mensagem
       const messagesRef = collection(db, 'conversations', conversationId, 'messages')
       const messageData = {
@@ -228,33 +254,6 @@ export default function ChatPage() {
     } finally {
       setSending(false)
     }
-  }
-
-  const getOrCreateConversation = async () => {
-    if (!user || !db || !userId) return null
-
-    // Buscar conversa existente
-    const conversationsRef = collection(db, 'conversations')
-    const q = query(conversationsRef, where('participants', 'array-contains', user.id))
-    const querySnapshot = await getDocs(q)
-    
-    for (const doc of querySnapshot.docs) {
-      const data = doc.data()
-      if (data.participants.includes(userId)) {
-        return doc.id
-      }
-    }
-
-    // Criar nova conversa
-    const newConversation = {
-      participants: [user.id, userId],
-      lastMessage: '',
-      lastMessageTime: serverTimestamp(),
-      unreadCount: {}
-    }
-    
-    const docRef = await addDoc(collection(db, 'conversations'), newConversation)
-    return docRef.id
   }
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {

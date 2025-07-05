@@ -5,6 +5,9 @@ import { doc, getDoc, updateDoc, collection, addDoc, serverTimestamp } from 'fir
 export async function POST(req: NextRequest) {
   try {
     const db = getFirestoreDB()
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de conexão com o banco de dados' }, { status: 500 })
+    }
     const { userId, plan, paymentMethod } = await req.json()
 
     if (!userId || !plan || !paymentMethod) {

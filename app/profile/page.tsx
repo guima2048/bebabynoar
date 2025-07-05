@@ -137,7 +137,12 @@ export default function ProfilePage() {
       const downloadURL = await getDownloadURL(storageRef)
       
       // Atualiza o perfil no Firestore
-      const userRef = doc(getFirestoreDB(), 'users', user.id)
+      const db = getFirestoreDB()
+      if (!db) {
+        toast.error('Serviço de banco de dados indisponível. Tente novamente mais tarde.')
+        return
+      }
+      const userRef = doc(db, 'users', user.id)
       await updateDoc(userRef, { photoURL: downloadURL })
       
       setProfile(prev => prev ? { ...prev, photoURL: downloadURL } : null)
@@ -167,6 +172,10 @@ export default function ProfilePage() {
       const downloadURL = await getDownloadURL(storageRef);
       // Atualiza o Firestore no campo 'photos'
       const db = getFirestoreDB();
+      if (!db) {
+        toast.error('Serviço de banco de dados indisponível. Tente novamente mais tarde.')
+        return
+      }
       const userRef = doc(db, 'users', user.id);
       const docSnap = await getDoc(userRef);
       let photos = (docSnap.exists() && docSnap.data().photos) ? docSnap.data().photos : [];
@@ -202,6 +211,10 @@ export default function ProfilePage() {
       const downloadURL = await getDownloadURL(storageRef);
       // Atualiza o Firestore no campo 'photos'
       const db = getFirestoreDB();
+      if (!db) {
+        toast.error('Serviço de banco de dados indisponível. Tente novamente mais tarde.')
+        return
+      }
       const userRef = doc(db, 'users', user.id);
       const docSnap = await getDoc(userRef);
       let photos = (docSnap.exists() && docSnap.data().photos) ? docSnap.data().photos : [];

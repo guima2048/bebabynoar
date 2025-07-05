@@ -5,6 +5,9 @@ import { query, where, getDocs, orderBy, limit } from 'firebase/firestore'
 export async function POST(req: NextRequest) {
   try {
     const db = getFirestoreDB()
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de conexão com o banco de dados' }, { status: 500 })
+    }
     const { reporterId, reportedUserId, reason, description } = await req.json()
 
     if (!reporterId || !reportedUserId || !reason) {
@@ -90,6 +93,9 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   try {
     const db = getFirestoreDB()
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de conexão com o banco de dados' }, { status: 500 })
+    }
     const reportsSnapshot = await getDocs(
       query(
         collection(db, 'reports'),
@@ -123,6 +129,9 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const db = getFirestoreDB()
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de conexão com o banco de dados' }, { status: 500 })
+    }
     const { reportId, status, moderatorNotes, action } = await req.json()
 
     if (!reportId || !status) {
@@ -202,6 +211,10 @@ function getReportPriority(reason: string): string {
 async function notifyModerators(reportId: string, reportedUserName: string, reason: string) {
   try {
     const db = getFirestoreDB()
+    if (!db) {
+      console.error('Erro de conexão com o banco de dados')
+      return
+    }
     
     // Buscar moderadores ativos
     const moderatorsQuery = await getDocs(
@@ -238,6 +251,10 @@ async function notifyModerators(reportId: string, reportedUserName: string, reas
 async function sendReportConfirmation(reporterId: string, reportedUserName: string, reason: string) {
   try {
     const db = getFirestoreDB()
+    if (!db) {
+      console.error('Erro de conexão com o banco de dados')
+      return
+    }
     await addDoc(collection(db, 'notifications'), {
       userId: reporterId,
       type: 'report_confirmation',
@@ -254,6 +271,10 @@ async function sendReportConfirmation(reporterId: string, reportedUserName: stri
 async function applyReportAction(userId: string, action: string, reason: string) {
   try {
     const db = getFirestoreDB()
+    if (!db) {
+      console.error('Erro de conexão com o banco de dados')
+      return
+    }
     const userRef = doc(db, 'users', userId)
 
     switch (action) {
@@ -301,6 +322,10 @@ async function applyReportAction(userId: string, action: string, reason: string)
 async function notifyReporter(reporterId: string, status: string, moderatorNotes: string) {
   try {
     const db = getFirestoreDB()
+    if (!db) {
+      console.error('Erro de conexão com o banco de dados')
+      return
+    }
     
     const message = status === 'resolved' 
       ? 'Seu relatório foi analisado e uma ação foi tomada.'
@@ -322,6 +347,10 @@ async function notifyReporter(reporterId: string, status: string, moderatorNotes
 async function notifyUserAction(userId: string, action: string, reason: string) {
   try {
     const db = getFirestoreDB()
+    if (!db) {
+      console.error('Erro de conexão com o banco de dados')
+      return
+    }
     
     const actionMessages = {
       warn: 'Você recebeu um aviso por violar nossas diretrizes.',

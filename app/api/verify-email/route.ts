@@ -7,6 +7,9 @@ import crypto from 'crypto'
 export async function POST(req: NextRequest) {
   try {
     const db = getFirestoreDB()
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de conexão com o banco de dados' }, { status: 500 })
+    }
     const { email } = await req.json()
 
     if (!email) {
@@ -76,6 +79,9 @@ export async function POST(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const db = getFirestoreDB()
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de conexão com o banco de dados' }, { status: 500 })
+    }
     const { token, email } = await req.json()
 
     if (!token || !email) {
@@ -279,6 +285,9 @@ async function sendEmailVerifiedConfirmation(email: string, userName: string) {
 export async function GET(req: NextRequest) {
   try {
     const db = getFirestoreDB()
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de conexão com o banco de dados' }, { status: 500 })
+    }
     const { searchParams } = new URL(req.url)
     const token = searchParams.get('token')
 
@@ -328,6 +337,10 @@ export async function GET(req: NextRequest) {
 async function verifyEmailToken(token: string) {
   try {
     const db = getFirestoreDB()
+    if (!db) {
+      console.error('Erro de conexão com o banco de dados')
+      return false
+    }
     // Buscar token na coleção de verificação
     const tokenQuery = query(
       collection(db, 'emailVerificationTokens'),
@@ -350,6 +363,10 @@ async function verifyEmailToken(token: string) {
 async function sendWelcomeEmail(userId: string, userData: any) {
   try {
     const db = getFirestoreDB()
+    if (!db) {
+      console.error('Erro de conexão com o banco de dados')
+      return
+    }
     // Criar notificação de boas-vindas
     await addDoc(collection(db, 'notifications'), {
       userId,

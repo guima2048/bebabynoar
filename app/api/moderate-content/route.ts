@@ -5,6 +5,9 @@ import { doc, getDoc, updateDoc, collection, addDoc, query, where, orderBy, getD
 export async function POST(request: NextRequest) {
   try {
     const db = getFirestoreDB()
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de conexão com o banco de dados' }, { status: 500 })
+    }
     const { contentId, contentType, action, reason, moderatorId } = await request.json()
 
     if (!contentId || !contentType || !action || !moderatorId) {
@@ -158,6 +161,9 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const db = getFirestoreDB()
+    if (!db) {
+      return NextResponse.json({ error: 'Erro de conexão com o banco de dados' }, { status: 500 })
+    }
     const { searchParams } = new URL(request.url)
     const status = searchParams.get('status') || 'pending'
     const contentType = searchParams.get('type') || 'all'
