@@ -2,304 +2,419 @@
 
 import React, { useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
-import { useRouter } from 'next/navigation'
+import { Search, Filter, MapPin, Heart, MessageCircle, Crown, Shield, Star, Users, TrendingUp, Eye, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
-import { differenceInYears } from 'date-fns'
-import { Search, Filter, Heart, ArrowLeft, MapPin } from 'lucide-react'
-import { toast } from 'react-hot-toast'
-import { filterVisibleUsers, User } from '@/lib/user-matching'
-import { mockProfiles, MockProfile } from '@/lib/mock-data'
+import { useRouter } from 'next/navigation'
+import toast from 'react-hot-toast'
+import { collection, query, where, orderBy, limit, getDocs, doc, getDoc } from 'firebase/firestore'
+import { db } from '@/lib/firebase'
 
-export default function BuscarPage() {
-  const { user, loading } = useAuth()
+interface Profile {
+  id: string
+  name: string
+  username?: string
+  age: number
+  city: string
+  state: string
+  userType: string
+  photoURL?: string
+  premium: boolean
+  verified: boolean
+  online: boolean
+  bio?: string
+  interests?: string[]
+  lastActive?: Date
+}
+
+export default function SearchPage() {
+  const { user, loading: authLoading } = useAuth()
   const router = useRouter()
-  const [profiles, setProfiles] = useState<MockProfile[]>([])
-  const [filteredProfiles, setFilteredProfiles] = useState<MockProfile[]>([])
-  const [loadingProfiles, setLoadingProfiles] = useState(true)
-  
-  // Estados de busca e filtros
+  const [profiles, setProfiles] = useState<Profile[]>([])
+  const [loading, setLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
-  const [userTypeFilter, setUserTypeFilter] = useState<'all' | 'sugar_baby' | 'sugar_daddy' | 'sugar_mommy' | 'sugar_babyboy'>('all')
-  const [ageRange, setAgeRange] = useState({ min: 18, max: 80 })
-  const [locationFilter, setLocationFilter] = useState('')
+  const [selectedState, setSelectedState] = useState('')
+  const [selectedCity, setSelectedCity] = useState('')
+  const [selectedUserType, setSelectedUserType] = useState('')
+  const [ageRange, setAgeRange] = useState({ min: 18, max: 65 })
   const [showFilters, setShowFilters] = useState(false)
+  const [hasSearched, setHasSearched] = useState(false)
 
-  // Verificar autenticação
   useEffect(() => {
-    if (!loading && !user) {
+    if (authLoading) return
+    
+    if (!user) {
       router.push('/login')
       return
     }
-  }, [user, loading, router])
+  }, [user, authLoading, router])
 
-  const fetchProfiles = async () => {
-    if (!user) return
-    
+  const handleSearch = async () => {
+    if (!user || !db) return
+
     try {
-      setLoadingProfiles(true)
+      setLoading(true)
+      setHasSearched(true)
       
-      // Usar dados mockados em vez da API
-      let allProfiles = mockProfiles.filter((profile: MockProfile) => profile.id !== user.id)
+      // Buscar perfis do tipo oposto
+      const oppositeType = user.userType === 'sugar_daddy' ? 'sugar_baby' : 'sugar_daddy'
       
-      // Aplicar regras de matching
-      const currentUser: User = {
-        id: user.id,
-        userType: user.userType as any,
-        gender: user.gender as any || 'female',
-        lookingFor: user.lookingFor as any || 'male',
-        username: user.name
+      const usersRef = collection(db, 'users')
+      let q = query(
+        usersRef,
+        where('userType', '==', oppositeType),
+        where('active', '==', true),
+        orderBy('lastActive', 'desc'),
+        limit(100)
+      )
+      
+      const querySnapshot = await getDocs(q)
+      const profilesData: Profile[] = []
+      
+      for (const doc of querySnapshot.docs) {
+        const userData = doc.data()
+        if (userData.id !== user.id) { // Excluir o próprio usuário
+          const profile: Profile = {
+            id: doc.id,
+            name: userData.name || userData.username || 'Usuário',
+            username: userData.username,
+            age: userData.age || 0,
+            city: userData.city || '',
+            state: userData.state || '',
+            userType: userData.userType || 'user',
+            photoURL: userData.photoURL,
+            premium: userData.premium || false,
+            verified: userData.verified || false,
+            online: userData.online || false,
+            bio: userData.bio,
+            interests: userData.interests || [],
+            lastActive: userData.lastActive?.toDate()
+          }
+          
+          // Aplicar filtros
+          if (matchesFilters(profile)) {
+            profilesData.push(profile)
+          }
+        }
       }
       
-      const visibleProfiles = filterVisibleUsers(currentUser, allProfiles as User[])
-      setProfiles(visibleProfiles as unknown as MockProfile[])
-      setFilteredProfiles(visibleProfiles as unknown as MockProfile[])
-    } catch (err) {
-      toast.error('Erro ao carregar perfis')
+      setProfiles(profilesData)
+      
+    } catch (error) {
+      console.error('Erro ao buscar perfis:', error)
+      toast.error('Erro ao buscar perfis')
     } finally {
-      setLoadingProfiles(false)
+      setLoading(false)
     }
   }
 
-  useEffect(() => {
-    if (user) {
-      fetchProfiles()
+  const matchesFilters = (profile: Profile) => {
+    // Filtro de busca por texto
+    if (searchTerm && !profile.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+        !profile.city.toLowerCase().includes(searchTerm.toLowerCase()) &&
+        !profile.bio?.toLowerCase().includes(searchTerm.toLowerCase())) {
+      return false
     }
-  }, [user])
-
-  // Aplicar filtros
-  useEffect(() => {
-    let filtered = profiles
-    if (searchTerm) {
-      filtered = filtered.filter(profile =>
-        profile.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        profile.city.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        profile.state.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (profile.about && profile.about.toLowerCase().includes(searchTerm.toLowerCase()))
-      )
+    
+    // Filtro de estado
+    if (selectedState && profile.state !== selectedState) {
+      return false
     }
-    if (userTypeFilter !== 'all') {
-      filtered = filtered.filter(profile => profile.userType === userTypeFilter)
+    
+    // Filtro de cidade
+    if (selectedCity && profile.city !== selectedCity) {
+      return false
     }
-    filtered = filtered.filter(profile => {
-      const age = differenceInYears(new Date(), new Date(profile.birthdate))
-      return age >= ageRange.min && age <= ageRange.max
-    })
-    if (locationFilter) {
-      filtered = filtered.filter(profile =>
-        profile.city.toLowerCase().includes(locationFilter.toLowerCase()) ||
-        profile.state.toLowerCase().includes(locationFilter.toLowerCase())
-      )
+    
+    // Filtro de tipo de usuário
+    if (selectedUserType && profile.userType !== selectedUserType) {
+      return false
     }
-    setFilteredProfiles(filtered)
-  }, [profiles, searchTerm, userTypeFilter, ageRange, locationFilter])
-
-  if (loading) {
-    return (
-      <div className="w-full min-h-screen flex items-center justify-center bg-[#18181b]">
-        <div className="text-white text-xl">Carregando...</div>
-      </div>
-    )
+    
+    // Filtro de idade
+    if (profile.age < ageRange.min || profile.age > ageRange.max) {
+      return false
+    }
+    
+    return true
   }
-  
-  if (!user) {
+
+  const formatLastActive = (lastActive?: Date) => {
+    if (!lastActive) return 'Desconhecido'
+    
+    const now = new Date()
+    const diffInMinutes = (now.getTime() - lastActive.getTime()) / (1000 * 60)
+    
+    if (diffInMinutes < 1) return 'Agora'
+    if (diffInMinutes < 60) return `${Math.floor(diffInMinutes)}m atrás`
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h atrás`
+    if (diffInMinutes < 10080) return `${Math.floor(diffInMinutes / 1440)}d atrás`
+    return lastActive.toLocaleDateString('pt-BR')
+  }
+
+  // Loading state
+  if (authLoading) {
     return (
-      <div className="w-full min-h-screen flex items-center justify-center bg-[#18181b]">
-        <div className="max-w-md mx-auto text-center text-white px-4">
-          <h2 className="text-2xl font-bold mb-4">Acesso negado</h2>
-          <p className="mb-6">Você precisa estar logado para buscar perfis.</p>
-          <Link href="/login" className="btn-primary">Entrar</Link>
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando...</p>
         </div>
       </div>
     )
   }
 
-  function getAge(birthdate: string) {
-    return differenceInYears(new Date(), new Date(birthdate))
+  // User not authenticated
+  if (!user) {
+    return null
   }
 
   return (
-    <div className="w-full min-h-screen flex flex-col items-center bg-[#18181b]">
-      <div className="w-full lg:max-w-[35vw] lg:mx-auto flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50">
+      <div className="max-w-7xl mx-auto p-4">
         {/* Header */}
-        <div className="sticky top-0 z-50 w-full bg-[#18181b] border-b border-white/10">
-          <div className="w-full px-6 py-6 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link href="/explore" className="p-2 hover:bg-white/10 rounded-lg transition-colors">
-                <ArrowLeft className="w-6 h-6 text-white" />
-              </Link>
-              <h1 className="text-2xl font-bold text-white">Buscar Perfis</h1>
-            </div>
+        <div className="mb-8">
+          <div className="flex items-center gap-4 mb-4">
             <button
-              onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center gap-3 px-6 py-3 rounded-xl transition-all duration-300 text-white font-semibold text-base ${showFilters ? 'bg-gradient-to-r from-purple-500 to-pink-500' : 'bg-white/10 hover:bg-white/20'}`}
+              onClick={() => router.back()}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
-              <Filter className="w-5 h-5" />
-              <span>Filtros</span>
+              <ArrowLeft className="w-5 h-5 text-gray-600" />
             </button>
+            <h1 className="text-3xl font-bold text-gray-900">Buscar</h1>
           </div>
-          {/* Campo de Busca */}
-          <div className="mt-6 px-6 pb-6">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-6 h-6" />
-              <input
-                type="text"
-                placeholder="Buscar por nome, cidade, estado ou descrição..."
-                className="w-full bg-white/10 border border-white/20 rounded-xl pl-14 pr-4 py-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 text-base"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-          </div>
+          <p className="text-gray-600">Encontre pessoas específicas</p>
         </div>
 
-        {/* Filtros */}
-        {showFilters && (
-          <div className="bg-black/20 border-b border-white/10 w-full">
-            <div className="w-full px-6 py-8 space-y-8">
-              {/* Tipo de Usuário */}
-              <div>
-                <label className="block text-base font-semibold mb-4 text-white">Tipo de Usuário</label>
-                <div className="flex gap-3">
-                  <button
-                    className={`px-6 py-3 rounded-xl text-base font-semibold transition-colors ${userTypeFilter === 'all' ? 'bg-purple-500 text-white' : 'bg-white/10 hover:bg-white/20 text-white'}`}
-                    onClick={() => setUserTypeFilter('all')}
-                  >Todos</button>
-                  <button
-                    className={`px-6 py-3 rounded-xl text-base font-semibold transition-colors ${userTypeFilter === 'sugar_baby' ? 'bg-pink-500 text-white' : 'bg-white/10 hover:bg-white/20 text-white'}`}
-                    onClick={() => setUserTypeFilter('sugar_baby')}
-                  >Sugar Babies</button>
-                  <button
-                    className={`px-6 py-3 rounded-xl text-base font-semibold transition-colors ${userTypeFilter === 'sugar_daddy' ? 'bg-blue-500 text-white' : 'bg-white/10 hover:bg-white/20 text-white'}`}
-                    onClick={() => setUserTypeFilter('sugar_daddy')}
-                  >Sugar Daddies</button>
-                  <button
-                    className={`px-6 py-3 rounded-xl text-base font-semibold transition-colors ${userTypeFilter === 'sugar_mommy' ? 'bg-purple-500 text-white' : 'bg-white/10 hover:bg-white/20 text-white'}`}
-                    onClick={() => setUserTypeFilter('sugar_mommy')}
-                  >Sugar Mommies</button>
-                  <button
-                    className={`px-6 py-3 rounded-xl text-base font-semibold transition-colors ${userTypeFilter === 'sugar_babyboy' ? 'bg-green-500 text-white' : 'bg-white/10 hover:bg-white/20 text-white'}`}
-                    onClick={() => setUserTypeFilter('sugar_babyboy')}
-                  >Sugar Babyboys</button>
+        {/* Search and Filters */}
+        <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
+          <div className="flex flex-col lg:flex-row gap-4 mb-4">
+            {/* Search */}
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Buscar por nome, cidade ou bio..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+              />
+            </div>
 
+            {/* Search Button */}
+            <button
+              onClick={handleSearch}
+              disabled={loading}
+              className="px-8 py-3 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Buscando...' : 'Buscar'}
+            </button>
+
+            {/* Filter Button */}
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center justify-center gap-2 px-6 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <Filter className="w-5 h-5 text-gray-600" />
+              <span className="text-gray-700">Filtros</span>
+            </button>
+          </div>
+
+          {/* Filter Options */}
+          {showFilters && (
+            <div className="pt-6 border-t border-gray-200">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Estado</label>
+                  <select
+                    value={selectedState}
+                    onChange={(e) => setSelectedState(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  >
+                    <option value="">Todos os estados</option>
+                    <option value="SP">São Paulo</option>
+                    <option value="RJ">Rio de Janeiro</option>
+                    <option value="MG">Minas Gerais</option>
+                    <option value="RS">Rio Grande do Sul</option>
+                    <option value="PR">Paraná</option>
+                  </select>
                 </div>
-              </div>
-
-              {/* Faixa Etária */}
-              <div>
-                <label className="block text-base font-semibold mb-4 text-white">Faixa Etária</label>
-                <div className="flex items-center gap-4">
-                  <input
-                    type="number"
-                    min="18"
-                    max="80"
-                    value={ageRange.min}
-                    onChange={(e) => setAgeRange(prev => ({ ...prev, min: parseInt(e.target.value) || 18 }))}
-                    className="w-20 bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-center text-base text-white"
-                  />
-                  <span className="text-white text-base">a</span>
-                  <input
-                    type="number"
-                    min="18"
-                    max="80"
-                    value={ageRange.max}
-                    onChange={(e) => setAgeRange(prev => ({ ...prev, max: parseInt(e.target.value) || 80 }))}
-                    className="w-20 bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-center text-base text-white"
-                  />
-                  <span className="text-white text-base">anos</span>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Cidade</label>
+                  <select
+                    value={selectedCity}
+                    onChange={(e) => setSelectedCity(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  >
+                    <option value="">Todas as cidades</option>
+                    <option value="São Paulo">São Paulo</option>
+                    <option value="Rio de Janeiro">Rio de Janeiro</option>
+                    <option value="Belo Horizonte">Belo Horizonte</option>
+                    <option value="Porto Alegre">Porto Alegre</option>
+                    <option value="Curitiba">Curitiba</option>
+                  </select>
                 </div>
-              </div>
-
-              {/* Localização */}
-              <div>
-                <label className="block text-base font-semibold mb-4 text-white">Localização</label>
-                <div className="relative">
-                  <MapPin className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <input
-                    type="text"
-                    placeholder="Digite uma cidade ou estado..."
-                    className="w-full bg-white/10 border border-white/20 rounded-xl pl-12 pr-4 py-4 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 text-base"
-                    value={locationFilter}
-                    onChange={(e) => setLocationFilter(e.target.value)}
-                  />
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de Usuário</label>
+                  <select
+                    value={selectedUserType}
+                    onChange={(e) => setSelectedUserType(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  >
+                    <option value="">Todos os tipos</option>
+                    <option value="sugar_baby">Sugar Baby</option>
+                    <option value="sugar_daddy">Sugar Daddy</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Faixa de Idade</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min="18"
+                      max="100"
+                      value={ageRange.min}
+                      onChange={(e) => setAgeRange(prev => ({ ...prev, min: parseInt(e.target.value) || 18 }))}
+                      className="w-20 px-2 py-2 border border-gray-200 rounded-lg text-center"
+                    />
+                    <span className="text-gray-500">-</span>
+                    <input
+                      type="number"
+                      min="18"
+                      max="100"
+                      value={ageRange.max}
+                      onChange={(e) => setAgeRange(prev => ({ ...prev, max: parseInt(e.target.value) || 65 }))}
+                      className="w-20 px-2 py-2 border border-gray-200 rounded-lg text-center"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
+          )}
+        </div>
+
+        {/* Results */}
+        {hasSearched && (
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              Resultados da busca
+            </h2>
+            <p className="text-gray-600">
+              {loading ? 'Buscando...' : `${profiles.length} perfil${profiles.length !== 1 ? 's' : ''} encontrado${profiles.length !== 1 ? 's' : ''}`}
+            </p>
           </div>
         )}
 
-        {/* Lista de Perfis */}
-        <div className="w-full px-6 py-8">
-          {loadingProfiles ? (
-            <div className="text-center py-12">
-              <div className="text-white text-xl">Carregando perfis...</div>
+        {/* Profiles Grid */}
+        {hasSearched && !loading && profiles.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Search className="w-8 h-8 text-gray-400" />
             </div>
-          ) : filteredProfiles.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredProfiles.map((profile) => (
-                <ProfileCard key={profile.id} profile={profile} getAge={getAge} />
-              ))}
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Nenhum perfil encontrado
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Tente ajustar seus filtros ou termos de busca
+            </p>
+            <button
+              onClick={() => {
+                setSearchTerm('')
+                setSelectedState('')
+                setSelectedCity('')
+                setSelectedUserType('')
+                setAgeRange({ min: 18, max: 65 })
+                setHasSearched(false)
+              }}
+              className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors"
+            >
+              Limpar filtros
+            </button>
+          </div>
+        ) : hasSearched && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {profiles.map((profile) => (
+              <div key={profile.id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 hover:scale-[1.02]">
+                <div className="relative">
+                  <img
+                    src={profile.photoURL || '/avatar.png'}
+                    alt={profile.name}
+                    className="w-full h-48 object-cover rounded-t-xl"
+                  />
+                  {profile.online && (
+                    <div className="absolute top-3 right-3 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                  )}
+                  {profile.premium && (
+                    <div className="absolute top-3 left-3">
+                      <Crown className="w-5 h-5 text-yellow-500" />
+                    </div>
+                  )}
+                </div>
+                
+                <div className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-semibold text-gray-900 truncate">{profile.name}</h3>
+                    {profile.verified && (
+                      <Shield className="w-4 h-4 text-blue-500" />
+                    )}
+                  </div>
+                  
+                  <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                    <MapPin className="w-4 h-4" />
+                    <span>{profile.city}, {profile.state}</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
+                    <span>{profile.age} anos</span>
+                    <span>•</span>
+                    <span className="capitalize">{profile.userType.replace('_', ' ')}</span>
+                  </div>
+                  
+                  {profile.bio && (
+                    <p className="text-sm text-gray-600 mb-4 line-clamp-2">{profile.bio}</p>
+                  )}
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500">
+                      Ativo {formatLastActive(profile.lastActive)}
+                    </span>
+                    
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/profile/${profile.id}`}
+                        className="p-2 bg-pink-100 text-pink-600 rounded-lg hover:bg-pink-200 transition-colors"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Link>
+                      
+                      <Link
+                        href={`/messages/${profile.id}`}
+                        className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Footer */}
+        {hasSearched && !loading && profiles.length > 0 && (
+          <div className="mt-8 bg-white rounded-xl shadow-sm p-6">
+            <div className="text-center">
+              <p className="text-gray-600">
+                Mostrando {profiles.length} perfil{profiles.length !== 1 ? 's' : ''} encontrado{profiles.length !== 1 ? 's' : ''}
+              </p>
             </div>
-          ) : (
-            <div className="text-center py-12">
-              <div className="text-white text-xl mb-4">Nenhum perfil encontrado</div>
-              <p className="text-gray-400">Tente ajustar os filtros de busca</p>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   )
-}
-
-function ProfileCard({ profile, getAge }: { profile: MockProfile; getAge: (birthdate: string) => number }) {
-  return (
-    <Link href={`/profile/${profile.id}`} className="block">
-      <div className="bg-white/5 hover:bg-white/10 rounded-2xl overflow-hidden transition-all duration-300 hover:scale-105 border border-white/10">
-        {/* Imagem */}
-        <div className="relative h-64">
-          <img
-            src={profile.photoURL || '/avatar.png'}
-            alt={profile.username}
-            className="w-full h-full object-cover"
-          />
-          {/* Overlay com gradiente */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-          
-          {/* Badges */}
-          <div className="absolute top-4 right-4 flex gap-2">
-            {profile.isPremium && (
-              <div className="px-3 py-1 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full text-xs font-bold text-white">
-                Premium
-              </div>
-            )}
-            {profile.isVerified && (
-              <div className="px-3 py-1 bg-gradient-to-r from-green-500 to-teal-500 rounded-full text-xs font-bold text-white">
-                ✓
-              </div>
-            )}
-          </div>
-
-          {/* Botão de Like */}
-          <button className="absolute bottom-4 right-4 p-3 bg-white/20 hover:bg-white/30 rounded-full transition-colors">
-            <Heart className="w-6 h-6 text-white" />
-          </button>
-        </div>
-        
-        {/* Informações */}
-        <div className="p-4">
-          <h3 className="font-bold text-lg mb-2 group-hover:text-white transition-colors text-white">
-            {profile.username}
-          </h3>
-          <p className="text-gray-400 text-sm mb-3">
-            {getAge(profile.birthdate)} anos • {profile.city}, {profile.state}
-          </p>
-          {profile.about && (
-            <p className="text-gray-300 text-sm line-clamp-2 leading-relaxed">
-              {profile.about}
-            </p>
-          )}
-        </div>
-      </div>
-    </Link>
-  )
+} 
 } 

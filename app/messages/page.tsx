@@ -7,17 +7,38 @@ import Link from 'next/link'
 import toast from 'react-hot-toast'
 import EmptyMessages from '@/components/EmptyMessages'
 import MessagesOnboarding from '@/components/MessagesOnboarding'
-import { mockConversations, mockStats, MockConversation } from '@/lib/mock-data'
+import { collection, query, where, orderBy, getDocs, doc, getDoc } from 'firebase/firestore'
+import { db } from '@/lib/firebase'
+
+interface Conversation {
+  id: string
+  lastMessage: string
+  lastMessageTime: Date
+  unreadCount: number
+  user: {
+    id: string
+    username: string
+    photoURL?: string
+    userType: string
+    premium: boolean
+    verified: boolean
+    online: boolean
+  }
+}
 
 export default function MessagesPage() {
   const { user, loading: authLoading } = useAuth()
-  const [conversations, setConversations] = useState<MockConversation[]>([])
+  const [conversations, setConversations] = useState<Conversation[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [filter, setFilter] = useState<'all' | 'unread' | 'online'>('all')
   const [showFilters, setShowFilters] = useState(false)
   const [showMobileMenu, setShowMobileMenu] = useState(false)
-  const [stats, setStats] = useState(mockStats)
+  const [stats, setStats] = useState({
+    totalConversations: 0,
+    unreadMessages: 0,
+    onlineUsers: 0
+  })
 
   useEffect(() => {
     console.log('🔍 MessagesPage - Auth state:', { user, authLoading })
@@ -34,14 +55,74 @@ export default function MessagesPage() {
     }
     
     console.log('✅ Usuário autenticado:', user)
-    
-    // Simular carregamento de dados
-    setTimeout(() => {
-      setConversations(mockConversations)
-      setStats(mockStats)
-      setLoading(false)
-    }, 1000)
+    loadConversations()
   }, [user, authLoading])
+
+  const loadConversations = async () => {
+    if (!user || !db) return
+
+    try {
+      setLoading(true)
+      
+      // Buscar conversas do usuário atual
+      const conversationsRef = collection(db, 'conversations')
+      const q = query(
+        conversationsRef,
+        where('participants', 'array-contains', user.id),
+        orderBy('lastMessageTime', 'desc')
+      )
+      
+      const querySnapshot = await getDocs(q)
+      const conversationsData: Conversation[] = []
+      
+      for (const doc of querySnapshot.docs) {
+        const conversationData = doc.data()
+        const otherUserId = conversationData.participants.find((id: string) => id !== user.id)
+        
+        if (otherUserId) {
+          // Buscar dados do outro usuário
+          const userDoc = await getDoc(doc(db, 'users', otherUserId))
+          if (userDoc.exists()) {
+            const userData = userDoc.data()
+            conversationsData.push({
+              id: doc.id,
+              lastMessage: conversationData.lastMessage || '',
+              lastMessageTime: conversationData.lastMessageTime?.toDate() || new Date(),
+              unreadCount: conversationData.unreadCount?.[user.id] || 0,
+              user: {
+                id: otherUserId,
+                username: userData.username || userData.name || 'Usuário',
+                photoURL: userData.photoURL,
+                userType: userData.userType || 'user',
+                premium: userData.premium || false,
+                verified: userData.verified || false,
+                online: userData.online || false
+              }
+            })
+          }
+        }
+      }
+      
+      setConversations(conversationsData)
+      
+      // Calcular estatísticas
+      const totalConversations = conversationsData.length
+      const unreadMessages = conversationsData.reduce((sum, conv) => sum + conv.unreadCount, 0)
+      const onlineUsers = conversationsData.filter(conv => conv.user.online).length
+      
+      setStats({
+        totalConversations,
+        unreadMessages,
+        onlineUsers
+      })
+      
+    } catch (error) {
+      console.error('Erro ao carregar conversas:', error)
+      toast.error('Erro ao carregar conversas')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const filteredConversations = conversations.filter(conversation => {
     const matchesSearch = conversation.user.username.toLowerCase().includes(searchTerm.toLowerCase())

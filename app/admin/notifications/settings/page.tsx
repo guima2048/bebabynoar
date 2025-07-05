@@ -22,6 +22,10 @@ export default function NotificationSettingsPage() {
       setLoading(true)
       try {
         const db = getFirestoreDB()
+        if (!db) {
+          console.error('Firestore não está inicializado')
+          return
+        }
         const ref = doc(db, 'admin', 'notificationSettings')
         const snap = await getDoc(ref)
         if (snap.exists()) setSettings(snap.data())
@@ -45,6 +49,11 @@ export default function NotificationSettingsPage() {
     setSaving(true)
     try {
       const db = getFirestoreDB()
+      if (!db) {
+        console.error('Firestore não está inicializado')
+        toast.error('Erro de configuração do banco de dados')
+        return
+      }
       const ref = doc(db, 'admin', 'notificationSettings')
       await setDoc(ref, settings, { merge: true })
       toast.success('Configurações salvas!')

@@ -97,10 +97,12 @@ export { collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, 
 // Funções para compatibilidade (só funcionam no client)
 export function getFirestoreDB() {
   if (typeof window === 'undefined') {
-    throw new Error('getFirestoreDB só pode ser usado no client. Use getAdminFirestore() no server.')
+    console.warn('getFirestoreDB chamado no servidor - retornando null')
+    return null
   }
   if (!db) {
-    throw new Error('Firebase Firestore não está inicializado')
+    console.warn('Firebase Firestore não está inicializado - retornando null')
+    return null
   }
   return db
 }

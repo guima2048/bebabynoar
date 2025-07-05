@@ -64,6 +64,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return
     }
 
+    // Timeout de segurança para evitar loading infinito
+    const timeoutId = setTimeout(() => {
+      console.warn('[AuthContext] Timeout de segurança - forçando loading = false')
+      setLoading(false)
+    }, 10000) // 10 segundos
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       console.log('[AuthContext] onAuthStateChanged:', user)
       if (user) {
@@ -71,6 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const db = getFirestoreDB()
           if (!db) {
             console.error('Erro de configuração do banco de dados')
+            setLoading(false)
             return
           }
           const userDoc = await getDoc(doc(db, 'users', user.uid))
@@ -99,7 +106,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               photoURL: user.photoURL || '',
               premium: false,
               verified: false,
-              userType: '',
+              userType: 'sugar_daddy', // Fallback para teste
+              gender: 'male', // Fallback para teste
+              lookingFor: 'female', // Fallback para teste
               isAdmin: false
             })
           }
@@ -112,7 +121,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             photoURL: user.photoURL || '',
             premium: false,
             verified: false,
-            userType: '',
+            userType: 'sugar_daddy', // Fallback para teste
+            gender: 'male', // Fallback para teste
+            lookingFor: 'female', // Fallback para teste
             isAdmin: false
           })
         }
@@ -124,7 +135,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('[AuthContext] loading:', false)
     })
 
-    return () => unsubscribe()
+    return () => {
+      clearTimeout(timeoutId)
+      unsubscribe()
+    }
   }, [])
 
   const signIn = async (email: string, password: string): Promise<void> => {
