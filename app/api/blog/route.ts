@@ -1,18 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAdminFirestore } from '@/lib/firebase-admin'
+import { prisma } from '@/lib/prisma'
 
 export async function GET(req: NextRequest) {
   try {
-    const db = getAdminFirestore()
     const { searchParams } = new URL(req.url)
     const status = searchParams.get('status')
     
     // Buscar todos os posts (published e scheduled)
-    const snapshot = await db.collection('blog').orderBy('createdAt', 'desc').get()
+    const snapshot = await prisma.blogPost.findMany({
+      orderBy: {
+        createdAt: 'desc'
+      }
+    })
     const now = Date.now();
-    let posts = snapshot.docs.map((doc: any) => ({
-      id: doc.id,
-      ...doc.data()
+    let posts = snapshot.map((post: any) => ({
+      id: post.id,
+      ...post
     }))
 
     // Se status for published, incluir agendados cuja data já passou
@@ -41,7 +44,6 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const db = getAdminFirestore()
     const { title, content, excerpt, status, scheduledFor, featuredImage } = await req.json()
     if (!title || !content) {
       return NextResponse.json({ error: 'Título e conteúdo são obrigatórios' }, { status: 400 })
@@ -54,8 +56,12 @@ export async function POST(req: NextRequest) {
       .replace(/-+/g, '-')
       .trim()
     // Validação de unicidade do slug
-    const slugSnap = await db.collection('blog').where('slug', '==', slug).get();
-    if (!slugSnap.empty) {
+    const slugSnap = await prisma.blogPost.findMany({
+      where: {
+        slug: slug
+      }
+    });
+    if (slugSnap.length > 0) {
       return NextResponse.json({ error: 'Já existe um post com esse slug.' }, { status: 400 });
     }
     // Validação de status
@@ -89,7 +95,9 @@ export async function POST(req: NextRequest) {
     } else if (status === 'scheduled' && scheduledFor) {
       postData.scheduledFor = scheduledFor;
     }
-    const docRef = await db.collection('blog').add(postData)
+    const docRef = await prisma.blogPost.create({
+      data: postData
+    })
     return NextResponse.json({ id: docRef.id, ...postData })
   } catch (error) {
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
@@ -98,7 +106,6 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    const db = getAdminFirestore()
     const { id, title, content, excerpt, slug, featuredImage, metaTitle, metaDescription, status, publishedAt, scheduledFor } = await req.json()
     if (!id || !title || !content || !slug) {
       return NextResponse.json({ error: 'ID, título, conteúdo e slug são obrigatórios' }, { status: 400 })
@@ -125,7 +132,12 @@ export async function PUT(req: NextRequest) {
       updateData.scheduledFor = scheduledFor;
       updateData.publishedAt = null;
     }
-    await db.collection('blog').doc(id).update(updateData)
+    const docRef = await prisma.blogPost.update({
+      where: {
+        id: id
+      },
+      data: updateData
+    })
     return NextResponse.json({ success: true, message: 'Post atualizado com sucesso!' })
   } catch (err) {
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
@@ -134,14 +146,17 @@ export async function PUT(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const db = getAdminFirestore()
     const { id } = await req.json()
     
     if (!id) {
       return NextResponse.json({ error: 'ID do post é obrigatório' }, { status: 400 })
     }
 
-    await db.collection('blog').doc(id).delete()
+    await prisma.blogPost.delete({
+      where: {
+        id: id
+      }
+    })
     
     return NextResponse.json({ 
       success: true,

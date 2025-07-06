@@ -83,7 +83,7 @@ export default function ImageUpload({
       } else if (error.name === 'TypeError' && error.message.includes('fetch')) {
         errorMessage = 'Erro de conexão. Verifique sua internet e tente novamente.';
       } else if (error.code === 'storage/unauthorized') {
-        errorMessage = 'Erro de autorização. Verifique as configurações do Firebase.';
+        errorMessage = 'Erro de autorização. Verifique suas permissões.';
       } else if (error.code === 'storage/quota-exceeded') {
         errorMessage = 'Limite de armazenamento excedido.';
       } else if (error.code === 'storage/unknown') {

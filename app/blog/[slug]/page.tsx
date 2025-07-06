@@ -2,7 +2,7 @@ import React from 'react'
 import Link from 'next/link'
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { getAdminFirestore } from '@/lib/firebase-admin'
+import { prisma } from '@/lib/prisma'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Calendar, Clock, User, ArrowLeft, Share2, Heart, MessageCircle } from 'lucide-react'
@@ -13,20 +13,17 @@ interface BlogPost {
   id: string
   title: string
   content: string
-  excerpt: string
+  excerpt?: string
   slug: string
-  featuredImage?: string
-  publishedAt: string
-  readTime: number
-  author: string
+  imageURL?: string
+  publishedAt?: string | Date | null
   tags: string[]
-  status: string
 }
 
 interface PageProps {
-  params: {
+  params: Promise<{
     slug: string
-  }
+  }>
 }
 
 // Adicionar um componente para exibir erros detalhados
@@ -42,20 +39,16 @@ function BlogError({ error }: { error: string }) {
 
 async function getBlogPost(slug: string): Promise<BlogPost | null | { error: string }> {
   try {
-    const db = getAdminFirestore()
-    const snap = await db.collection('blog')
-      .where('slug', '==', slug)
-      .where('status', '==', 'published')
-      .get()
-    if (snap.empty) {
+    const post = await prisma.blogPost.findFirst({
+      where: {
+        slug,
+        published: true,
+      },
+    })
+    if (!post) {
       return { error: `[404] Nenhum post encontrado para o slug: ${slug}` }
     }
-    const doc = snap.docs[0]
-    const data = doc.data()
-    return {
-      id: doc.id,
-      ...data
-    } as BlogPost
+    return post as BlogPost
   } catch (err) {
     return { error: `[EXCEPTION] ${err instanceof Error ? err.message : String(err)}` }
   }
@@ -63,18 +56,17 @@ async function getBlogPost(slug: string): Promise<BlogPost | null | { error: str
 
 async function getRelatedPosts(currentPost: BlogPost): Promise<BlogPost[]> {
   try {
-    const db = getAdminFirestore()
-    const snap = await db.collection('blog')
-      .where('status', '==', 'published')
-      .get()
-    const allPosts = snap.docs
-      .map(doc => ({ id: doc.id, ...doc.data() } as BlogPost))
-      .filter(post => post.id !== currentPost.id)
+    const allPosts = await prisma.blogPost.findMany({
+      where: {
+        published: true,
+        id: { not: currentPost.id },
+      },
+    })
     // Filtra posts relacionados por tags
     const relatedPosts = allPosts.filter(post => 
       post.tags && currentPost.tags && post.tags.some(tag => currentPost.tags.includes(tag))
     )
-    return relatedPosts.slice(0, 3)
+    return relatedPosts.slice(0, 3) as BlogPost[]
   } catch (err) {
     return []
   }
@@ -100,7 +92,8 @@ function parseFirestoreDate(date: any): Date | null {
 }
 
 export default async function BlogPostPage({ params }: PageProps) {
-  const result = await getBlogPost(params.slug)
+  const { slug } = await params
+  const result = await getBlogPost(slug)
   if (!result) {
     return <BlogError error={"[ERRO] Nenhum resultado retornado de getBlogPost"} />
   }
@@ -118,17 +111,11 @@ export default async function BlogPostPage({ params }: PageProps) {
   if (!post.content) {
     return <BlogError error="[ERRO] post.content ausente" />
   }
-  if (!post.author) {
-    return <BlogError error="[ERRO] post.author ausente" />
-  }
   if (!post.publishedAt) {
     return <BlogError error="[ERRO] post.publishedAt ausente" />
   }
   if (!Array.isArray(post.tags)) {
     post.tags = [];
-  }
-  if (post.status !== 'published') {
-    return <BlogError error={`[ERRO] post.status não é 'published' (status: ${post.status})`} />
   }
 
   const pubDate = parseFirestoreDate(post.publishedAt);
@@ -182,31 +169,23 @@ export default async function BlogPostPage({ params }: PageProps) {
           {/* Meta informações */}
           <div className="flex flex-wrap items-center gap-6 text-gray-600 mb-6">
             <div className="flex items-center gap-2">
-              <User className="w-4 h-4" />
-              <span>{post.author}</span>
-            </div>
-            <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4" />
               <span>{pubDate ? format(pubDate, 'dd MMM yyyy', { locale: ptBR }) : 'Data inválida'}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4" />
-              <span>{post.readTime} min de leitura</span>
-            </div>
           </div>
 
-          {/* Imagem de destaque - Usando layout="fill" dentro de um contêiner com altura fixa */}
-          {post.featuredImage && (
+          {/* Imagem de destaque - Usando layout="fill" dentro de um container com altura fixa */}
+          {post.imageURL && (
             <div className="mb-8 relative w-full h-64 md:h-96 rounded-xl overflow-hidden shadow-lg"> {/* Adicionado relative, w-full, h-xx, overflow-hidden */}
               <Image
-                src={post.featuredImage}
+                src={post.imageURL}
                 alt={post.title}
                 layout="fill" // Usar layout="fill" para preencher o contêiner pai
                 objectFit="cover" // Garantir que a imagem cubra o espaço sem distorcer
                 loading="lazy"
                 placeholder="blur" // Usar placeholder="blur"
                 blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" // Placeholder simples para blur
-                unoptimized={post.featuredImage.startsWith('http')}
+                unoptimized={post.imageURL.startsWith('http')}
                 sizes="(max-width: 768px) 100vw, 1200px" // Manter sizes para srcset
               />
             </div>
@@ -242,11 +221,11 @@ export default async function BlogPostPage({ params }: PageProps) {
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center">
               <span className="text-white font-bold text-xl">
-                {post.author.charAt(0).toUpperCase()}
+                {post.title.charAt(0).toUpperCase()}
               </span>
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">{post.author}</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{post.title}</h3>
               <p className="text-gray-600">
                 Especialista em relacionamentos e escritor do blog Bebaby
               </p>
@@ -263,17 +242,17 @@ export default async function BlogPostPage({ params }: PageProps) {
           <div className="grid md:grid-cols-3 gap-6">
             {relatedPosts.map(relatedPost => (
               <article key={relatedPost.id} className="bg-white rounded-xl shadow-sm border overflow-hidden hover:shadow-lg transition-shadow">
-                {relatedPost.featuredImage && (
+                {relatedPost.imageURL && (
                   <Link href={`/blog/${relatedPost.slug}`} className="block relative w-full h-48 overflow-hidden"> {/* Adicionado relative, w-full, h-xx, overflow-hidden */}
                     <Image
-                      src={relatedPost.featuredImage}
+                      src={relatedPost.imageURL}
                       alt={relatedPost.title}
                       layout="fill" // Usar layout="fill" para preencher o contêiner pai
                       objectFit="cover" // Garantir que a imagem cubra o espaço sem distorcer
                       loading="lazy"
                       placeholder="blur" // Usar placeholder="blur"
                       blurDataURL="data:image/png;base64,iVBORw0KGgoAAAABAAAAAQABAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" // Placeholder simples para blur
-                      unoptimized={relatedPost.featuredImage.startsWith('http')}
+                      unoptimized={relatedPost.imageURL.startsWith('http')}
                       sizes="(max-width: 768px) 100vw, 400px" // Manter sizes para srcset
                     />
                   </Link>
@@ -282,11 +261,9 @@ export default async function BlogPostPage({ params }: PageProps) {
                   <div className="flex items-center gap-4 text-sm text-gray-500 mb-3">
                     <span className="flex items-center gap-1">
                       <Calendar className="w-3 h-3" />
-                      {format(new Date(relatedPost.publishedAt), 'dd MMM yyyy', { locale: ptBR })}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {relatedPost.readTime} min
+                      <span className="text-xs text-gray-500">
+                        {format(new Date(relatedPost.publishedAt ?? ''), 'dd MMM yyyy', { locale: ptBR })}
+                      </span>
                     </span>
                   </div>
                   
@@ -335,7 +312,8 @@ export default async function BlogPostPage({ params }: PageProps) {
 }
 
 export async function generateMetadata({ params }: PageProps) {
-  const result = await getBlogPost(params.slug)
+  const { slug } = await params
+  const result = await getBlogPost(slug)
   if (!result || (typeof result === 'object' && 'error' in result)) {
     return {
       title: 'Post não encontrado - Blog Bebaby',
@@ -357,10 +335,10 @@ export async function generateMetadata({ params }: PageProps) {
       title: post.title,
       description: post.excerpt,
       url: `/blog/${post.slug}`,
-      images: post.featuredImage ? [post.featuredImage] : [],
+      images: post.imageURL ? [post.imageURL] : [],
       type: 'article',
       publishedTime: post.publishedAt,
-      authors: [post.author],
+      authors: [post.title],
     },
   }
 }

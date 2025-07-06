@@ -2,9 +2,8 @@
 
 import React, { useEffect, useState, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { getFirestoreDB } from '@/lib/firebase'
-import { doc, getDoc } from 'firebase/firestore'
-import { useAuth } from '@/contexts/AuthContext'
+
+import { useAuth } from '@/hooks/useAuth'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { differenceInYears } from 'date-fns'
@@ -85,54 +84,37 @@ export default function ProfileViewPage() {
     if (!id) { return }
 
     try {
-      const db = getFirestoreDB()
-      if (!db) {
-        setError('Erro de configuração do banco de dados')
+      setLoading(true)
+      
+      // Buscar perfil via API
+      const response = await fetch(`/api/user/profile/${id}`)
+      
+      if (!response.ok) {
+        setError('Perfil não encontrado')
         return
       }
       
-      setLoading(true)
-      const docRef = doc(db, 'users', id)
-      const docSnap = await getDoc(docRef)
+      const data = await response.json()
+      console.log('📸 [Profile] Dados completos do usuário:', data)
+      setProfile(data.user as ProfileData)
       
-      if (docSnap.exists()) {
-        const data = docSnap.data()
-        console.log('📸 [Profile] Dados completos do usuário:', data)
-        console.log('📸 [Profile] Campos específicos:', {
-          about: data.about,
-          lookingFor: data.lookingFor,
-          relationshipType: data.relationshipType,
-          height: data.height,
-          weight: data.weight,
-          hasChildren: data.hasChildren,
-          smokes: data.smokes,
-          drinks: data.drinks,
-          education: data.education,
-          profession: data.profession,
-          availableForTravel: data.availableForTravel,
-          gender: data.gender
-        })
-        setProfile(data as ProfileData)
-        
-        // Carregar fotos públicas do array photos no Firestore (mesmo sistema do admin)
-        const photos = data.photos || []
-        console.log('📸 [Profile] Array de fotos:', photos)
-        
-        const publicPhotos = photos
-          .filter((photo: any) => !photo.isPrivate && (photo.url || photo.photoURL))
-          .map((photo: any) => photo.url || photo.photoURL)
-        setGalleryPublic(publicPhotos)
-        const privatePhotos = photos
-          .filter((photo: any) => photo.isPrivate && (photo.url || photo.photoURL))
-          .map((photo: any) => photo.url || photo.photoURL)
-        setGalleryPrivate(privatePhotos)
-        
-        // Registrar visualização do perfil
-        if (user && user.id !== id) {
-          await recordProfileView(id)
-        }
-      } else {
-        setError('Perfil não encontrado')
+      // Carregar fotos
+      const photos = data.photos || []
+      console.log('📸 [Profile] Array de fotos:', photos)
+      
+      const publicPhotos = photos
+        .filter((photo: any) => !photo.isPrivate)
+        .map((photo: any) => photo.url)
+      setGalleryPublic(publicPhotos)
+      
+      const privatePhotos = photos
+        .filter((photo: any) => photo.isPrivate)
+        .map((photo: any) => photo.url)
+      setGalleryPrivate(privatePhotos)
+      
+      // Registrar visualização do perfil
+      if (user && user.id !== id) {
+        await recordProfileView(id)
       }
     } catch (error) {
       setError('Erro ao carregar perfil')

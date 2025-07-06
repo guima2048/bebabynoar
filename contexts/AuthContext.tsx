@@ -1,23 +1,10 @@
 'use client'
 
-import React, { createContext, useContext, useEffect, useState } from 'react'
-import { 
-  onAuthStateChanged, 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword,
-  signOut,
-  updateProfile,
-  sendPasswordResetEmail,
-  User as FirebaseUser
-} from 'firebase/auth'
-import { 
-  doc, 
-  getDoc, 
-  setDoc, 
-  updateDoc, 
-  serverTimestamp 
-} from 'firebase/firestore'
-import { getFirestoreDB, auth } from '@/lib/firebase'
+import React, { createContext, useEffect, useState } from 'react'
+import { useSession, signIn, signOut } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
+import toast from 'react-hot-toast'
+import bcrypt from 'bcryptjs'
 
 interface User {
   id: string
@@ -53,235 +40,162 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const { data: session, status } = useSession()
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+  const router = useRouter()
 
   useEffect(() => {
-    console.log('[AuthContext] useEffect disparado');
-    if (!auth) {
-      console.error('Firebase Auth não está inicializado')
-      setLoading(false)
+    if (status === 'loading') {
+      setLoading(true)
       return
     }
 
-    // Timeout de segurança para evitar loading infinito
-    const timeoutId = setTimeout(() => {
-      console.warn('[AuthContext] Timeout de segurança - forçando loading = false')
-      setLoading(false)
-    }, 10000) // 10 segundos
-
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      console.log('[AuthContext] onAuthStateChanged:', user)
-      if (user) {
-        try {
-          const db = getFirestoreDB()
-          if (!db) {
-            console.error('Erro de configuração do banco de dados')
-            setLoading(false)
-            return
-          }
-          const userDoc = await getDoc(doc(db, 'users', user.uid))
-          console.log('[AuthContext] userDoc.exists:', userDoc.exists())
-          if (userDoc.exists()) {
-            const userData = userDoc.data()
-            console.log('[AuthContext] Dados do usuário no Firestore:', userData)
-            setUser({
-              id: user.uid,
-              email: user.email || '',
-              name: userData.username || user.displayName || '',
-              photoURL: userData.photoURL || user.photoURL || '',
-              premium: userData.premium || false,
-              verified: userData.verified || false,
-              userType: userData.userType || 'user',
-              gender: userData.gender || '',
-              lookingFor: userData.lookingFor || '',
-              isAdmin: userData.isAdmin || false,
-            })
-          } else {
-            console.warn('[AuthContext] Documento do usuário não existe no Firestore!')
-            setUser({
-              id: user.uid,
-              email: user.email || '',
-              name: user.displayName || '',
-              photoURL: user.photoURL || '',
-              premium: false,
-              verified: false,
-              userType: 'sugar_daddy', // Fallback para teste
-              gender: 'male', // Fallback para teste
-              lookingFor: 'female', // Fallback para teste
-              isAdmin: false
-            })
-          }
-        } catch (error) {
-          console.error('[AuthContext] Erro ao carregar dados do usuário:', error)
-          setUser({
-            id: user.uid,
-            email: user.email || '',
-            name: user.displayName || '',
-            photoURL: user.photoURL || '',
-            premium: false,
-            verified: false,
-            userType: 'sugar_daddy', // Fallback para teste
-            gender: 'male', // Fallback para teste
-            lookingFor: 'female', // Fallback para teste
-            isAdmin: false
-          })
-        }
-      } else {
-        console.log('[AuthContext] Usuário não autenticado')
-        setUser(null)
-      }
-      setLoading(false)
-      console.log('[AuthContext] loading:', false)
-    })
-
-    return () => {
-      clearTimeout(timeoutId)
-      unsubscribe()
+    if (session?.user) {
+      setUser({
+        id: session.user.id,
+        email: session.user.email,
+        name: session.user.name,
+        photoURL: session.user.image,
+        premium: session.user.premium,
+        verified: session.user.verified,
+        userType: session.user.userType,
+        isAdmin: session.user.isAdmin,
+      })
+    } else {
+      setUser(null)
     }
-  }, [])
+    
+    setLoading(false)
+  }, [session, status])
 
-  const signIn = async (email: string, password: string): Promise<void> => {
-    if (!auth) throw new Error('Firebase Auth não está inicializado')
+  const handleSignIn = async (email: string, password: string): Promise<void> => {
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password)
-      
-      // Registrar IP de login
-      try {
-        await fetch('/api/record-login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            userId: userCredential.user.uid
-          })
-        })
-      } catch (error) {
-        console.error('Erro ao registrar IP de login:', error)
-        // Não falha o login se não conseguir registrar o IP
+      const result = await signIn('credentials', {
+        email,
+        password,
+        redirect: false,
+      })
+
+      if (result?.error) {
+        throw new Error(result.error)
       }
-      
-      // Não retorna nada
+
+      toast.success('Login realizado com sucesso!')
     } catch (error: any) {
+      toast.error(error.message || 'Erro ao fazer login')
       throw error
     }
   }
 
-  const signUp = async (email: string, password: string, userData: any): Promise<void> => {
-    if (!auth) throw new Error('Firebase Auth não está inicializado')
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password)
-    const user = userCredential.user
-    const db = getFirestoreDB()
-    if (!db) {
-      throw new Error('Erro de configuração do banco de dados')
+  const handleSignUp = async (email: string, password: string, userData: any): Promise<void> => {
+    try {
+      // Criar usuário via API
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          ...userData,
+        }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || 'Erro ao cadastrar')
+      }
+
+      // Fazer login automaticamente
+      await handleSignIn(email, password)
+      toast.success('Cadastro realizado com sucesso!')
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao cadastrar')
+      throw error
     }
-    await setDoc(doc(db, 'users', user.uid), {
-      ...userData,
-      email: user.email || '',
-      createdAt: new Date(),
-      premium: false,
-      verified: false,
-    })
-    setUser({
-      id: user.uid,
-      email: user.email || '',
-      name: userData.username || user.displayName || '',
-      photoURL: userData.photoURL || user.photoURL || '',
-      premium: false,
-      verified: false,
-      userType: userData.userType || 'user',
-      isAdmin: userData.isAdmin || false,
-    })
-    // Não retorna nada (void)
   }
 
-  const logout = async () => {
-    if (!auth) throw new Error('Firebase Auth não está inicializado')
+  const handleLogout = async () => {
     try {
-      await signOut(auth)
-    } catch (error: any) {
-      throw error
+      await signOut({ redirect: false })
+      setUser(null)
+      toast.success('Logout realizado com sucesso!')
+      router.push('/')
+    } catch (error) {
+      toast.error('Erro ao fazer logout')
     }
   }
 
   const updateUserProfile = async (data: Partial<User>) => {
-    if (!user) { throw new Error('Usuário não autenticado') }
-
     try {
-      const db = getFirestoreDB()
-      if (!db) {
-        throw new Error('Erro de configuração do banco de dados')
+      const response = await fetch('/api/user/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      })
+
+      if (!response.ok) {
+        throw new Error('Erro ao atualizar perfil')
       }
-      await updateDoc(doc(db, 'users', user.id), data)
-      setUser(prev => prev ? { ...prev, ...data } : null)
+
+      // Atualizar estado local
+      if (user) {
+        setUser({ ...user, ...data })
+      }
+
+      toast.success('Perfil atualizado com sucesso!')
     } catch (error: any) {
+      toast.error(error.message || 'Erro ao atualizar perfil')
       throw error
     }
   }
 
   const resetPassword = async (email: string) => {
-    if (!auth) throw new Error('Firebase Auth não está inicializado')
     try {
-      await sendPasswordResetEmail(auth, email)
+      const response = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Erro ao enviar email de reset')
+      }
+
+      toast.success('Email de recuperação enviado!')
     } catch (error: any) {
+      toast.error(error.message || 'Erro ao enviar email de reset')
       throw error
     }
   }
 
   const getAuthToken = async (): Promise<string | null> => {
-    if (!auth?.currentUser) return null
-    try {
-      return await auth.currentUser.getIdToken()
-    } catch (error) {
-      console.error('Erro ao obter token:', error)
-      return null
-    }
-  }
-
-  const getErrorMessage = (errorCode: string): string => {
-    switch (errorCode) {
-      case 'auth/user-not-found':
-        return 'Usuário não encontrado'
-      case 'auth/wrong-password':
-        return 'Senha incorreta'
-      case 'auth/email-already-in-use':
-        return 'Este email já está em uso'
-      case 'auth/weak-password':
-        return 'A senha deve ter pelo menos 6 caracteres'
-      case 'auth/invalid-email':
-        return 'Email inválido'
-      case 'auth/too-many-requests':
-        return 'Muitas tentativas. Tente novamente mais tarde'
-      default:
-        return 'Ocorreu um erro. Tente novamente'
-    }
-  }
-
-  const value = {
-    user,
-    loading,
-    signIn,
-    signUp,
-    logout,
-    updateUserProfile,
-    resetPassword,
-    getAuthToken
+    // Para NextAuth, o token é gerenciado automaticamente
+    return null
   }
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        signIn: handleSignIn,
+        signUp: handleSignUp,
+        logout: handleLogout,
+        updateUserProfile,
+        resetPassword,
+        getAuthToken,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   )
 }
-
-export function useAuth() {
-  const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error('useAuth deve ser usado dentro de um AuthProvider')
-  }
-  return context
-} 
 
 export default AuthContext 

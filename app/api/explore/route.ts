@@ -1,112 +1,165 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAdminFirestore } from '@/lib/firebase-admin'
-import { getAuth } from 'firebase-admin/auth'
-import { filterVisibleUsers, User } from '@/lib/user-matching'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
   try {
-    // Verificar autenticação
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json(
-        { success: false, error: 'Token de autenticação necessário' },
-        { status: 401 }
-      )
-    }
-
-    const token = authHeader.split('Bearer ')[1]
-    let currentUser: any
-
-    try {
-      const auth = getAuth()
-      const decodedToken = await auth.verifyIdToken(token)
-      currentUser = decodedToken
-    } catch (error) {
-      return NextResponse.json(
-        { success: false, error: 'Token inválido' },
-        { status: 401 }
-      )
-    }
-
-    const db = getAdminFirestore()
-    const { searchParams } = new URL(request.url)
-    const limit = parseInt(searchParams.get('limit') || '50')
-    const userType = searchParams.get('userType')
-    const isPremium = searchParams.get('isPremium')
-    const isVerified = searchParams.get('isVerified')
-
-    let query = db.collection('users')
-      .orderBy('createdAt', 'desc')
-      .limit(limit * 2) // Buscar mais para compensar o filtro
-
-    // Aplicar filtros se fornecidos
-    if (userType) {
-      query = query.where('userType', '==', userType)
-    }
+    const session = await getServerSession(authOptions)
     
-    if (isPremium === 'true') {
-      query = query.where('isPremium', '==', true)
-    }
-    if (isVerified === 'true') {
-      query = query.where('isVerified', '==', true)
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Não autorizado' },
+        { status: 401 }
+      )
     }
 
-    const snapshot = await query.get()
-    const allProfiles = snapshot.docs.map((doc: any) => ({
-      id: doc.id,
-      ...doc.data()
-    }))
+    const { searchParams } = new URL(request.url)
+    
+    // Parâmetros de busca
+    const search = searchParams.get('search') || ''
+    const userType = searchParams.get('userType') as 'SUGAR_BABY' | 'SUGAR_DADDY' | null
+    const gender = searchParams.get('gender') as 'MALE' | 'FEMALE' | null
+    const state = searchParams.get('state') || ''
+    const city = searchParams.get('city') || ''
+    const minAge = parseInt(searchParams.get('minAge') || '18')
+    const maxAge = parseInt(searchParams.get('maxAge') || '100')
+    const verified = searchParams.get('verified') === 'true'
+    const premium = searchParams.get('premium') === 'true'
+    
+    // Paginação
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '20')
+    const offset = (page - 1) * limit
 
-    // Filtrar apenas usuários com fotos públicas
-    const profilesWithPhotos = allProfiles.filter((profile: any) => {
-      // Verificar se tem photoURL (foto de perfil)
-      const hasProfilePhoto = profile.photoURL && profile.photoURL !== ''
-      
-      // Verificar se tem fotos públicas na galeria
-      const hasPublicPhotos = profile.photos && Array.isArray(profile.photos) && 
-        profile.photos.some((photo: any) => !photo.isPrivate)
-      
-      // Verificar se tem fotos públicas no array publicPhotos
-      const hasPublicPhotosArray = profile.publicPhotos && Array.isArray(profile.publicPhotos) && 
-        profile.publicPhotos.length > 0
-      
-      return hasProfilePhoto || hasPublicPhotos || hasPublicPhotosArray
+    // Calcular datas de nascimento para filtro de idade
+    const today = new Date()
+    const minDate = new Date(today.getFullYear() - maxAge, today.getMonth(), today.getDate())
+    const maxDate = new Date(today.getFullYear() - minAge, today.getMonth(), today.getDate())
+
+    // Construir filtros
+    const where: any = {
+      id: { not: session.user.id }, // Excluir usuário atual
+      status: 'ACTIVE',
+      birthdate: {
+        gte: minDate,
+        lte: maxDate
+      }
+    }
+
+    // Filtro por tipo de usuário (o que está procurando)
+    if (userType) {
+      where.lookingFor = userType
+    }
+
+    // Filtro por gênero
+    if (gender) {
+      where.gender = gender
+    }
+
+    // Filtro por localização
+    if (state) {
+      where.state = state
+    }
+    if (city) {
+      where.city = city
+    }
+
+    // Filtro por verificação
+    if (verified) {
+      where.verified = true
+    }
+
+    // Filtro por premium
+    if (premium) {
+      where.premium = true
+    }
+
+    // Busca por texto (nome, username, about)
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { username: { contains: search, mode: 'insensitive' } },
+        { about: { contains: search, mode: 'insensitive' } }
+      ]
+    }
+
+    // Buscar usuários
+    const users = await prisma.user.findMany({
+      where,
+      select: {
+        id: true,
+        name: true,
+        username: true,
+        birthdate: true,
+        gender: true,
+        userType: true,
+        state: true,
+        city: true,
+        about: true,
+        photoURL: true,
+        verified: true,
+        premium: true,
+        premiumExpiry: true,
+        photos: {
+          where: { isPrivate: false },
+          select: { url: true },
+          take: 1
+        },
+        _count: {
+          select: {
+            photos: {
+              where: { isPrivate: false }
+            }
+          }
+        }
+      },
+      orderBy: [
+        { premium: 'desc' },
+        { verified: 'desc' },
+        { lastActive: 'desc' }
+      ],
+      take: limit,
+      skip: offset
     })
 
-    // Aplicar regras de matching
-    const currentUserData = await db.collection('users').doc(currentUser.uid).get()
-    if (!currentUserData.exists) {
-      return NextResponse.json(
-        { success: false, error: 'Usuário não encontrado' },
-        { status: 404 }
-      )
-    }
+    // Contar total de resultados
+    const total = await prisma.user.count({ where })
 
-    const userData = currentUserData.data()
-    const userForMatching: User = {
-      id: currentUser.uid,
-      userType: userData?.userType || 'sugar_baby',
-      gender: userData?.gender || 'female',
-      lookingFor: userData?.lookingFor || 'male',
-      username: userData?.username || ''
-    }
+    // Calcular idade e formatar dados
+    const formattedUsers = users.map(user => {
+      const age = today.getFullYear() - user.birthdate.getFullYear()
+      const monthDiff = today.getMonth() - user.birthdate.getMonth()
+      const actualAge = monthDiff < 0 || (monthDiff === 0 && today.getDate() < user.birthdate.getDate()) 
+        ? age - 1 
+        : age
 
-    // Aplicar filtro de matching
-    const visibleProfiles = filterVisibleUsers(userForMatching, profilesWithPhotos as User[])
-    
-    // Limitar ao número solicitado
-    const profiles = visibleProfiles.slice(0, limit)
+      return {
+        ...user,
+        age: actualAge,
+        photoCount: user._count.photos,
+        mainPhoto: user.photoURL || user.photos[0]?.url,
+        photos: undefined, // Remover array de fotos
+        _count: undefined // Remover contador
+      }
+    })
 
-    return NextResponse.json({ 
-      success: true, 
-      profiles,
-      total: profiles.length 
+    return NextResponse.json({
+      users: formattedUsers,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasNext: page * limit < total,
+        hasPrev: page > 1
+      }
     })
 
   } catch (error) {
-    console.error('Erro ao buscar perfis:', error)
+    console.error('❌ Erro ao buscar usuários:', error)
     return NextResponse.json(
-      { success: false, error: 'Erro interno do servidor' },
+      { error: 'Erro interno do servidor' },
       { status: 500 }
     )
   }

@@ -1,360 +1,244 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getFirestoreDB, collection, addDoc, serverTimestamp, doc, getDoc, query, where, getDocs, updateDoc } from '@/lib/firebase'
-import { sendInterestSchema, respondInterestSchema, validateAndSanitize, createErrorResponse } from '@/lib/schemas'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import { z } from 'zod'
 
-export async function POST(req: NextRequest) {
+const sendInterestSchema = z.object({
+  receiverId: z.string(),
+  message: z.string().optional(),
+})
+
+const respondInterestSchema = z.object({
+  interestId: z.string(),
+  response: z.enum(['ACCEPTED', 'REJECTED']),
+  message: z.string().optional(),
+})
+
+export async function POST(request: NextRequest) {
   try {
-    const db = getFirestoreDB()
-    if (!db) {
-      return NextResponse.json({ error: 'Erro de conexão com o banco de dados' }, { status: 500 })
-    }
-    const body = await req.json()
+    const session = await getServerSession(authOptions)
     
-    // Validação Zod
-    const validation = validateAndSanitize(sendInterestSchema, body)
-    if (!validation.success) {
-      return NextResponse.json(createErrorResponse(validation.errors), { status: 400 })
-    }
-    
-    const { senderId, receiverId, message } = validation.data
-
-    if (!senderId || !receiverId) {
+    if (!session?.user?.id) {
       return NextResponse.json(
-        { error: 'IDs do remetente e destinatário são obrigatórios' },
-        { status: 400 }
+        { message: 'Não autorizado' },
+        { status: 401 }
       )
     }
 
-    // Verificar se os usuários existem
-    const senderDoc = await getDoc(doc(db, 'users', senderId))
-    const receiverDoc = await getDoc(doc(db, 'users', receiverId))
+    const body = await request.json()
+    const { receiverId, message } = sendInterestSchema.parse(body)
 
-    if (!senderDoc.exists() || !receiverDoc.exists()) {
+    // Verificar se o receptor existe
+    const receiver = await prisma.user.findUnique({
+      where: { id: receiverId }
+    })
+
+    if (!receiver) {
       return NextResponse.json(
-        { error: 'Usuário não encontrado' },
+        { message: 'Usuário não encontrado' },
         { status: 404 }
       )
     }
 
-    const senderData = senderDoc.data()
-    const receiverData = receiverDoc.data()
+    // Verificar se já existe um interesse
+    const existingInterest = await prisma.interest.findFirst({
+      where: {
+        senderId: session.user.id,
+        receiverId
+      }
+    })
 
-    // Verificar se já enviou interesse recentemente
-    const existingInterest = await getDocs(
-      query(
-        collection(db, 'interests'),
-        where('senderId', '==', senderId),
-        where('receiverId', '==', receiverId),
-        where('status', 'in', ['pending', 'accepted'])
-      )
-    )
-
-    if (!existingInterest.empty) {
+    if (existingInterest) {
       return NextResponse.json(
-        { error: 'Você já enviou interesse para este usuário' },
+        { message: 'Você já enviou interesse para este usuário' },
         { status: 400 }
       )
     }
 
     // Criar interesse
-    const interestData = {
-      senderId,
-      receiverId,
-      message: message || '',
-      status: 'pending',
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    }
-
-    const interestRef = await addDoc(collection(db, 'interests'), interestData)
-
-    // Criar notificação para o destinatário
-    const notificationData = {
-      userId: receiverId,
-      type: 'interest',
-      title: `${senderData.name} demonstrou interesse em você!`,
-      message: message || 'Clique para ver o perfil completo',
+    const interest = await prisma.interest.create({
       data: {
-        senderId,
-        senderName: senderData.name,
-        senderPhoto: senderData.photos?.[0] || null,
-        interestId: interestRef.id
+        senderId: session.user.id,
+        receiverId,
+        message,
+        status: 'PENDING'
       },
-      read: false,
-      createdAt: serverTimestamp()
-    }
-
-    await addDoc(collection(db, 'notifications'), notificationData)
-
-    // Enviar notificação push se habilitada
-    if (receiverData.pushEnabled && receiverData.pushTokens?.length > 0) {
-      try {
-        await sendPushNotification(
-          receiverData.pushTokens,
-          `${senderData.name} demonstrou interesse em você!`,
-          message || 'Clique para ver o perfil completo',
-          {
-            type: 'interest',
-            senderId,
-            interestId: interestRef.id
+      include: {
+        sender: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+            photoURL: true,
+            userType: true,
           }
-        )
-      } catch (pushError) {
-        console.error('Erro ao enviar push notification:', pushError)
+        },
+        receiver: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+            photoURL: true,
+            userType: true,
+          }
+        }
       }
-    }
-
-    // Enviar e-mail se habilitado
-    if (receiverData.notificationSettings?.emailInterests && receiverData.email) {
-      try {
-        await sendEmailNotification(
-          receiverData.email,
-          (receiverData.name || 'Usuário'),
-          (senderData.name || ''),
-          (message || ''),
-          interestRef.id
-        )
-      } catch (emailError) {
-        console.error('Erro ao enviar e-mail de notificação:', emailError)
-      }
-    }
-
-    return NextResponse.json({
-      success: true,
-      interestId: interestRef.id,
-      message: 'Interesse enviado com sucesso'
     })
 
+    // Criar notificação para o receptor
+    await prisma.notification.create({
+      data: {
+        userId: receiverId,
+        title: 'Novo interesse!',
+        message: `${interest.sender.name} enviou interesse por você`,
+        type: 'INTEREST',
+        data: {
+          interestId: interest.id,
+          senderId: session.user.id,
+          senderName: interest.sender.name,
+        }
+      }
+    })
+
+    return NextResponse.json({
+      message: 'Interesse enviado com sucesso',
+      interest
+    })
   } catch (error) {
     console.error('Erro ao enviar interesse:', error)
+    
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { message: 'Dados inválidos', errors: error.errors },
+        { status: 400 }
+      )
+    }
+
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { message: 'Erro interno do servidor' },
       { status: 500 }
     )
   }
 }
 
 // Responder ao interesse
-export async function PUT(req: NextRequest) {
+export async function PUT(request: NextRequest) {
   try {
-    const db = getFirestoreDB()
-    if (!db) {
-      return NextResponse.json({ error: 'Erro de conexão com o banco de dados' }, { status: 500 })
-    }
-    const body = await req.json()
+    const session = await getServerSession(authOptions)
     
-    // Validação Zod
-    const validation = validateAndSanitize(respondInterestSchema, body)
-    if (!validation.success) {
-      return NextResponse.json(createErrorResponse(validation.errors), { status: 400 })
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { message: 'Não autorizado' },
+        { status: 401 }
+      )
     }
-    
-    const { interestId, response, message } = validation.data
+
+    const body = await request.json()
+    const { interestId, response, message } = respondInterestSchema.parse(body)
 
     // Buscar interesse
-    const interestDoc = await getDoc(doc(db, 'interests', interestId))
-    if (!interestDoc.exists()) {
+    const interest = await prisma.interest.findUnique({
+      where: { id: interestId },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+            photoURL: true,
+          }
+        },
+        receiver: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+            photoURL: true,
+          }
+        }
+      }
+    })
+
+    if (!interest) {
       return NextResponse.json(
-        { error: 'Interesse não encontrado' },
+        { message: 'Interesse não encontrado' },
         { status: 404 }
       )
     }
 
-    const interestData = interestDoc.data()
+    // Verificar se o usuário atual é o receptor
+    if (interest.receiverId !== session.user.id) {
+      return NextResponse.json(
+        { message: 'Acesso negado' },
+        { status: 403 }
+      )
+    }
 
     // Atualizar interesse
-    await updateDoc(doc(db, 'interests', interestId), {
-      status: response,
-      responseMessage: message || '',
-      respondedAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
+    const updatedInterest = await prisma.interest.update({
+      where: { id: interestId },
+      data: {
+        status: response,
+        updatedAt: new Date()
+      },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+            photoURL: true,
+          }
+        },
+        receiver: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+            photoURL: true,
+          }
+        }
+      }
     })
-
-    // Buscar dados dos usuários
-    const senderDoc = await getDoc(doc(db, 'users', interestData.senderId))
-    const receiverDoc = await getDoc(doc(db, 'users', interestData.receiverId))
-
-    const senderData = senderDoc.exists() ? senderDoc.data() : null
-    const receiverData = receiverDoc.exists() ? receiverDoc.data() : null
 
     // Criar notificação para o remetente
-    if (senderData) {
-      const notificationTitle = response === 'accepted' 
-        ? `${receiverData?.name} aceitou seu interesse!` 
-        : `${receiverData?.name} não aceitou seu interesse`
+    const notificationTitle = response === 'ACCEPTED' 
+      ? `${interest.receiver.name} aceitou seu interesse!` 
+      : `${interest.receiver.name} não aceitou seu interesse`
 
-      const notificationData = {
-        userId: interestData.senderId,
-        type: 'interest_response',
+    await prisma.notification.create({
+      data: {
+        userId: interest.senderId,
         title: notificationTitle,
-        message: message || (response === 'accepted' ? 'Vocês podem começar a conversar!' : 'Não desanime, continue tentando!'),
+        message: message || (response === 'ACCEPTED' ? 'Vocês podem começar a conversar!' : 'Não desanime, continue tentando!'),
+        type: 'INTEREST',
         data: {
-          receiverId: interestData.receiverId,
-          receiverName: receiverData?.name,
-          receiverPhoto: receiverData?.photos?.[0] || null,
           interestId,
-          response
-        },
-        read: false,
-        createdAt: serverTimestamp()
-      }
-
-      await addDoc(collection(db, 'notifications'), notificationData)
-
-      // Enviar push notification se habilitado
-      if (senderData.pushEnabled && senderData.pushTokens?.length > 0) {
-        try {
-          await sendPushNotification(
-            senderData.pushTokens,
-            notificationTitle,
-            message || (response === 'accepted' ? 'Vocês podem começar a conversar!' : 'Não desanime, continue tentando!'),
-            {
-              type: 'interest_response',
-              receiverId: interestData.receiverId,
-              interestId,
-              response
-            }
-          )
-        } catch (pushError) {
-          console.error('Erro ao enviar push notification:', pushError)
+          response,
+          receiverId: interest.receiverId,
+          receiverName: interest.receiver.name,
         }
       }
-
-      // Enviar e-mail se habilitado
-      if (senderData.notificationSettings?.emailInterests && senderData.email) {
-        try {
-          await sendEmailNotification(
-            senderData.email,
-            (senderData.name || ''),
-            (receiverData?.name || 'Usuário'),
-            (message || (response === 'accepted' ? 'Vocês podem começar a conversar!' : 'Não desanime, continue tentando!')),
-            interestId
-          )
-        } catch (emailError) {
-          console.error('Erro ao enviar e-mail de notificação:', emailError)
-        }
-      }
-    }
+    })
 
     return NextResponse.json({
-      success: true,
-      message: `Interesse ${response === 'accepted' ? 'aceito' : 'rejeitado'} com sucesso`
+      message: response === 'ACCEPTED' ? 'Interesse aceito com sucesso' : 'Interesse rejeitado',
+      interest: updatedInterest
     })
-
   } catch (error) {
     console.error('Erro ao responder interesse:', error)
+    
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { message: 'Dados inválidos', errors: error.errors },
+        { status: 400 }
+      )
+    }
+
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { message: 'Erro interno do servidor' },
       { status: 500 }
     )
-  }
-}
-
-async function sendPushNotification(tokens: string[], title: string, message: string, data: any) {
-  try {
-    const response = await fetch('https://fcm.googleapis.com/fcm/send', {
-      method: 'POST',
-      headers: {
-        'Authorization': `key=${process.env.FIREBASE_SERVER_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        registration_ids: tokens,
-        notification: {
-          title,
-          body: message,
-          icon: '/icon-192x192.png',
-          badge: '/badge-72x72.png',
-          click_action: '/profile'
-        },
-        data: {
-          ...data,
-          click_action: '/profile',
-          timestamp: Date.now().toString()
-        },
-        priority: 'high'
-      })
-    })
-
-    if (!response.ok) {
-      throw new Error(`FCM error: ${response.status}`)
-    }
-
-    const result = await response.json()
-    
-    if (result.failure > 0) {
-      console.warn('Alguns push notifications falharam:', result.results)
-    }
-
-    return result
-  } catch (error) {
-    console.error('Erro ao enviar push notification:', error)
-    throw error
-  }
-}
-
-async function sendEmailNotification(
-  email: string, 
-  receiverName: string, 
-  senderName: string, 
-  message: string, 
-  interestId: string
-) {
-  try {
-    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: {
-        'api-key': process.env.BREVO_API_KEY!,
-        'Content-Type': 'application/json',
-        'accept': 'application/json',
-      },
-      body: JSON.stringify({
-        sender: { name: 'Bebaby App', email: 'no-reply@bebaby.app' },
-        to: [{ email }],
-        subject: `${senderName} demonstrou interesse em você! - Bebaby App`,
-        htmlContent: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background: linear-gradient(135deg, #ec4899, #8b5cf6); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-              <h1 style="color: white; margin: 0; font-size: 28px;">💕 Novo Interesse!</h1>
-            </div>
-            
-            <div style="background: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-              <h2 style="color: #333; margin-bottom: 20px;">Olá, ${receiverName}!</h2>
-              
-              <p style="color: #666; line-height: 1.6; margin-bottom: 25px;">
-                <strong>${senderName}</strong> demonstrou interesse em você no Bebaby App!
-              </p>
-              
-              ${message ? `
-                <div style="background: #f8f9fa; border-left: 4px solid #ec4899; padding: 20px; margin-bottom: 25px;">
-                  <p style="color: #333; font-style: italic; margin: 0;">
-                    "${message}"
-                  </p>
-                </div>
-              ` : ''}
-              
-              <div style="text-align: center;">
-                <a href="${process.env.NEXT_PUBLIC_APP_URL}/profile/${senderName}" 
-                   style="background: linear-gradient(135deg, #ec4899, #8b5cf6); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; display: inline-block; font-weight: bold;">
-                  Ver Perfil
-                </a>
-              </div>
-              
-              <p style="color: #999; font-size: 14px; margin-top: 25px; text-align: center;">
-                Responda rapidamente para não perder essa oportunidade! 💖
-              </p>
-            </div>
-          </div>
-        `
-      })
-    })
-
-    if (!res.ok) {
-      console.error('Erro ao enviar e-mail de notificação:', await res.text())
-      throw new Error('Falha ao enviar e-mail')
-    }
-  } catch (error) {
-    console.error('Erro ao enviar e-mail de notificação:', error)
-    throw error
   }
 } 

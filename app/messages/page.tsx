@@ -1,14 +1,13 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/hooks/useAuth'
 import { Search, MessageCircle, Crown, Shield, Clock, User, Filter, MoreVertical, Heart, Users, Star, TrendingUp, Menu } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import EmptyMessages from '@/components/EmptyMessages'
 import MessagesOnboarding from '@/components/MessagesOnboarding'
-import { collection, query, where, orderBy, getDocs, doc, getDoc } from 'firebase/firestore'
-import { db } from '@/lib/firebase'
+
 
 interface Conversation {
   id: string
@@ -59,49 +58,34 @@ export default function MessagesPage() {
   }, [user, authLoading])
 
   const loadConversations = async () => {
-    if (!user || !db) return
+    if (!user) return
 
     try {
       setLoading(true)
       
-      // Buscar conversas do usuário atual
-      const conversationsRef = collection(db, 'conversations')
-      const q = query(
-        conversationsRef,
-        where('participants', 'array-contains', user.id),
-        orderBy('lastMessageTime', 'desc')
-      )
+      // Buscar conversas via API
+      const response = await fetch('/api/conversations')
       
-      const querySnapshot = await getDocs(q)
-      const conversationsData: Conversation[] = []
-      
-      for (const conversationDoc of querySnapshot.docs) {
-        const conversationData = conversationDoc.data()
-        const otherUserId = conversationData.participants.find((id: string) => id !== user.id)
-        
-        if (typeof otherUserId === 'string' && otherUserId) {
-          // Buscar dados do outro usuário
-          const userDoc = await getDoc(doc(db, 'users', otherUserId))
-          if (userDoc.exists()) {
-            const userData = userDoc.data()
-            conversationsData.push({
-              id: conversationDoc.id,
-              lastMessage: conversationData.lastMessage || '',
-              lastMessageTime: conversationData.lastMessageTime?.toDate() || new Date(),
-              unreadCount: conversationData.unreadCount?.[user.id] || 0,
-              user: {
-                id: otherUserId,
-                username: userData.username || userData.name || 'Usuário',
-                photoURL: userData.photoURL,
-                userType: userData.userType || 'user',
-                premium: userData.premium || false,
-                verified: userData.verified || false,
-                online: userData.online || false
-              }
-            })
-          }
-        }
+      if (!response.ok) {
+        throw new Error('Erro ao carregar conversas')
       }
+      
+      const data = await response.json()
+      const conversationsData: Conversation[] = data.conversations.map((conv: any) => ({
+        id: conv.id,
+        lastMessage: conv.lastMessage || '',
+        lastMessageTime: new Date(conv.lastMessageTime),
+        unreadCount: conv.unreadCount || 0,
+        user: {
+          id: conv.participant.id,
+          username: conv.participant.username || conv.participant.name || 'Usuário',
+          photoURL: conv.participant.photoURL,
+          userType: 'user',
+          premium: conv.participant.premium || false,
+          verified: conv.participant.verified || false,
+          online: false
+        }
+      }))
       
       setConversations(conversationsData)
       

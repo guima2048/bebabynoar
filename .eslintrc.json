@@ -2,8 +2,6 @@
   "extends": "next/core-web-vitals",
   "rules": {
     "no-console": "warn",
-    "react/no-unescaped-entities": "off",
-    "curly": "off",
     "@next/next/no-img-element": "warn",
     "jsx-a11y/alt-text": "warn",
     "react-hooks/exhaustive-deps": "warn",

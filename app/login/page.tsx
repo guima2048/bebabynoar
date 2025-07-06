@@ -2,13 +2,10 @@
 
 import React, { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { signInWithEmailAndPassword } from 'firebase/auth'
-import { collection, query, where, getDocs } from 'firebase/firestore'
-import { auth } from '@/lib/firebase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
-import { getFirestoreDB } from '@/lib/firebase'
+import { useAuth } from '@/hooks/useAuth'
 
 interface LoginForm {
   identifier: string
@@ -19,35 +16,41 @@ export default function LoginPage() {
   const { register, handleSubmit, formState: { errors }, setError } = useForm<LoginForm>()
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const { signIn } = useAuth()
 
   async function onSubmit(data: LoginForm) {
     setLoading(true)
     try {
-      if (!auth) {
-        toast.error('Serviço de autenticação indisponível. Tente novamente mais tarde.')
-        setLoading(false)
-        return
-      }
-      
-      const db = getFirestoreDB()
-      if (!db) {
-        toast.error('Serviço de banco de dados indisponível. Tente novamente mais tarde.')
-        setLoading(false)
-        return
-      }
       let email = data.identifier
-      // Se não for e-mail, tenta buscar pelo nome de usuário
+      
+      // Se não for e-mail, tenta buscar pelo nome de usuário via API
       if (!/^[^@]+@[^@]+\.[^@]+$/.test(data.identifier)) {
-        const q = query(collection(db, 'users'), where('username', '==', data.identifier.toLowerCase()))
-        const snap = await getDocs(q)
-        if (snap.empty) {
-          setError('identifier', { message: 'Usuário não encontrado' })
+        try {
+          const response = await fetch('/api/auth/get-email-by-username', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ username: data.identifier.toLowerCase() })
+          })
+          
+          if (response.ok) {
+            const result = await response.json()
+            email = result.email
+          } else {
+            setError('identifier', { message: 'Usuário não encontrado' })
+            setLoading(false)
+            return
+          }
+        } catch (error) {
+          setError('identifier', { message: 'Erro ao buscar usuário' })
           setLoading(false)
           return
         }
-        email = snap.docs[0].data().email
       }
-      const userCredential = await signInWithEmailAndPassword(auth, email, data.password)
+
+      // Usar NextAuth para login
+      await signIn(email, data.password)
       
       // Registrar IP de login
       try {
@@ -57,7 +60,7 @@ export default function LoginPage() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            userId: userCredential.user.uid
+            email: email
           })
         })
       } catch (error) {
@@ -65,10 +68,10 @@ export default function LoginPage() {
         // Não falha o login se não conseguir registrar o IP
       }
       
-      toast.success('Login realizado!')
+      // Redirecionar após login bem-sucedido
       router.push('/explore')
     } catch (err: any) {
-      toast.error('Credenciais inválidas')
+      toast.error(err.message || 'Credenciais inválidas')
     } finally {
       setLoading(false)
     }

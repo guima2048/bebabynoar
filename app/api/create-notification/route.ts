@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getFirestoreDB, collection, addDoc, serverTimestamp, doc, getDoc, updateDoc, query, where, getDocs } from '@/lib/firebase'
+import { PrismaClient } from '@prisma/client'
+
+const prisma = new PrismaClient()
 
 export async function POST(req: NextRequest) {
   try {
-    const db = getFirestoreDB()
-    if (!db) {
-      return NextResponse.json({ error: 'Erro de conexão com o banco de dados' }, { status: 500 })
-    }
-    
     const { userId, type, title, message, data } = await req.json()
 
     if (!userId || !type || !title || !message) {
@@ -18,25 +15,14 @@ export async function POST(req: NextRequest) {
     }
 
     // Verificar se o usuário existe
-    const userDoc = await getDoc(doc(db, 'users', userId))
-    if (!userDoc.exists()) {
+    const userDoc = await prisma.user.findUnique({
+      where: { id: userId },
+    })
+    if (!userDoc) {
       return NextResponse.json(
         { error: 'Usuário não encontrado' },
         { status: 404 }
       )
-    }
-
-    const userData = userDoc.data()
-
-    // Verificar configurações de notificação do usuário
-    const notificationSettings = userData.notificationSettings || {}
-    
-    // Verificar se o tipo de notificação está habilitado
-    if (notificationSettings[type] === false) {
-      return NextResponse.json({
-        success: true,
-        message: 'Notificação desabilitada para este usuário'
-      })
     }
 
     // Criar notificação
@@ -47,43 +33,12 @@ export async function POST(req: NextRequest) {
       message,
       data: data || {},
       read: false,
-      createdAt: serverTimestamp()
+      createdAt: new Date()
     }
 
-    const notificationRef = await addDoc(collection(db, 'notifications'), notificationData)
-
-    // Enviar notificação push se habilitada
-    if (userData.pushEnabled && userData.pushTokens?.length > 0) {
-      try {
-        await sendPushNotification(
-          userData.pushTokens,
-          title,
-          message,
-          {
-            type,
-            ...data
-          }
-        )
-      } catch (pushError) {
-        console.error('Erro ao enviar push notification:', pushError)
-      }
-    }
-
-    // Enviar e-mail se habilitado
-    if (notificationSettings.emailNotifications && userData.email) {
-      try {
-        await sendEmailNotification(
-          userData.email,
-          userData.name,
-          title,
-          message,
-          type,
-          data
-        )
-      } catch (emailError) {
-        console.error('Erro ao enviar e-mail de notificação:', emailError)
-      }
-    }
+    const notificationRef = await prisma.notification.create({
+      data: notificationData
+    })
 
     return NextResponse.json({
       success: true,
@@ -103,11 +58,6 @@ export async function POST(req: NextRequest) {
 // Marcar notificação como lida
 export async function PUT(req: NextRequest) {
   try {
-    const db = getFirestoreDB()
-    if (!db) {
-      return NextResponse.json({ error: 'Erro de conexão com o banco de dados' }, { status: 500 })
-    }
-    
     const { notificationId, userId } = await req.json()
 
     if (!notificationId || !userId) {
@@ -118,16 +68,17 @@ export async function PUT(req: NextRequest) {
     }
 
     // Verificar se a notificação existe e pertence ao usuário
-    const notificationDoc = await getDoc(doc(db, 'notifications', notificationId))
-    if (!notificationDoc.exists()) {
+    const notificationDoc = await prisma.notification.findUnique({
+      where: { id: notificationId },
+    })
+    if (!notificationDoc) {
       return NextResponse.json(
         { error: 'Notificação não encontrada' },
         { status: 404 }
       )
     }
 
-    const notificationData = notificationDoc.data()
-    if (notificationData.userId !== userId) {
+    if (notificationDoc.userId !== userId) {
       return NextResponse.json(
         { error: 'Não autorizado' },
         { status: 403 }
@@ -135,9 +86,11 @@ export async function PUT(req: NextRequest) {
     }
 
     // Marcar como lida
-    await updateDoc(doc(db, 'notifications', notificationId), {
-      read: true,
-      readAt: serverTimestamp()
+    await prisma.notification.update({
+      where: { id: notificationId },
+      data: {
+        read: true
+      }
     })
 
     return NextResponse.json({
@@ -157,11 +110,6 @@ export async function PUT(req: NextRequest) {
 // Marcar todas as notificações como lidas
 export async function PATCH(req: NextRequest) {
   try {
-    const db = getFirestoreDB()
-    if (!db) {
-      return NextResponse.json({ error: 'Erro de conexão com o banco de dados' }, { status: 500 })
-    }
-    
     const { userId } = await req.json()
 
     if (!userId) {
@@ -172,19 +120,20 @@ export async function PATCH(req: NextRequest) {
     }
 
     // Buscar todas as notificações não lidas do usuário
-    const unreadNotifications = await getDocs(
-      query(
-        collection(db, 'notifications'),
-        where('userId', '==', userId),
-        where('read', '==', false)
-      )
-    )
+    const unreadNotifications = await prisma.notification.findMany({
+      where: {
+        userId: userId,
+        read: false
+      }
+    })
 
     // Marcar todas como lidas
-    const updatePromises = unreadNotifications.docs.map(doc =>
-      updateDoc(doc.ref, {
-        read: true,
-        readAt: serverTimestamp()
+    const updatePromises = unreadNotifications.map(notification =>
+      prisma.notification.update({
+        where: { id: notification.id },
+        data: {
+          read: true
+        }
       })
     )
 
@@ -192,7 +141,7 @@ export async function PATCH(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `${unreadNotifications.docs.length} notificações marcadas como lidas`
+      message: `${unreadNotifications.length} notificações marcadas como lidas`
     })
 
   } catch (error) {
@@ -201,49 +150,6 @@ export async function PATCH(req: NextRequest) {
       { error: 'Erro interno do servidor' },
       { status: 500 }
     )
-  }
-}
-
-async function sendPushNotification(tokens: string[], title: string, message: string, data: any) {
-  try {
-    const response = await fetch('https://fcm.googleapis.com/fcm/send', {
-      method: 'POST',
-      headers: {
-        'Authorization': `key=${process.env.FIREBASE_SERVER_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        registration_ids: tokens,
-        notification: {
-          title,
-          body: message,
-          icon: '/icon-192x192.png',
-          badge: '/badge-72x72.png',
-          click_action: '/notifications'
-        },
-        data: {
-          ...data,
-          click_action: '/notifications',
-          timestamp: Date.now().toString()
-        },
-        priority: 'high'
-      })
-    })
-
-    if (!response.ok) {
-      throw new Error(`FCM error: ${response.status}`)
-    }
-
-    const result = await response.json()
-    
-    if (result.failure > 0) {
-      console.warn('Alguns push notifications falharam:', result.results)
-    }
-
-    return result
-  } catch (error) {
-    console.error('Erro ao enviar push notification:', error)
-    throw error
   }
 }
 

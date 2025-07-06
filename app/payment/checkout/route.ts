@@ -1,13 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getFirestoreDB } from '@/lib/firebase'
-import { doc, getDoc, updateDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore'
+import { prisma } from '@/lib/prisma'
 
 export async function POST(req: NextRequest) {
   try {
-    const db = getFirestoreDB()
-    if (!db) {
-      return NextResponse.json({ error: 'Erro de conexão com o banco de dados' }, { status: 500 })
-    }
     const { userId, plan, paymentMethod } = await req.json()
 
     if (!userId || !plan || !paymentMethod) {
@@ -27,16 +22,14 @@ export async function POST(req: NextRequest) {
     }
 
     // Buscar dados do usuário
-    const userDoc = await getDoc(doc(db, 'users', userId))
-    if (!userDoc.exists()) {
+    const user = await prisma.user.findUnique({ where: { id: userId } })
+    if (!user) {
       return NextResponse.json(
         { error: 'Usuário não encontrado' },
         { status: 404 }
       )
     }
 
-    const userData = userDoc.data()
-    
     // Definir valores dos planos
     const planPrices = {
       basic: { amount: 2990, currency: 'BRL', name: 'Básico' },
@@ -51,18 +44,7 @@ export async function POST(req: NextRequest) {
     try {
       // Aqui você integraria com o Stripe
       // const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
-      // paymentIntent = await stripe.paymentIntents.create({
-      //   amount: selectedPlan.amount,
-      //   currency: selectedPlan.currency.toLowerCase(),
-      //   customer: userData.stripeCustomerId,
-      //   payment_method: paymentMethod,
-      //   confirm: true,
-      //   metadata: {
-      //     userId,
-      //     plan,
-      //     planName: selectedPlan.name
-      //   }
-      // })
+      // paymentIntent = await stripe.paymentIntents.create({ ... })
 
       // Simulação para desenvolvimento
       paymentIntent = {
@@ -79,42 +61,42 @@ export async function POST(req: NextRequest) {
     }
 
     // Registrar tentativa de pagamento
-    const paymentRecord = await addDoc(collection(db, 'payments'), {
-      userId,
-      plan,
-      planName: selectedPlan.name,
-      amount: selectedPlan.amount / 100,
-      currency: selectedPlan.currency,
-      paymentMethod,
-      stripePaymentIntentId: paymentIntent.id,
-      status: paymentIntent.status,
-      createdAt: serverTimestamp()
+    await prisma.payment.create({
+      data: {
+        userId,
+        plan,
+        amount: selectedPlan.amount / 100,
+        currency: selectedPlan.currency,
+        status: paymentIntent.status === 'succeeded' ? 'COMPLETED' : 'FAILED',
+        stripePaymentIntentId: paymentIntent.id,
+      }
     })
 
     // Se o pagamento foi bem-sucedido
     if (paymentIntent.status === 'succeeded') {
       // Atualizar status do usuário
-      await updateDoc(doc(db, 'users', userId), {
-        premium: true,
-        premiumPlan: plan,
-        premiumActivatedAt: serverTimestamp(),
-        lastPaymentDate: serverTimestamp(),
-        subscriptionStatus: 'active'
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          premium: true,
+          premiumExpiry: null, // ou defina a data de expiração se necessário
+        }
       })
 
       // Criar notificação
-      await addDoc(collection(db, 'notifications'), {
-        userId,
-        type: 'payment_success',
-        title: 'Pagamento aprovado!',
-        message: `Seu status ${selectedPlan.name} foi ativado com sucesso!`,
-        read: false,
-        createdAt: serverTimestamp()
+      await prisma.notification.create({
+        data: {
+          userId,
+          type: 'PAYMENT',
+          title: 'Pagamento aprovado!',
+          message: `Seu status ${selectedPlan.name} foi ativado com sucesso!`,
+          read: false,
+        }
       })
 
       // Enviar e-mail de confirmação
-      if (userData.email) {
-        await sendPaymentConfirmationEmail(userData.email, selectedPlan.name)
+      if (user.email) {
+        await sendPaymentConfirmationEmail(user.email, selectedPlan.name)
       }
     }
 
@@ -158,14 +140,11 @@ async function sendPaymentConfirmationEmail(email: string, planName: string) {
             <div style="background: linear-gradient(135deg, #ec4899, #8b5cf6); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
               <h1 style="color: white; margin: 0; font-size: 28px;">🎉 Pagamento Aprovado!</h1>
             </div>
-            
             <div style="background: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
               <h2 style="color: #333; margin-bottom: 20px;">Parabéns! Seu plano ${planName} foi ativado!</h2>
-              
               <p style="color: #666; line-height: 1.6; margin-bottom: 25px;">
                 Seu pagamento foi processado com sucesso e agora você tem acesso a todos os benefícios do seu plano.
               </p>
-              
               <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 25px;">
                 <h3 style="color: #333; margin-bottom: 15px;">Benefícios do seu plano:</h3>
                 <ul style="color: #666; line-height: 1.8; margin: 0; padding-left: 20px;">
@@ -176,14 +155,12 @@ async function sendPaymentConfirmationEmail(email: string, planName: string) {
                   <li>✅ Suporte prioritário</li>
                 </ul>
               </div>
-              
               <div style="text-align: center;">
                 <a href="${process.env.NEXT_PUBLIC_APP_URL}/profile" 
                    style="background: linear-gradient(135deg, #ec4899, #8b5cf6); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; display: inline-block; font-weight: bold;">
                   Acessar Minha Conta
                 </a>
               </div>
-              
               <p style="color: #999; font-size: 14px; margin-top: 25px; text-align: center;">
                 Se você tiver alguma dúvida, entre em contato conosco em suporte@bebaby.app
               </p>
@@ -192,10 +169,7 @@ async function sendPaymentConfirmationEmail(email: string, planName: string) {
         `
       })
     })
-
-    if (!res.ok) {
-      // Silenciar erro de e-mail para não afetar o fluxo principal
-    }
+    // Silenciar erro de e-mail para não afetar o fluxo principal
   } catch (error) {
     // Silenciar erro de e-mail para não afetar o fluxo principal
   }

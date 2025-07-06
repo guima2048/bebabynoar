@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getFirestoreDB } from '@/lib/firebase'
-import { collection, doc, getDoc, setDoc, deleteDoc, query, where, getDocs, orderBy } from 'firebase/firestore'
+import { prisma } from '@/lib/prisma'
 
 // Interfaces TypeScript
 interface BlockData {
@@ -15,7 +14,6 @@ interface BlockData {
 
 interface UserData {
   name?: string
-  displayName?: string
   email: string
   userType: string
   age?: number
@@ -27,11 +25,6 @@ interface UserData {
 
 export async function POST(request: NextRequest) {
   try {
-    const db = getFirestoreDB()
-    if (!db) {
-      return NextResponse.json({ error: 'Erro de conexão com o banco de dados' }, { status: 500 })
-    }
-    
     const { userId, targetUserId, reason } = await request.json()
 
     if (!userId || !targetUserId) {
@@ -43,50 +36,57 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar se o usuário existe
-    const userRef = doc(db, 'users', userId)
-    const userDoc = await getDoc(userRef)
-    if (!userDoc.exists()) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+    })
+    
+    if (!user) {
       return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 })
     }
 
     // Verificar se o alvo existe
-    const targetRef = doc(db, 'users', targetUserId)
-    const targetDoc = await getDoc(targetRef)
-    if (!targetDoc.exists()) {
+    const targetUser = await prisma.user.findUnique({
+      where: { id: targetUserId }
+    })
+    
+    if (!targetUser) {
       return NextResponse.json({ error: 'Usuário alvo não encontrado' }, { status: 404 })
     }
 
     // Verificar se já está bloqueado
-    const blockRef = doc(db, 'blocks', `${userId}_${targetUserId}`)
-    const blockDoc = await getDoc(blockRef)
+    const existingBlock = await prisma.block.findUnique({
+      where: {
+        userId_targetUserId: {
+          userId,
+          targetUserId
+        }
+      }
+    })
     
-    if (blockDoc.exists()) {
+    if (existingBlock) {
       return NextResponse.json({ error: 'Usuário já está bloqueado' }, { status: 400 })
     }
 
     // Adicionar bloqueio
-    await setDoc(blockRef, {
-      userId,
-      targetUserId,
-      reason: reason || 'Bloqueio solicitado pelo usuário',
-      createdAt: new Date(),
-      userType: userDoc.data().userType,
-      targetUserType: targetDoc.data().userType,
+    await prisma.block.create({
+      data: {
+        userId,
+        targetUserId,
+        reason: reason || 'Bloqueio solicitado pelo usuário',
+        userType: user.userType,
+        targetUserType: targetUser.userType,
+      }
     })
 
     // Remover de favoritos se existir
-    const favoriteRef = doc(db, 'favorites', `${userId}_${targetUserId}`)
-    const favoriteDoc = await getDoc(favoriteRef)
-    if (favoriteDoc.exists()) {
-      await deleteDoc(favoriteRef)
-    }
-
-    // Remover favorito recíproco se existir
-    const reciprocalFavoriteRef = doc(db, 'favorites', `${targetUserId}_${userId}`)
-    const reciprocalFavoriteDoc = await getDoc(reciprocalFavoriteRef)
-    if (reciprocalFavoriteDoc.exists()) {
-      await deleteDoc(reciprocalFavoriteRef)
-    }
+    await prisma.favorite.deleteMany({
+      where: {
+        OR: [
+          { userId, targetUserId },
+          { userId: targetUserId, targetUserId: userId }
+        ]
+      }
+    })
 
     return NextResponse.json({ 
       success: true, 
@@ -94,6 +94,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
+    console.error('Erro ao bloquear usuário:', error)
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
@@ -103,11 +104,6 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const db = getFirestoreDB()
-    if (!db) {
-      return NextResponse.json({ error: 'Erro de conexão com o banco de dados' }, { status: 500 })
-    }
-    
     const { userId, targetUserId } = await request.json()
 
     if (!userId || !targetUserId) {
@@ -115,14 +111,27 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Remover bloqueio
-    const blockRef = doc(db, 'blocks', `${userId}_${targetUserId}`)
-    const blockDoc = await getDoc(blockRef)
+    const block = await prisma.block.findUnique({
+      where: {
+        userId_targetUserId: {
+          userId,
+          targetUserId
+        }
+      }
+    })
     
-    if (!blockDoc.exists()) {
+    if (!block) {
       return NextResponse.json({ error: 'Usuário não está bloqueado' }, { status: 404 })
     }
 
-    await deleteDoc(blockRef)
+    await prisma.block.delete({
+      where: {
+        userId_targetUserId: {
+          userId,
+          targetUserId
+        }
+      }
+    })
 
     return NextResponse.json({ 
       success: true, 
@@ -130,6 +139,7 @@ export async function DELETE(request: NextRequest) {
     })
 
   } catch (error) {
+    console.error('Erro ao desbloquear usuário:', error)
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
@@ -139,11 +149,6 @@ export async function DELETE(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const db = getFirestoreDB()
-    if (!db) {
-      return NextResponse.json({ error: 'Erro de conexão com o banco de dados' }, { status: 500 })
-    }
-    
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId')
 
@@ -152,51 +157,51 @@ export async function GET(request: NextRequest) {
     }
 
     // Buscar usuários bloqueados
-    const blocksRef = collection(db, 'blocks')
-    const q = query(
-      blocksRef,
-      where('userId', '==', userId),
-      orderBy('createdAt', 'desc')
-    )
-
-    const querySnapshot = await getDocs(q)
-    const blocks = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as BlockData[]
-
-    // Buscar dados dos usuários bloqueados
-    const blockedUsers = await Promise.all(
-      blocks.map(async (block) => {
-        const userRef = doc(db, 'users', block.targetUserId)
-        const userDoc = await getDoc(userRef)
-        if (userDoc.exists()) {
-          const userData = userDoc.data() as UserData
-          return {
-            ...block,
-            targetUser: {
-              id: userDoc.id,
-              name: userData.name || userData.displayName || 'Usuário',
-              email: userData.email,
-              userType: userData.userType,
-              age: userData.age,
-              location: userData.location,
-              bio: userData.bio,
-              photos: userData.photos || [],
-              isPremium: userData.isPremium || false,
-            }
+    const blocks = await prisma.block.findMany({
+      where: { userId },
+      include: {
+        targetUser: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            userType: true,
+            location: true,
+            photos: true,
+            premium: true,
           }
         }
-        return null
-      })
-    )
+      },
+      orderBy: { createdAt: 'desc' }
+    })
 
-    // Filtrar usuários que ainda existem
-    const validBlocks = blockedUsers.filter(block => block !== null)
+    // Formatar dados dos usuários bloqueados
+    const blockedUsers = blocks.map(block => ({
+      id: block.id,
+      userId: block.userId,
+      targetUserId: block.targetUserId,
+      reason: block.reason,
+      createdAt: block.createdAt,
+      userType: block.userType,
+      targetUserType: block.targetUserType,
+      targetUser: {
+        id: block.targetUser.id,
+        name: block.targetUser.name || 'Usuário',
+        email: block.targetUser.email,
+        userType: block.targetUser.userType,
+        location: block.targetUser.location,
+        photos: block.targetUser.photos || [],
+        isPremium: block.targetUser.premium || false,
+      }
+    }))
 
     return NextResponse.json({
-      blockedUsers: validBlocks,
-      count: validBlocks.length,
+      blockedUsers,
+      count: blockedUsers.length,
     })
 
   } catch (error) {
+    console.error('Erro ao buscar usuários bloqueados:', error)
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

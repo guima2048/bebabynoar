@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAdminFirestore } from '@/lib/firebase-admin'
+import { prisma } from '@/lib/prisma'
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,7 +21,6 @@ export async function POST(req: NextRequest) {
                     clientIp || 
                     cfConnectingIp || 
                     trueClientIp || 
-                    req.ip || 
                     'unknown'
     
     // Limpar IP se necessário
@@ -51,22 +50,17 @@ export async function POST(req: NextRequest) {
       console.error('Erro ao obter localização do IP:', error)
     }
 
-    const db = getAdminFirestore()
+    const db = prisma
     
     // Registrar login
-    await db.collection('userLogins').add({
-      userId,
-      ip: detectedIp,
-      ipLocation,
-      timestamp: new Date(),
-      userAgent: req.headers.get('user-agent') || 'unknown'
-    })
-
-    // Atualizar último IP no documento do usuário
-    await db.collection('users').doc(userId).update({
-      lastLoginIp: detectedIp,
-      lastLoginIpLocation: ipLocation,
-      lastLoginAt: new Date()
+    await db.loginHistory.create({
+      data: {
+        userId,
+        ipAddress: detectedIp,
+        location: ipLocation,
+        timestamp: new Date(),
+        userAgent: req.headers.get('user-agent') || 'unknown'
+      }
     })
 
     return NextResponse.json({ 

@@ -1,13 +1,12 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
-import { Search, Filter, MapPin, Heart, MessageCircle, Crown, Shield, Star, Users, TrendingUp, Eye, ArrowLeft } from 'lucide-react'
-import Link from 'next/link'
+import { useAuth } from '@/hooks/useAuth'
 import { useRouter } from 'next/navigation'
-import toast from 'react-hot-toast'
-import { collection, query, where, orderBy, limit, getDocs, doc, getDoc } from 'firebase/firestore'
-import { db } from '@/lib/firebase'
+import Link from 'next/link'
+import { Search, Filter, MapPin, Heart, Eye, Crown, Shield } from 'lucide-react'
+import { toast } from 'react-hot-toast'
+import { getUserTypeDisplayName, getUserTypeColor, getUserTypeAbbreviation } from '@/lib/user-matching'
 
 interface Profile {
   id: string
@@ -20,144 +19,109 @@ interface Profile {
   photoURL?: string
   premium: boolean
   verified: boolean
-  online: boolean
   bio?: string
-  interests?: string[]
-  lastActive?: Date
 }
 
-export default function SearchPage() {
+export default function BuscarPage() {
   const { user, loading: authLoading } = useAuth()
   const router = useRouter()
   const [profiles, setProfiles] = useState<Profile[]>([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedState, setSelectedState] = useState('')
   const [selectedCity, setSelectedCity] = useState('')
   const [selectedUserType, setSelectedUserType] = useState('')
-  const [ageRange, setAgeRange] = useState({ min: 18, max: 65 })
+  const [selectedGender, setSelectedGender] = useState('')
+  const [minAge, setMinAge] = useState('18')
+  const [maxAge, setMaxAge] = useState('100')
   const [showFilters, setShowFilters] = useState(false)
-  const [hasSearched, setHasSearched] = useState(false)
 
+  // Verificar autenticação
   useEffect(() => {
-    if (authLoading) return
-    
-    if (!user) {
+    if (!authLoading && !user) {
       router.push('/login')
       return
     }
   }, [user, authLoading, router])
 
-  const handleSearch = async () => {
-    if (!user || !db) return
-
+  const loadProfiles = async () => {
+    if (!user) return
+    
     try {
       setLoading(true)
-      setHasSearched(true)
       
-      // Buscar perfis do tipo oposto
-      const oppositeType = user.userType === 'sugar_daddy' ? 'sugar_baby' : 'sugar_daddy'
+      // Construir parâmetros de busca
+      const params = new URLSearchParams({
+        limit: '50',
+        page: '1'
+      })
+
+      if (searchTerm) params.append('search', searchTerm)
+      if (selectedState) params.append('state', selectedState)
+      if (selectedCity) params.append('city', selectedCity)
+      if (selectedUserType) params.append('userType', selectedUserType)
+      if (selectedGender) params.append('gender', selectedGender)
+      if (minAge) params.append('minAge', minAge)
+      if (maxAge) params.append('maxAge', maxAge)
       
-      const usersRef = collection(db, 'users')
-      let q = query(
-        usersRef,
-        where('userType', '==', oppositeType),
-        where('active', '==', true),
-        orderBy('lastActive', 'desc'),
-        limit(100)
-      )
+      const response = await fetch(`/api/explore?${params}`)
       
-      const querySnapshot = await getDocs(q)
-      const profilesData: Profile[] = []
-      
-      for (const doc of querySnapshot.docs) {
-        const userData = doc.data()
-        if (userData.id !== user.id) { // Excluir o próprio usuário
-          const profile: Profile = {
-            id: doc.id,
-            name: userData.name || userData.username || 'Usuário',
-            username: userData.username,
-            age: userData.age || 0,
-            city: userData.city || '',
-            state: userData.state || '',
-            userType: userData.userType || 'user',
-            photoURL: userData.photoURL,
-            premium: userData.premium || false,
-            verified: userData.verified || false,
-            online: userData.online || false,
-            bio: userData.bio,
-            interests: userData.interests || [],
-            lastActive: userData.lastActive?.toDate()
-          }
-          
-          // Aplicar filtros
-          if (matchesFilters(profile)) {
-            profilesData.push(profile)
-          }
-        }
+      if (!response.ok) {
+        throw new Error('Erro ao buscar perfis')
       }
+      
+      const data = await response.json()
+      const profilesData: Profile[] = data.users.map((userData: any) => ({
+        id: userData.id,
+        name: userData.name || userData.username || 'Usuário',
+        username: userData.username,
+        age: userData.age || 0,
+        city: userData.city || '',
+        state: userData.state || '',
+        userType: userData.userType || 'user',
+        photoURL: userData.mainPhoto,
+        premium: userData.premium || false,
+        verified: userData.verified || false,
+        bio: userData.about
+      }))
       
       setProfiles(profilesData)
       
     } catch (error) {
-      console.error('Erro ao buscar perfis:', error)
-      toast.error('Erro ao buscar perfis')
+      console.error('Erro ao carregar perfis:', error)
+      toast.error('Erro ao carregar perfis')
     } finally {
       setLoading(false)
     }
   }
 
-  const matchesFilters = (profile: Profile) => {
-    // Filtro de busca por texto
-    if (searchTerm && !profile.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-        !profile.city.toLowerCase().includes(searchTerm.toLowerCase()) &&
-        !profile.bio?.toLowerCase().includes(searchTerm.toLowerCase())) {
-      return false
+  useEffect(() => {
+    if (user) {
+      loadProfiles()
     }
-    
-    // Filtro de estado
-    if (selectedState && profile.state !== selectedState) {
-      return false
-    }
-    
-    // Filtro de cidade
-    if (selectedCity && profile.city !== selectedCity) {
-      return false
-    }
-    
-    // Filtro de tipo de usuário
-    if (selectedUserType && profile.userType !== selectedUserType) {
-      return false
-    }
-    
-    // Filtro de idade
-    if (profile.age < ageRange.min || profile.age > ageRange.max) {
-      return false
-    }
-    
-    return true
+  }, [user])
+
+  const handleSearch = () => {
+    loadProfiles()
   }
 
-  const formatLastActive = (lastActive?: Date) => {
-    if (!lastActive) return 'Desconhecido'
-    
-    const now = new Date()
-    const diffInMinutes = (now.getTime() - lastActive.getTime()) / (1000 * 60)
-    
-    if (diffInMinutes < 1) return 'Agora'
-    if (diffInMinutes < 60) return `${Math.floor(diffInMinutes)}m atrás`
-    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h atrás`
-    if (diffInMinutes < 10080) return `${Math.floor(diffInMinutes / 1440)}d atrás`
-    return lastActive.toLocaleDateString('pt-BR')
+  const clearFilters = () => {
+    setSearchTerm('')
+    setSelectedState('')
+    setSelectedCity('')
+    setSelectedUserType('')
+    setSelectedGender('')
+    setMinAge('18')
+    setMaxAge('100')
   }
 
   // Loading state
-  if (authLoading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando...</p>
+          <p className="text-gray-600">Carregando perfis...</p>
         </div>
       </div>
     )
@@ -173,62 +137,57 @@ export default function SearchPage() {
       <div className="max-w-7xl mx-auto p-4">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-4 mb-4">
-            <button
-              onClick={() => router.back()}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5 text-gray-600" />
-            </button>
-            <h1 className="text-3xl font-bold text-gray-900">Buscar</h1>
-          </div>
-          <p className="text-gray-600">Encontre pessoas específicas</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Buscar</h1>
+          <p className="text-gray-600">Encontre sua conexão perfeita</p>
         </div>
 
         {/* Search and Filters */}
-        <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
-          <div className="flex flex-col lg:flex-row gap-4 mb-4">
+        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-8">
+          <div className="flex flex-col lg:flex-row gap-4">
             {/* Search */}
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Buscar por nome, cidade ou bio..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-              />
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Buscar por nome, username ou descrição..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                />
+              </div>
             </div>
 
             {/* Search Button */}
             <button
               onClick={handleSearch}
-              disabled={loading}
-              className="px-8 py-3 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-2 px-6 py-3 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors"
             >
-              {loading ? 'Buscando...' : 'Buscar'}
+              <Search className="w-5 h-5" />
+              Buscar
             </button>
 
-            {/* Filter Button */}
+            {/* Filters Button */}
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center justify-center gap-2 px-6 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-2 px-6 py-3 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
             >
-              <Filter className="w-5 h-5 text-gray-600" />
-              <span className="text-gray-700">Filtros</span>
+              <Filter className="w-5 h-5" />
+              Filtros
             </button>
           </div>
 
-          {/* Filter Options */}
+          {/* Filters Panel */}
           {showFilters && (
-            <div className="pt-6 border-t border-gray-200">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                {/* State Filter */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Estado</label>
                   <select
                     value={selectedState}
                     onChange={(e) => setSelectedState(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                   >
                     <option value="">Todos os estados</option>
                     <option value="SP">São Paulo</option>
@@ -238,13 +197,14 @@ export default function SearchPage() {
                     <option value="PR">Paraná</option>
                   </select>
                 </div>
-                
+
+                {/* City Filter */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Cidade</label>
                   <select
                     value={selectedCity}
                     onChange={(e) => setSelectedCity(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                   >
                     <option value="">Todas as cidades</option>
                     <option value="São Paulo">São Paulo</option>
@@ -254,163 +214,172 @@ export default function SearchPage() {
                     <option value="Curitiba">Curitiba</option>
                   </select>
                 </div>
-                
+
+                {/* User Type Filter */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de Usuário</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Tipo</label>
                   <select
                     value={selectedUserType}
                     onChange={(e) => setSelectedUserType(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                   >
                     <option value="">Todos os tipos</option>
-                    <option value="sugar_baby">Sugar Baby</option>
-                    <option value="sugar_daddy">Sugar Daddy</option>
+                    <option value="SUGAR_BABY">Sugar Baby</option>
+                    <option value="SUGAR_DADDY">Sugar Daddy</option>
                   </select>
                 </div>
-                
+
+                {/* Gender Filter */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Faixa de Idade</label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min="18"
-                      max="100"
-                      value={ageRange.min}
-                      onChange={(e) => setAgeRange(prev => ({ ...prev, min: parseInt(e.target.value) || 18 }))}
-                      className="w-20 px-2 py-2 border border-gray-200 rounded-lg text-center"
-                    />
-                    <span className="text-gray-500">-</span>
-                    <input
-                      type="number"
-                      min="18"
-                      max="100"
-                      value={ageRange.max}
-                      onChange={(e) => setAgeRange(prev => ({ ...prev, max: parseInt(e.target.value) || 65 }))}
-                      className="w-20 px-2 py-2 border border-gray-200 rounded-lg text-center"
-                    />
-                  </div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Gênero</label>
+                  <select
+                    value={selectedGender}
+                    onChange={(e) => setSelectedGender(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  >
+                    <option value="">Todos</option>
+                    <option value="MALE">Masculino</option>
+                    <option value="FEMALE">Feminino</option>
+                  </select>
                 </div>
+
+                {/* Min Age Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Idade Mín</label>
+                  <input
+                    type="number"
+                    min="18"
+                    max="100"
+                    value={minAge}
+                    onChange={(e) => setMinAge(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  />
+                </div>
+
+                {/* Max Age Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Idade Máx</label>
+                  <input
+                    type="number"
+                    min="18"
+                    max="100"
+                    value={maxAge}
+                    onChange={(e) => setMaxAge(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              {/* Clear Filters */}
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={clearFilters}
+                  className="px-4 py-2 text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Limpar Filtros
+                </button>
               </div>
             </div>
           )}
         </div>
 
-        {/* Results */}
-        {hasSearched && (
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">
-              Resultados da busca
-            </h2>
-            <p className="text-gray-600">
-              {loading ? 'Buscando...' : `${profiles.length} perfil${profiles.length !== 1 ? 's' : ''} encontrado${profiles.length !== 1 ? 's' : ''}`}
-            </p>
-          </div>
-        )}
+        {/* Results Count */}
+        <div className="mb-6">
+          <p className="text-gray-600">
+            {profiles.length} perfil{profiles.length !== 1 ? 's' : ''} encontrado{profiles.length !== 1 ? 's' : ''}
+          </p>
+        </div>
 
         {/* Profiles Grid */}
-        {hasSearched && !loading && profiles.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Search className="w-8 h-8 text-gray-400" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Nenhum perfil encontrado
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Tente ajustar seus filtros ou termos de busca
-            </p>
-            <button
-              onClick={() => {
-                setSearchTerm('')
-                setSelectedState('')
-                setSelectedCity('')
-                setSelectedUserType('')
-                setAgeRange({ min: 18, max: 65 })
-                setHasSearched(false)
-              }}
-              className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors"
-            >
-              Limpar filtros
-            </button>
-          </div>
-        ) : hasSearched && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {profiles.map((profile) => (
-              <div key={profile.id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 hover:scale-[1.02]">
-                <div className="relative">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {profiles.map((profile) => (
+            <div key={profile.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
+              {/* Profile Image */}
+              <div className="relative h-48 bg-gradient-to-br from-pink-100 to-purple-100">
+                {profile.photoURL ? (
                   <img
-                    src={profile.photoURL || '/avatar.png'}
+                    src={profile.photoURL}
                     alt={profile.name}
-                    className="w-full h-48 object-cover rounded-t-xl"
+                    className="w-full h-full object-cover"
                   />
-                  {profile.online && (
-                    <div className="absolute top-3 right-3 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
-                  )}
-                  {profile.premium && (
-                    <div className="absolute top-3 left-3">
-                      <Crown className="w-5 h-5 text-yellow-500" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <div className="w-20 h-20 bg-gradient-to-br from-pink-200 to-purple-200 rounded-full flex items-center justify-center">
+                      <span className="text-2xl font-bold text-pink-600">
+                        {profile.name.charAt(0).toUpperCase()}
+                      </span>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
                 
-                <div className="p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-semibold text-gray-900 truncate">{profile.name}</h3>
-                    {profile.verified && (
-                      <Shield className="w-4 h-4 text-blue-500" />
-                    )}
-                  </div>
-                  
-                  <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-                    <MapPin className="w-4 h-4" />
-                    <span>{profile.city}, {profile.state}</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
-                    <span>{profile.age} anos</span>
-                    <span>•</span>
-                    <span className="capitalize">{profile.userType.replace('_', ' ')}</span>
-                  </div>
-                  
-                  {profile.bio && (
-                    <p className="text-sm text-gray-600 mb-4 line-clamp-2">{profile.bio}</p>
-                  )}
-                  
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">
-                      Ativo {formatLastActive(profile.lastActive)}
-                    </span>
-                    
-                    <div className="flex items-center gap-2">
-                      <Link
-                        href={`/profile/${profile.id}`}
-                        className="p-2 bg-pink-100 text-pink-600 rounded-lg hover:bg-pink-200 transition-colors"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Link>
-                      
-                      <Link
-                        href={`/messages/${profile.id}`}
-                        className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors"
-                      >
-                        <MessageCircle className="w-4 h-4" />
-                      </Link>
+                {/* Premium Badge */}
+                {profile.premium && (
+                  <div className="absolute top-3 right-3">
+                    <div className="bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
+                      <Crown className="w-3 h-3" />
+                      Premium
                     </div>
                   </div>
+                )}
+
+                {/* Verified Badge */}
+                {profile.verified && (
+                  <div className="absolute top-3 left-3">
+                    <div className="bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
+                      <Shield className="w-3 h-3" />
+                      Verificado
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Profile Info */}
+              <div className="p-4">
+                <div className="flex items-start justify-between mb-2">
+                  <div>
+                    <h3 className="font-semibold text-gray-900">{profile.name}</h3>
+                    <p className="text-sm text-gray-500">{profile.age} anos</p>
+                  </div>
+                  <div className={`px-2 py-1 rounded-full text-xs font-semibold ${getUserTypeColor(profile.userType as any)}`}>
+                    {getUserTypeAbbreviation(profile.userType as any)}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1 text-sm text-gray-600 mb-3">
+                  <MapPin className="w-4 h-4" />
+                  <span>{profile.city}, {profile.state}</span>
+                </div>
+
+                {profile.bio && (
+                  <p className="text-sm text-gray-600 mb-4 line-clamp-2">{profile.bio}</p>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex gap-2">
+                  <Link
+                    href={`/profile/${profile.id}`}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors text-sm"
+                  >
+                    <Eye className="w-4 h-4" />
+                    Ver Perfil
+                  </Link>
+                  <button className="flex items-center justify-center gap-2 px-4 py-2 border border-pink-600 text-pink-600 rounded-lg hover:bg-pink-50 transition-colors text-sm">
+                    <Heart className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-
-        {/* Footer */}
-        {hasSearched && !loading && profiles.length > 0 && (
-          <div className="mt-8 bg-white rounded-xl shadow-sm p-6">
-            <div className="text-center">
-              <p className="text-gray-600">
-                Mostrando {profiles.length} perfil{profiles.length !== 1 ? 's' : ''} encontrado{profiles.length !== 1 ? 's' : ''}
-              </p>
             </div>
+          ))}
+        </div>
+
+        {/* No Results */}
+        {profiles.length === 0 && !loading && (
+          <div className="text-center py-12">
+            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Search className="w-12 h-12 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhum perfil encontrado</h3>
+            <p className="text-gray-600">Tente ajustar os filtros ou termos de busca</p>
           </div>
         )}
       </div>

@@ -1,9 +1,8 @@
 "use client"
 
 import React, { useEffect, useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { getFirestoreDB } from '@/lib/firebase';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { useAuth } from '@/hooks/useAuth';
+
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 
@@ -45,15 +44,10 @@ export default function EditProfilePage() {
     const fetchProfile = async () => {
       setLoading(true);
       try {
-        const db = getFirestoreDB();
-        if (!db) {
-          toast.error('Serviço de banco de dados indisponível. Tente novamente mais tarde.');
-          return;
-        }
-        const userRef = doc(db, "users", user.id);
-        const snap = await getDoc(userRef);
-        if (snap.exists()) {
-          setProfile(snap.data());
+        const response = await fetch(`/api/user/profile/${user.id}`);
+        if (response.ok) {
+          const data = await response.json();
+          setProfile(data.user);
         }
       } catch (e) {
         toast.error("Erro ao carregar perfil");
@@ -72,34 +66,38 @@ export default function EditProfilePage() {
     if (!user) return;
     setSaving(true);
     try {
-      const db = getFirestoreDB();
-      if (!db) {
-        toast.error('Serviço de banco de dados indisponível. Tente novamente mais tarde.');
-        return;
-      }
-      const userRef = doc(db, "users", user.id);
-      await updateDoc(userRef, {
-        name: profile.name || "",
-        username: profile.username || "",
-        city: profile.city || "",
-        state: profile.state || "",
-        about: profile.about || "",
-        relationshipType: profile.relationshipType || "",
-        height: profile.height || "",
-        weight: profile.weight || "",
-        hasChildren: profile.hasChildren === "Sim",
-        smokes: profile.smokes === "Sim",
-        drinks: profile.drinks === "Sim",
-        education: profile.education || "",
-        userType: profile.userType || "",
-        gender: profile.gender || "",
-        lookingFor: profile.lookingFor || "",
-        profession: profile.profession || "",
-
-        availableForTravel: profile.availableForTravel || "",
+      const response = await fetch(`/api/user/profile/${user.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: profile.name || "",
+          username: profile.username || "",
+          city: profile.city || "",
+          state: profile.state || "",
+          about: profile.about || "",
+          relationshipType: profile.relationshipType || "",
+          height: profile.height || "",
+          weight: profile.weight || "",
+          hasChildren: profile.hasChildren === "Sim",
+          smokes: profile.smokes === "Sim",
+          drinks: profile.drinks === "Sim",
+          education: profile.education || "",
+          userType: profile.userType || "",
+          gender: profile.gender || "",
+          lookingFor: profile.lookingFor || "",
+          profession: profile.profession || "",
+          availableForTravel: profile.availableForTravel || "",
+        })
       });
-      toast.success("Perfil atualizado!");
-      router.push("/profile");
+      
+      if (response.ok) {
+        toast.success("Perfil atualizado!");
+        router.push("/profile");
+      } else {
+        toast.error("Erro ao salvar perfil");
+      }
     } catch (e) {
       toast.error("Erro ao salvar perfil");
     } finally {

@@ -2,8 +2,7 @@
 
 import React, { useState, useRef } from 'react'
 import { Image, X, Upload, Loader2 } from 'lucide-react'
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { storage } from '@/lib/firebase'
+
 import toast from 'react-hot-toast'
 
 interface MessageImageUploadProps {
@@ -39,32 +38,31 @@ export default function MessageImageUpload({ onImageUpload, disabled = false }: 
     }
     reader.readAsDataURL(file)
 
-    // Upload para Firebase Storage
+    // Upload via API
     setUploading(true)
     try {
-      if (!storage) {
-        toast.error('Erro de conexão com o storage')
-        return
+      const formData = new FormData()
+      formData.append('photo', file)
+      formData.append('type', 'message')
+      
+      const response = await fetch('/api/upload-photo', {
+        method: 'POST',
+        body: formData
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        
+        // Chamar callback com a URL
+        onImageUpload(data.url)
+        
+        // Limpar preview
+        setPreview(null)
+        
+        toast.success('Imagem enviada com sucesso!')
+      } else {
+        toast.error('Erro ao enviar imagem')
       }
-
-      // Criar nome único para o arquivo
-      const timestamp = Date.now()
-      const fileName = `message-images/${timestamp}_${file.name}`
-      const storageRef = ref(storage, fileName)
-
-      // Upload do arquivo
-      const snapshot = await uploadBytes(storageRef, file)
-      
-      // Obter URL de download
-      const downloadURL = await getDownloadURL(snapshot.ref)
-      
-      // Chamar callback com a URL
-      onImageUpload(downloadURL)
-      
-      // Limpar preview
-      setPreview(null)
-      
-      toast.success('Imagem enviada com sucesso!')
     } catch (error) {
       console.error('Erro no upload:', error)
       toast.error('Erro ao enviar imagem')

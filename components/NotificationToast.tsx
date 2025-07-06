@@ -14,12 +14,18 @@ export default function NotificationToast() {
     if (latestNotification && !latestNotification.read) {
       // Verifica se é uma notificação nova (últimos 5 segundos)
       const now = new Date()
-      const notificationTime =
-        latestNotification.createdAt instanceof Date
-          ? latestNotification.createdAt
-          : (typeof latestNotification.createdAt === 'object' && latestNotification.createdAt !== null && 'toDate' in latestNotification.createdAt)
-            ? (latestNotification.createdAt as { toDate: () => Date }).toDate()
-            : new Date()
+      let notificationTime: Date
+      if (
+        typeof latestNotification.createdAt === 'string' || typeof latestNotification.createdAt === 'number'
+      ) {
+        notificationTime = new Date(latestNotification.createdAt)
+      } else if (
+        typeof latestNotification.createdAt === 'object' && latestNotification.createdAt !== null && 'toDate' in latestNotification.createdAt
+      ) {
+        notificationTime = (latestNotification.createdAt as { toDate: () => Date }).toDate()
+      } else {
+        notificationTime = new Date()
+      }
       const timeDiff = now.getTime() - notificationTime.getTime()
       
       if (timeDiff < 5000) { // 5 segundos

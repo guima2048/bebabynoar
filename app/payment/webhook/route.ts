@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getFirestoreDB } from '@/lib/firebase'
-import { collection, getDocs, query, where, updateDoc, doc, addDoc, serverTimestamp } from 'firebase/firestore'
+import { prisma } from '@/lib/prisma'
 
 export async function POST(req: NextRequest) {
   try {
-    const db = getFirestoreDB()
     const body = await req.text()
     const signature = req.headers.get('stripe-signature')
 
@@ -49,58 +47,43 @@ export async function POST(req: NextRequest) {
 
 async function handlePaymentSuccess(paymentIntent: any) {
   try {
-    const db = getFirestoreDB()
-    if (!db) {
-      console.error('Erro de conexão com o banco de dados')
-      return
-    }
-    const { customer, amount, metadata } = paymentIntent
-    
+    const { customer, amount, metadata, id, currency } = paymentIntent
     // Buscar usuário pelo customer ID
-    const userQuery = query(
-      collection(db, 'users'),
-      where('stripeCustomerId', '==', customer)
-    )
-    const userSnap = await getDocs(userQuery)
-    
-    if (!userSnap.empty) {
-      const userDoc = userSnap.docs[0]
-      const userId = userDoc.id
-      
+    const user = await prisma.user.findFirst({ where: { stripeCustomerId: customer } })
+    if (user) {
       // Atualizar status do usuário para premium
-      await updateDoc(doc(db, 'users', userId), {
-        premium: true,
-        premiumPlan: metadata.plan || 'basic',
-        premiumActivatedAt: serverTimestamp(),
-        stripeCustomerId: customer,
-        lastPaymentDate: serverTimestamp()
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          premium: true,
+          premiumExpiry: null,
+          lastPaymentDate: new Date(),
+        }
       })
-
       // Registrar pagamento
-      await addDoc(collection(db, 'payments'), {
-        userId,
-        stripePaymentIntentId: paymentIntent.id,
-        amount: amount / 100, // Stripe usa centavos
-        currency: paymentIntent.currency,
-        status: 'completed',
-        plan: metadata.plan || 'basic',
-        createdAt: serverTimestamp()
+      await prisma.payment.create({
+        data: {
+          userId: user.id,
+          stripePaymentIntentId: id,
+          amount: amount / 100,
+          currency: currency,
+          status: 'COMPLETED',
+          plan: metadata?.plan || 'basic',
+        }
       })
-
       // Criar notificação
-      await addDoc(collection(db, 'notifications'), {
-        userId,
-        type: 'payment_success',
-        title: 'Pagamento aprovado!',
-        message: 'Seu status Premium foi ativado com sucesso!',
-        read: false,
-        createdAt: serverTimestamp()
+      await prisma.notification.create({
+        data: {
+          userId: user.id,
+          type: 'PAYMENT',
+          title: 'Pagamento aprovado!',
+          message: 'Seu status Premium foi ativado com sucesso!',
+          read: false,
+        }
       })
-
       // Enviar e-mail de confirmação
-      const userData = userDoc.data()
-      if (userData.email) {
-        await sendPaymentConfirmationEmail(userData.email, metadata.plan || 'basic')
+      if (user.email) {
+        await sendPaymentConfirmationEmail(user.email, metadata?.plan || 'basic')
       }
     }
   } catch (error) {
@@ -110,38 +93,23 @@ async function handlePaymentSuccess(paymentIntent: any) {
 
 async function handlePaymentFailure(paymentIntent: any) {
   try {
-    const db = getFirestoreDB()
-    if (!db) {
-      console.error('Erro de conexão com o banco de dados')
-      return
-    }
     const { customer, last_payment_error } = paymentIntent
-    
     // Buscar usuário
-    const userQuery = query(
-      collection(db, 'users'),
-      where('stripeCustomerId', '==', customer)
-    )
-    const userSnap = await getDocs(userQuery)
-    
-    if (!userSnap.empty) {
-      const userDoc = userSnap.docs[0]
-      const userId = userDoc.id
-      
+    const user = await prisma.user.findFirst({ where: { stripeCustomerId: customer } })
+    if (user) {
       // Criar notificação de falha
-      await addDoc(collection(db, 'notifications'), {
-        userId,
-        type: 'payment_failed',
-        title: 'Falha no pagamento',
-        message: `Pagamento falhou: ${last_payment_error?.message || 'Erro desconhecido'}`,
-        read: false,
-        createdAt: serverTimestamp()
+      await prisma.notification.create({
+        data: {
+          userId: user.id,
+          type: 'PAYMENT',
+          title: 'Falha no pagamento',
+          message: `Pagamento falhou: ${last_payment_error?.message || 'Erro desconhecido'}`,
+          read: false,
+        }
       })
-
       // Enviar e-mail de falha
-      const userData = userDoc.data()
-      if (userData.email) {
-        await sendPaymentFailureEmail(userData.email, last_payment_error?.message)
+      if (user.email) {
+        await sendPaymentFailureEmail(user.email, last_payment_error?.message)
       }
     }
   } catch (error) {
@@ -151,40 +119,27 @@ async function handlePaymentFailure(paymentIntent: any) {
 
 async function handleSubscriptionPayment(invoice: any) {
   try {
-    const db = getFirestoreDB()
-    if (!db) {
-      console.error('Erro de conexão com o banco de dados')
-      return
-    }
-    const { customer, subscription, amount_paid } = invoice
-    
+    const { customer, subscription, amount_paid, id, currency } = invoice
     // Buscar usuário
-    const userQuery = query(
-      collection(db, 'users'),
-      where('stripeCustomerId', '==', customer)
-    )
-    const userSnap = await getDocs(userQuery)
-    
-    if (!userSnap.empty) {
-      const userDoc = userSnap.docs[0]
-      const userId = userDoc.id
-      
+    const user = await prisma.user.findFirst({ where: { stripeCustomerId: customer } })
+    if (user) {
       // Atualizar data do último pagamento
-      await updateDoc(doc(db, 'users', userId), {
-        lastPaymentDate: serverTimestamp(),
-        subscriptionStatus: 'active'
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          lastPaymentDate: new Date(),
+          subscriptionStatus: 'active',
+        }
       })
-
       // Registrar pagamento recorrente
-      await addDoc(collection(db, 'payments'), {
-        userId,
-        stripeInvoiceId: invoice.id,
-        stripeSubscriptionId: subscription,
-        amount: amount_paid / 100,
-        currency: invoice.currency,
-        status: 'completed',
-        type: 'subscription',
-        createdAt: serverTimestamp()
+      await prisma.payment.create({
+        data: {
+          userId: user.id,
+          amount: amount_paid / 100,
+          currency: currency,
+          status: 'COMPLETED',
+          plan: 'subscription',
+        }
       })
     }
   } catch (error) {
@@ -194,45 +149,30 @@ async function handleSubscriptionPayment(invoice: any) {
 
 async function handleSubscriptionCancelled(subscription: any) {
   try {
-    const db = getFirestoreDB()
-    if (!db) {
-      console.error('Erro de conexão com o banco de dados')
-      return
-    }
     const { customer } = subscription
-    
     // Buscar usuário
-    const userQuery = query(
-      collection(db, 'users'),
-      where('stripeCustomerId', '==', customer)
-    )
-    const userSnap = await getDocs(userQuery)
-    
-    if (!userSnap.empty) {
-      const userDoc = userSnap.docs[0]
-      const userId = userDoc.id
-      
-      // Desativar premium
-      await updateDoc(doc(db, 'users', userId), {
-        premium: false,
-        subscriptionStatus: 'cancelled',
-        premiumCancelledAt: serverTimestamp()
+    const user = await prisma.user.findFirst({ where: { stripeCustomerId: customer } })
+    if (user) {
+      // Atualizar status de assinatura
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          subscriptionStatus: 'cancelled',
+        }
       })
-
-      // Criar notificação
-      await addDoc(collection(db, 'notifications'), {
-        userId,
-        type: 'subscription_cancelled',
-        title: 'Assinatura cancelada',
-        message: 'Sua assinatura Premium foi cancelada. Você ainda tem acesso até o final do período pago.',
-        read: false,
-        createdAt: serverTimestamp()
+      // Notificar usuário
+      await prisma.notification.create({
+        data: {
+          userId: user.id,
+          type: 'PAYMENT',
+          title: 'Assinatura cancelada',
+          message: 'Sua assinatura foi cancelada.',
+          read: false,
+        }
       })
-
       // Enviar e-mail de cancelamento
-      const userData = userDoc.data()
-      if (userData.email) {
-        await sendSubscriptionCancellationEmail(userData.email)
+      if (user.email) {
+        await sendSubscriptionCancellationEmail(user.email)
       }
     }
   } catch (error) {

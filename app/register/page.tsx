@@ -4,10 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { createUserWithEmailAndPassword } from 'firebase/auth'
-import { doc, setDoc, getDoc, collection, query, where, getDocs } from 'firebase/firestore'
-import { auth } from '@/lib/firebase'
-import { getFirestoreDB } from '@/lib/firebase'
+
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
@@ -121,52 +118,7 @@ export default function RegisterPage() {
   async function onSubmit(data: FormData) {
     setLoading(true)
     try {
-      const db = getFirestoreDB()
-      if (!db) {
-        toast.error('Erro de configuração do banco de dados')
-        setLoading(false)
-        return
-      }
-      
       console.log('Iniciando processo de cadastro...', { username: data.username, email: data.email })
-      
-      // Verifica unicidade do nome de usuário
-      console.log('Verificando unicidade do username...')
-      const q = query(collection(db, 'users'), where('username', '==', data.username))
-      const snap = await getDocs(q)
-      if (!snap.empty) {
-        console.log('Username já existe')
-        setError('username', { message: 'Nome de usuário já existe' })
-        setLoading(false)
-        return
-      }
-      
-      // Verifica unicidade do e-mail
-      console.log('Verificando unicidade do email...')
-      const q2 = query(collection(db, 'users'), where('email', '==', data.email))
-      const snap2 = await getDocs(q2)
-      if (!snap2.empty) {
-        console.log('Email já existe')
-        setError('email', { message: 'E-mail já cadastrado' })
-        setLoading(false)
-        return
-      }
-      
-      // Cria usuário no Firebase Auth
-      console.log('Criando usuário no Firebase Auth...')
-      if (!auth) {
-        console.error('Auth não disponível')
-        toast.error('Serviço de autenticação indisponível. Tente novamente mais tarde.');
-        setLoading(false);
-        return;
-      }
-      
-      const userCredential = await createUserWithEmailAndPassword(auth as any, data.email, data.password)
-      const user = userCredential.user
-      console.log('Usuário criado no Auth:', user.uid)
-      
-      // Salva dados adicionais no Firestore
-      console.log('Salvando dados no Firestore...')
       
       // Define o gênero automaticamente baseado no tipo de usuário
       const getGenderFromUserType = (userType: string): string => {
@@ -195,14 +147,33 @@ export default function RegisterPage() {
         status: 'active',
         premium: false,
         signupIp: signupIp || '',
+        password: data.password
       }
       console.log('Dados do usuário:', userData)
       
-      await setDoc(doc(db, 'users', user.uid), userData)
-      console.log('Dados salvos com sucesso no Firestore')
+      // Registrar via API
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(userData)
+      })
       
-      toast.success('Cadastro realizado com sucesso!')
-      router.push('/profile/edit')
+      if (response.ok) {
+        console.log('Dados salvos com sucesso')
+        toast.success('Cadastro realizado com sucesso!')
+        router.push('/profile/edit')
+      } else {
+        const errorData = await response.json()
+        if (errorData.error === 'username_exists') {
+          setError('username', { message: 'Nome de usuário já existe' })
+        } else if (errorData.error === 'email_exists') {
+          setError('email', { message: 'E-mail já cadastrado' })
+        } else {
+          toast.error(errorData.message || 'Erro ao cadastrar. Tente novamente.')
+        }
+      }
     } catch (err: any) {
       console.error('Erro durante o cadastro:', err)
       console.error('Código do erro:', err.code)

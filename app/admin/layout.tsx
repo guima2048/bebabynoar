@@ -17,25 +17,34 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname()
 
   useEffect(() => {
+    console.log('🔐 AdminLayout: Iniciando verificação de autenticação...')
     checkAuth()
   }, [])
 
   const checkAuth = async () => {
     try {
+      console.log('🔐 AdminLayout: Verificando autenticação...')
       const response = await fetch('/api/admin/check-auth')
+      console.log('🔐 AdminLayout: Resposta da API:', response.status)
+      
       if (response.ok) {
+        console.log('✅ AdminLayout: Usuário autenticado')
         setIsAuthenticated(true)
       } else {
+        console.log('❌ AdminLayout: Usuário não autenticado')
         if (pathname !== '/admin/login') {
+          console.log('🔄 AdminLayout: Redirecionando para login...')
           router.push('/admin/login')
         }
       }
     } catch (error) {
-      console.error('Erro ao verificar autenticação:', error)
+      console.error('❌ AdminLayout: Erro ao verificar autenticação:', error)
       if (pathname !== '/admin/login') {
+        console.log('🔄 AdminLayout: Redirecionando para login devido a erro...')
         router.push('/admin/login')
       }
     } finally {
+      console.log('✅ AdminLayout: Verificação de autenticação concluída')
       setIsLoading(false)
     }
   }
@@ -52,7 +61,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     }
   }
 
+  console.log('🎨 AdminLayout: Renderizando...', {
+    isLoading,
+    isAuthenticated,
+    pathname
+  })
+
   if (isLoading) {
+    console.log('⏳ AdminLayout: Mostrando loading...')
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -64,12 +80,16 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   }
 
   if (pathname === '/admin/login') {
+    console.log('🔐 AdminLayout: Página de login, renderizando children')
     return <>{children}</>
   }
 
   if (!isAuthenticated) {
+    console.log('❌ AdminLayout: Não autenticado, retornando null')
     return null
   }
+
+  console.log('✅ AdminLayout: Renderizando layout completo')
 
   const menuItems = [
     { href: '/admin/dashboard', label: 'Dashboard', icon: '📊' },

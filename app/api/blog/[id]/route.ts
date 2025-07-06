@@ -1,22 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getAdminFirestore } from '@/lib/firebase-admin'
+import { prisma } from '@/lib/prisma'
+
+// Tipagem correta para contexto de rota dinâmico no Next.js 15
+interface RouteContext {
+  params: Promise<{ id: string }>
+}
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: RouteContext
 ) {
   try {
-    const db = getAdminFirestore()
-    const docSnap = await db.collection('blog').doc(params.id).get()
+    const { id } = await context.params
+    const docSnap = await prisma.blogPost.findUnique({
+      where: { id }
+    })
     
-    if (!docSnap.exists) {
+    if (!docSnap) {
       return NextResponse.json({ error: 'Post não encontrado' }, { status: 404 })
     }
     
-    return NextResponse.json({
-      id: docSnap.id,
-      ...docSnap.data()
-    })
+    return NextResponse.json(docSnap)
   } catch (error) {
     console.error('Erro ao buscar post:', error)
     return NextResponse.json(
@@ -28,10 +32,10 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: RouteContext
 ) {
   try {
-    const db = getAdminFirestore()
+    const { id } = await context.params
     const { title, content, excerpt, status } = await req.json()
     
     if (!title || !content) {
@@ -42,8 +46,7 @@ export async function PUT(
     const slug = title
       .toLowerCase()
       .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/[^\w\s-]/g, '')
       .replace(/\s+/g, '-')
       .replace(/-+/g, '-')
       .trim()
@@ -60,12 +63,12 @@ export async function PUT(
       updateData.publishedAt = new Date();
     }
 
-    await db.collection('blog').doc(params.id).update(updateData)
-    
-    return NextResponse.json({
-      id: params.id,
-      ...updateData
+    const docSnap = await prisma.blogPost.update({
+      where: { id },
+      data: updateData
     })
+    
+    return NextResponse.json(docSnap)
 
   } catch (error) {
     console.error('Erro ao atualizar post:', error)
@@ -78,11 +81,13 @@ export async function PUT(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: RouteContext
 ) {
   try {
-    const db = getAdminFirestore()
-    await db.collection('blog').doc(params.id).delete()
+    const { id } = await context.params
+    await prisma.blogPost.delete({
+      where: { id }
+    })
     
     return NextResponse.json({
       success: true,

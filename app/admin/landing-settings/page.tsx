@@ -771,7 +771,7 @@ export default function LandingSettingsPage() {
                           <span className="text-xs text-gray-500">•</span>
                           <span className="text-xs text-gray-500">{testimonial.location}</span>
                         </div>
-                        <p className="text-xs text-gray-600 line-clamp-2">"{testimonial.story}"</p>
+                        <p className="text-xs text-gray-600 line-clamp-2">&ldquo;{testimonial.story}&rdquo;</p>
                       </div>
                     ))}
                   </div>
@@ -819,7 +819,7 @@ export default function LandingSettingsPage() {
               <li>• As imagens devem estar na pasta <code>public/landing/</code></li>
               <li>• Formatos suportados: WebP, PNG, JPG, JPEG</li>
               <li>• Apenas itens ativos aparecem na landing page</li>
-              <li>• Clique em "Salvar" para aplicar as mudanças</li>
+              <li>• Clique em &ldquo;Salvar&rdquo; para aplicar as mudanças</li>
             </ul>
           </div>
         </div>

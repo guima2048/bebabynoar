@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAdminFirestore } from '@/lib/firebase-admin';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,12 +12,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const db = getAdminFirestore();
-    
-    // Atualizar status premium do usuário
-    await db.collection('users').doc(userId).update({
-      premium: premium,
-      updatedAt: new Date()
+    // Atualizar status premium do usuário usando Prisma
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        premium: premium,
+        updatedAt: new Date()
+      }
     });
 
     return NextResponse.json({

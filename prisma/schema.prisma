@@ -1,0 +1,481 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ========================================
+// MODELOS DE USUÁRIO E AUTENTICAÇÃO
+// ========================================
+
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  username          String   @unique
+  password          String?
+  name              String?
+  birthdate         DateTime
+  gender            Gender
+  userType          UserType
+  lookingFor        UserType?
+  
+  // Localização
+  state             String
+  city              String
+  location          String?
+  
+  // Perfil
+  about             String?
+  photoURL          String?
+  verified          Boolean  @default(false)
+  premium           Boolean  @default(false)
+  premiumExpiry     DateTime?
+  status            UserStatus @default(ACTIVE)
+  
+  // Estilo de vida
+  height            String?
+  weight            String?
+  education         String?
+  profession        String?
+  hasChildren       Boolean?
+  smokes            Boolean?
+  drinks            Boolean?
+  
+  // Relacionamento sugar
+  relationshipType  String?
+  availableForTravel Boolean?
+  receiveTravelers  Boolean?
+  
+  // Redes sociais
+  social            Json?
+  
+  // Fotos
+  photos            Photo[]
+  
+  // Timestamps
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  lastActive        DateTime @default(now())
+  
+  // Relacionamentos
+  sentMessages      Message[] @relation("SenderMessages")
+  receivedMessages  Message[] @relation("ReceiverMessages")
+  sentInterests     Interest[] @relation("SentInterests")
+  receivedInterests Interest[] @relation("ReceivedInterests")
+  sentReports       Report[] @relation("SentReports")
+  receivedReports   Report[] @relation("ReceivedReports")
+  notifications     Notification[]
+  payments          Payment[]
+  profileViews      ProfileView[] @relation("ViewedProfile")
+  viewedProfiles    ProfileView[] @relation("ViewerProfile")
+  conversations     ConversationParticipant[]
+  loginHistory      LoginHistory[]
+  blockedUsers      Block[] @relation("UserBlocks")
+  blockedByUsers    Block[] @relation("TargetUserBlocks")
+  favorites         Favorite[] @relation("UserFavorites")
+  favoritedByUsers  Favorite[] @relation("TargetUserFavorites")
+  
+  // Admin
+  isAdmin           Boolean  @default(false)
+  
+  // Stripe/Assinatura
+  stripeCustomerId      String? @unique
+  lastPaymentDate       DateTime?
+  subscriptionStatus    String?
+  
+  // Email verification
+  emailVerified     Boolean  @default(false)
+  emailVerifiedAt   DateTime?
+  emailVerificationToken String?
+  emailVerificationExpiry DateTime?
+  lastVerificationEmailSent DateTime?
+  
+  // Password reset
+  passwordResetToken String?
+  passwordResetTokenExpiry DateTime?
+  passwordUpdatedAt DateTime?
+  
+  @@map("users")
+}
+
+model Photo {
+  id          String   @id @default(cuid())
+  url         String
+  fileName    String?
+  isPrivate   Boolean  @default(false)
+  uploadedAt  DateTime @default(now())
+  
+  // Relacionamentos
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("photos")
+}
+
+// ========================================
+// MODELOS DE MENSAGENS E CONVERSAS
+// ========================================
+
+model Conversation {
+  id              String   @id @default(cuid())
+  lastMessage     String?
+  lastMessageTime DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relacionamentos
+  participants    ConversationParticipant[]
+  messages        Message[]
+  
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  id             String @id @default(cuid())
+  conversationId String
+  userId         String
+  unreadCount    Int    @default(0)
+  joinedAt       DateTime @default(now())
+  
+  // Relacionamentos
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([conversationId, userId])
+  @@map("conversation_participants")
+}
+
+model Message {
+  id             String        @id @default(cuid())
+  content        String
+  type           MessageType   @default(TEXT)
+  imageURL       String?
+  read           Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  
+  // Relacionamentos
+  conversationId String
+  conversation   Conversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User          @relation("SenderMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId     String
+  receiver       User          @relation("ReceiverMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  
+  @@map("messages")
+}
+
+// ========================================
+// MODELOS DE INTERESSES E RELACIONAMENTOS
+// ========================================
+
+model Interest {
+  id          String        @id @default(cuid())
+  message     String?
+  status      InterestStatus @default(PENDING)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  
+  // Relacionamentos
+  senderId    String
+  sender      User          @relation("SentInterests", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId  String
+  receiver    User          @relation("ReceivedInterests", fields: [receiverId], references: [id], onDelete: Cascade)
+  
+  @@unique([senderId, receiverId])
+  @@map("interests")
+}
+
+// ========================================
+// MODELOS DE NOTIFICAÇÕES
+// ========================================
+
+model Notification {
+  id        String            @id @default(cuid())
+  title     String
+  message   String
+  type      NotificationType
+  read      Boolean           @default(false)
+  data      Json?
+  createdAt DateTime          @default(now())
+  
+  // Relacionamentos
+  userId    String
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("notifications")
+}
+
+// ========================================
+// MODELOS DE PAGAMENTOS E PREMIUM
+// ========================================
+
+model Payment {
+  id                    String        @id @default(cuid())
+  amount                Decimal
+  currency              String        @default("BRL")
+  status                PaymentStatus @default(PENDING)
+  stripePaymentIntentId String?       @unique
+  stripeCustomerId      String?
+  plan                  String?
+  createdAt             DateTime      @default(now())
+  
+  // Relacionamentos
+  userId                String
+  user                  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("payments")
+}
+
+// ========================================
+// MODELOS DE RELATÓRIOS E MODERAÇÃO
+// ========================================
+
+model Report {
+  id          String      @id @default(cuid())
+  reason      String
+  description String?
+  status      ReportStatus @default(PENDING)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  // Relacionamentos
+  reporterId  String
+  reporter    User        @relation("SentReports", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedId  String
+  reported    User        @relation("ReceivedReports", fields: [reportedId], references: [id], onDelete: Cascade)
+  
+  @@map("reports")
+}
+
+// ========================================
+// MODELOS DE ESTATÍSTICAS E ANALYTICS
+// ========================================
+
+model ProfileView {
+  id        String   @id @default(cuid())
+  viewedAt  DateTime @default(now())
+  
+  // Relacionamentos
+  viewerId  String
+  viewer    User     @relation("ViewerProfile", fields: [viewerId], references: [id], onDelete: Cascade)
+  viewedId  String
+  viewed    User     @relation("ViewedProfile", fields: [viewedId], references: [id], onDelete: Cascade)
+  
+  @@unique([viewerId, viewedId])
+  @@map("profile_views")
+}
+
+model LoginHistory {
+  id        String   @id @default(cuid())
+  ipAddress String?
+  userAgent String?
+  location  String?
+  timestamp DateTime @default(now())
+  
+  // Relacionamentos
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("login_history")
+}
+
+// ========================================
+// MODELOS DE BLOG E CONTEÚDO
+// ========================================
+
+model BlogPost {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  content     String
+  excerpt     String?
+  imageURL    String?
+  published   Boolean  @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // SEO
+  metaTitle       String?
+  metaDescription String?
+  tags            String[]
+  
+  @@map("blog_posts")
+}
+
+// ========================================
+// MODELOS DE CONFIGURAÇÕES
+// ========================================
+
+model LandingSettings {
+  id                String   @id @default(cuid())
+  bannerImageURL    String?
+  bannerTitle       String?
+  bannerSubtitle    String?
+  bannerDescription String?
+  primaryButtonText String?
+  primaryButtonLink String?
+  secondaryButtonText String?
+  secondaryButtonLink String?
+  heroBaby1Image    String?
+  heroDaddy1Image   String?
+  heroBaby2Image    String?
+  heroDaddy2Image   String?
+  updatedAt         DateTime @updatedAt
+  
+  @@map("landing_settings")
+}
+
+model Testimonial {
+  id       String   @id @default(cuid())
+  name     String
+  location String
+  story    String
+  rating   Int
+  photo    String?
+  isActive Boolean  @default(true)
+  
+  @@map("testimonials")
+}
+
+model ProfileCard {
+  id         String   @id @default(cuid())
+  name       String
+  location   String
+  profession String
+  photo      String?
+  isActive   Boolean  @default(true)
+  type       String   // 'sugar_baby' ou 'sugar_daddy'
+  
+  @@map("profile_cards")
+}
+
+// ========================================
+// ENUMS
+// ========================================
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum UserType {
+  SUGAR_BABY
+  SUGAR_DADDY
+  SUGAR_MOMMY
+  SUGAR_BABYBOY
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  BANNED
+  PENDING
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+}
+
+enum InterestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum NotificationType {
+  MESSAGE
+  INTEREST
+  PAYMENT
+  SYSTEM
+  TRIP
+  PROFILE_VIEW
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+enum ReportStatus {
+  PENDING
+  INVESTIGATING
+  RESOLVED
+  DISMISSED
+}
+
+// ========================================
+// MODELOS DE BLOQUEIO E FAVORITOS
+// ========================================
+
+model Block {
+  id            String   @id @default(cuid())
+  reason        String?
+  createdAt     DateTime @default(now())
+  userType      UserType
+  targetUserType UserType
+  
+  // Relacionamentos
+  userId        String
+  user          User     @relation("UserBlocks", fields: [userId], references: [id], onDelete: Cascade)
+  targetUserId  String
+  targetUser    User     @relation("TargetUserBlocks", fields: [targetUserId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, targetUserId])
+  @@map("blocks")
+}
+
+model Favorite {
+  id            String   @id @default(cuid())
+  createdAt     DateTime @default(now())
+  
+  // Relacionamentos
+  userId        String
+  user          User     @relation("UserFavorites", fields: [userId], references: [id], onDelete: Cascade)
+  targetUserId  String
+  targetUser    User     @relation("TargetUserFavorites", fields: [targetUserId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, targetUserId])
+  @@map("favorites")
+}
+
+model BlogSettings {
+  id                  String   @id @default("main") // sempre terá apenas um registro
+  primaryColor        String
+  secondaryColor      String
+  accentColor         String
+  backgroundColor     String
+  textColor           String
+  titleFont           String
+  bodyFont            String
+  heroTitle           String
+  heroSubtitle        String
+  heroBackgroundImage String
+  heroBackgroundAlt   String
+  siteTitle           String
+  siteDescription     String
+  defaultKeywords     String
+  searchPlaceholder   String
+  recentArticlesTitle String
+  popularArticlesTitle String
+  readMoreText        String
+  noArticlesText      String
+  footerText          String
+  privacyPolicyText   String
+  termsText           String
+  contactText         String
+  updatedAt           DateTime @updatedAt
+
+  @@map("blog_settings")
+} 

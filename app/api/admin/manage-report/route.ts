@@ -1,14 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/firebase'
-import { doc, updateDoc, deleteDoc, serverTimestamp, query, where, getDocs, collection } from 'firebase/firestore'
+import { prisma } from '@/lib/prisma'
 
 export async function PUT(req: NextRequest) {
   try {
-    // Verificar se o Firebase está inicializado
-    if (!db) {
-      return NextResponse.json({ error: 'Firebase não inicializado' }, { status: 500 })
-    }
-
     const { reportId, action, adminNotes } = await req.json()
     
     if (!reportId || !action) {
@@ -16,55 +10,44 @@ export async function PUT(req: NextRequest) {
     }
 
     // Busca a denúncia
-    const reportQuery = query(
-      collection(db, 'denuncias'),
-      where('__name__', '==', reportId)
-    )
-    const reportSnap = await getDocs(reportQuery)
+    const report = await prisma.report.findUnique({
+      where: { id: reportId },
+      include: { reported: true }
+    })
     
-    if (reportSnap.empty) {
+    if (!report) {
       return NextResponse.json({ error: 'Denúncia não encontrada' }, { status: 404 })
     }
 
-    const report = reportSnap.docs[0].data()
-
     // Atualiza o status da denúncia
-    await updateDoc(doc(db, 'denuncias', reportId), {
-      status: action === 'review' ? 'Em Revisão' : 'Resolvida',
-      revisado: true,
-      revisadoPor: 'Admin',
-      dataRevisao: serverTimestamp(),
-      acaoTomada: action,
-      adminNotes: adminNotes || null,
+    await prisma.report.update({
+      where: { id: reportId },
+      data: {
+        status: action === 'review' ? 'INVESTIGATING' : 'RESOLVED',
+      }
     })
 
     // Se a ação for bloquear ou excluir o usuário denunciado
     if (action === 'block_user' || action === 'delete_user') {
       if (action === 'block_user') {
-        await updateDoc(doc(db, 'users', report.denunciadoId), {
-          ativo: false,
-          bloqueadoEm: serverTimestamp(),
-          motivoBloqueio: adminNotes || 'Denúncia de usuário',
+        await prisma.user.update({
+          where: { id: report.reportedId },
+          data: {
+            status: 'BANNED',
+          }
         })
       } else if (action === 'delete_user') {
-        // Marca o usuário como deletado (não remove fisicamente por segurança)
-        await updateDoc(doc(db, 'users', report.denunciadoId), {
-          deletado: true,
-          deletadoEm: serverTimestamp(),
-          motivoDelecao: adminNotes || 'Denúncia de usuário',
+        // Marca o usuário como inativo (não remove fisicamente por segurança)
+        await prisma.user.update({
+          where: { id: report.reportedId },
+          data: {
+            status: 'INACTIVE',
+          }
         })
       }
 
       // Envia e-mail de notificação para o usuário denunciado
-      const userQuery = query(
-        collection(db, 'users'),
-        where('__name__', '==', report.denunciadoId)
-      )
-      const userSnap = await getDocs(userQuery)
-      
-      if (!userSnap.empty) {
-        const userEmail = userSnap.docs[0].data().email
-        
+      if (report.reported?.email) {
         const res = await fetch('https://api.brevo.com/v3/smtp/email', {
           method: 'POST',
           headers: {
@@ -74,7 +57,7 @@ export async function PUT(req: NextRequest) {
           },
           body: JSON.stringify({
             sender: { name: 'Bebaby App', email: 'no-reply@bebaby.app' },
-            to: [{ email: userEmail }],
+            to: [{ email: report.reported.email }],
             subject: action === 'block_user' ? 'Conta bloqueada - Bebaby App' : 'Conta removida - Bebaby App',
             htmlContent: `
               <h2>${action === 'block_user' ? 'Sua conta foi bloqueada' : 'Sua conta foi removida'}</h2>
@@ -109,18 +92,15 @@ export async function PUT(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    // Verificar se o Firebase está inicializado
-    if (!db) {
-      return NextResponse.json({ error: 'Firebase não inicializado' }, { status: 500 })
-    }
-
     const { reportId } = await req.json()
     
     if (!reportId) {
       return NextResponse.json({ error: 'ID da denúncia não fornecido' }, { status: 400 })
     }
 
-    await deleteDoc(doc(db, 'denuncias', reportId))
+    await prisma.report.delete({
+      where: { id: reportId }
+    })
 
     return NextResponse.json({
       success: true,

@@ -1,15 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getFirestoreDB } from '@/lib/firebase'
-import { doc, getDoc, updateDoc, serverTimestamp, collection, query, where, getDocs, addDoc } from 'firebase/firestore'
+import { prisma } from '@/lib/prisma'
 import { verifyEmailSchema, validateAndSanitize, createErrorResponse } from '@/lib/schemas'
 import crypto from 'crypto'
 
 export async function POST(req: NextRequest) {
   try {
-    const db = getFirestoreDB()
-    if (!db) {
-      return NextResponse.json({ error: 'Erro de conexão com o banco de dados' }, { status: 500 })
-    }
     const { email } = await req.json()
 
     if (!email) {
@@ -20,25 +15,19 @@ export async function POST(req: NextRequest) {
     }
 
     // Buscar usuário pelo email
-    const userQuery = await getDocs(
-      query(
-        collection(db, 'users'),
-        where('email', '==', email)
-      )
-    )
+    const user = await prisma.user.findUnique({
+      where: { email: email }
+    })
     
-    if (userQuery.empty) {
+    if (!user) {
       return NextResponse.json(
         { error: 'Usuário não encontrado' },
         { status: 404 }
       )
     }
 
-    const userDoc = userQuery.docs[0]
-    const userData = userDoc.data()
-
     // Verificar se o email já está verificado
-    if (userData.emailVerified) {
+    if (user.emailVerified) {
       return NextResponse.json(
         { error: 'Email já está verificado' },
         { status: 400 }
@@ -50,16 +39,19 @@ export async function POST(req: NextRequest) {
     const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 horas
 
     // Salvar token no banco
-    await updateDoc(doc(db, 'users', userDoc.id), {
-      emailVerificationToken: verificationToken,
-      emailVerificationExpiry: tokenExpiry,
-      lastVerificationEmailSent: serverTimestamp()
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailVerificationToken: verificationToken,
+        emailVerificationExpiry: tokenExpiry,
+        lastVerificationEmailSent: new Date()
+      }
     })
 
     // Enviar e-mail de verificação
     const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL}/verify-email?token=${verificationToken}&email=${encodeURIComponent(email)}`
     
-    await sendVerificationEmail(email, verificationUrl, userData.name || 'Usuário')
+    await sendVerificationEmail(email, verificationUrl, user.name || 'Usuário')
 
     return NextResponse.json({
       success: true,
@@ -78,10 +70,6 @@ export async function POST(req: NextRequest) {
 // Verificar token de email
 export async function PUT(req: NextRequest) {
   try {
-    const db = getFirestoreDB()
-    if (!db) {
-      return NextResponse.json({ error: 'Erro de conexão com o banco de dados' }, { status: 500 })
-    }
     const { token, email } = await req.json()
 
     if (!token || !email) {
@@ -92,25 +80,19 @@ export async function PUT(req: NextRequest) {
     }
 
     // Buscar usuário pelo email
-    const userQuery = await getDocs(
-      query(
-        collection(db, 'users'),
-        where('email', '==', email)
-      )
-    )
+    const user = await prisma.user.findUnique({
+      where: { email: email }
+    })
     
-    if (userQuery.empty) {
+    if (!user) {
       return NextResponse.json(
         { error: 'Usuário não encontrado' },
         { status: 404 }
       )
     }
 
-    const userDoc = userQuery.docs[0]
-    const userData = userDoc.data()
-
     // Verificar se o token é válido
-    if (userData.emailVerificationToken !== token) {
+    if (user.emailVerificationToken !== token) {
       return NextResponse.json(
         { error: 'Token inválido' },
         { status: 400 }
@@ -118,7 +100,7 @@ export async function PUT(req: NextRequest) {
     }
 
     // Verificar se o token não expirou
-    if (userData.emailVerificationExpiry && userData.emailVerificationExpiry.toDate() < new Date()) {
+    if (user.emailVerificationExpiry && user.emailVerificationExpiry < new Date()) {
       return NextResponse.json(
         { error: 'Token expirado' },
         { status: 400 }
@@ -126,15 +108,18 @@ export async function PUT(req: NextRequest) {
     }
 
     // Marcar email como verificado
-    await updateDoc(doc(db, 'users', userDoc.id), {
-      emailVerified: true,
-      emailVerifiedAt: serverTimestamp(),
-      emailVerificationToken: null,
-      emailVerificationExpiry: null
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailVerified: true,
+        emailVerifiedAt: new Date(),
+        emailVerificationToken: null,
+        emailVerificationExpiry: null
+      }
     })
 
     // Enviar e-mail de confirmação
-    await sendEmailVerifiedConfirmation(email, userData.name || 'Usuário')
+    await sendEmailVerifiedConfirmation(email, user.name || 'Usuário')
 
     return NextResponse.json({
       success: true,
@@ -152,7 +137,6 @@ export async function PUT(req: NextRequest) {
 
 async function sendVerificationEmail(email: string, verificationUrl: string, userName: string) {
   try {
-    const db = getFirestoreDB()
     const res = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {
@@ -198,13 +182,14 @@ async function sendVerificationEmail(email: string, verificationUrl: string, use
                   <li>Maior segurança para sua conta</li>
                   <li>Recuperação de senha mais fácil</li>
                   <li>Notificações importantes sobre sua conta</li>
-                  <li>Melhor experiência no app</li>
                 </ul>
               </div>
               
-              <p style="color: #999; font-size: 14px; margin-top: 25px; text-align: center;">
-                Este link expira em 24 horas. Se você não solicitou esta verificação, ignore este email.
-              </p>
+              <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+                <p style="color: #999; font-size: 12px;">
+                  Este email foi enviado para ${email}. Se você não se cadastrou no Bebaby App, ignore este email.
+                </p>
+              </div>
             </div>
           </div>
         `
@@ -212,18 +197,17 @@ async function sendVerificationEmail(email: string, verificationUrl: string, use
     })
 
     if (!res.ok) {
-      console.error('Erro ao enviar e-mail de verificação:', await res.text())
-      throw new Error('Falha ao enviar e-mail')
+      throw new Error(`Erro ao enviar email: ${res.status}`)
     }
+
   } catch (error) {
-    console.error('Erro ao enviar e-mail de verificação:', error)
+    console.error('Erro ao enviar email de verificação:', error)
     throw error
   }
 }
 
 async function sendEmailVerifiedConfirmation(email: string, userName: string) {
   try {
-    const db = getFirestoreDB()
     const res = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {
@@ -234,7 +218,7 @@ async function sendEmailVerifiedConfirmation(email: string, userName: string) {
       body: JSON.stringify({
         sender: { name: 'Bebaby App', email: 'no-reply@bebaby.app' },
         to: [{ email }],
-        subject: 'Email verificado com sucesso! - Bebaby App',
+        subject: 'Email Verificado - Bebaby App',
         htmlContent: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="background: linear-gradient(135deg, #10b981, #059669); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
@@ -245,29 +229,31 @@ async function sendEmailVerifiedConfirmation(email: string, userName: string) {
               <h2 style="color: #333; margin-bottom: 20px;">Parabéns, ${userName}!</h2>
               
               <p style="color: #666; line-height: 1.6; margin-bottom: 25px;">
-                Seu email foi verificado com sucesso! Agora você tem acesso completo ao Bebaby App.
+                Seu email foi verificado com sucesso! Agora você pode aproveitar todos os recursos do Bebaby App.
               </p>
               
-              <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 20px; border-radius: 8px; margin-bottom: 25px;">
-                <h3 style="color: #166534; margin-bottom: 15px;">🎉 O que você pode fazer agora:</h3>
-                <ul style="color: #166534; line-height: 1.8; margin: 0; padding-left: 20px;">
-                  <li>Completar seu perfil</li>
-                  <li>Explorar outros usuários</li>
-                  <li>Enviar mensagens</li>
-                  <li>Participar da comunidade</li>
-                </ul>
-              </div>
-              
-              <div style="text-align: center;">
-                <a href="${process.env.NEXT_PUBLIC_APP_URL}/profile" 
-                   style="background: linear-gradient(135deg, #ec4899, #8b5cf6); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; display: inline-block; font-weight: bold;">
-                  Acessar Minha Conta
+              <div style="text-align: center; margin-bottom: 25px;">
+                <a href="${process.env.NEXT_PUBLIC_APP_URL}" 
+                   style="background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; display: inline-block; font-weight: bold;">
+                  Acessar Bebaby App
                 </a>
               </div>
               
-              <p style="color: #999; font-size: 14px; margin-top: 25px; text-align: center;">
-                Obrigado por escolher o Bebaby App! 🎀
-              </p>
+              <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin-top: 25px; border-left: 4px solid #10b981;">
+                <h3 style="color: #333; margin-bottom: 10px; font-size: 16px;">O que você pode fazer agora?</h3>
+                <ul style="color: #666; line-height: 1.6; margin: 0; padding-left: 20px; font-size: 14px;">
+                  <li>Completar seu perfil</li>
+                  <li>Encontrar pessoas interessantes</li>
+                  <li>Enviar e receber mensagens</li>
+                  <li>Participar de eventos</li>
+                </ul>
+              </div>
+              
+              <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+                <p style="color: #999; font-size: 12px;">
+                  Obrigado por escolher o Bebaby App!
+                </p>
+              </div>
             </div>
           </div>
         `
@@ -275,108 +261,130 @@ async function sendEmailVerifiedConfirmation(email: string, userName: string) {
     })
 
     if (!res.ok) {
-      console.error('Erro ao enviar e-mail de confirmação:', await res.text())
+      throw new Error(`Erro ao enviar email: ${res.status}`)
     }
+
   } catch (error) {
-    console.error('Erro ao enviar e-mail de confirmação:', error)
+    console.error('Erro ao enviar email de confirmação:', error)
+    throw error
   }
 }
 
 export async function GET(req: NextRequest) {
   try {
-    const db = getFirestoreDB()
-    if (!db) {
-      return NextResponse.json({ error: 'Erro de conexão com o banco de dados' }, { status: 500 })
-    }
     const { searchParams } = new URL(req.url)
     const token = searchParams.get('token')
+    const email = searchParams.get('email')
 
-    if (!token) {
-      return NextResponse.json({ error: 'Token de verificação é obrigatório' }, { status: 400 })
+    if (!token || !email) {
+      return NextResponse.json(
+        { error: 'Token e email são obrigatórios' },
+        { status: 400 }
+      )
     }
 
-    // Buscar usuário pelo token de verificação
-    const usersRef = collection(db, 'users')
-    const q = query(usersRef, where('emailVerificationToken', '==', token))
-    const querySnapshot = await getDocs(q)
-
-    if (querySnapshot.empty) {
-      return NextResponse.json({ error: 'Token inválido ou expirado' }, { status: 400 })
+    // Verificar token
+    const isValid = await verifyEmailToken(token)
+    
+    if (!isValid) {
+      return NextResponse.json(
+        { error: 'Token inválido ou expirado' },
+        { status: 400 }
+      )
     }
 
-    const userDoc = querySnapshot.docs[0]
-    const userData = userDoc.data()
-
-    // Verificar se o token não expirou (24 horas)
-    const tokenCreatedAt = userData.emailVerificationTokenCreatedAt?.toDate()
-    const now = new Date()
-    const tokenAge = now.getTime() - tokenCreatedAt.getTime()
-    const maxAge = 24 * 60 * 60 * 1000 // 24 horas
-
-    if (tokenAge > maxAge) {
-      return NextResponse.json({ error: 'Token expirado' }, { status: 400 })
-    }
-
-    // Marcar email como verificado
-    await updateDoc(userDoc.ref, {
-      emailVerified: true,
-      emailVerificationToken: null,
-      emailVerificationTokenCreatedAt: null,
-      emailVerifiedAt: new Date(),
+    return NextResponse.json({
+      success: true,
+      message: 'Token válido'
     })
 
-    // Redirecionar para página de sucesso
-    return NextResponse.redirect(new URL('/verify-email?success=true', req.url))
-
   } catch (error) {
-    console.error('Erro ao verificar email:', error)
-    return NextResponse.redirect(new URL('/verify-email?error=true', req.url))
+    console.error('Erro ao verificar token:', error)
+    return NextResponse.json(
+      { error: 'Erro interno do servidor' },
+      { status: 500 }
+    )
   }
 }
 
 async function verifyEmailToken(token: string) {
   try {
-    const db = getFirestoreDB()
-    if (!db) {
-      console.error('Erro de conexão com o banco de dados')
-      return false
-    }
-    // Buscar token na coleção de verificação
-    const tokenQuery = query(
-      collection(db, 'emailVerificationTokens'),
-      where('token', '==', token),
-      where('expiresAt', '>', new Date())
-    )
-    const querySnapshot = await getDocs(tokenQuery)
+    const user = await prisma.user.findFirst({
+      where: {
+        emailVerificationToken: token,
+        emailVerificationExpiry: {
+          gt: new Date()
+        }
+      }
+    })
 
-    if (querySnapshot.empty) {
-      return false
-    }
-
-    return true
+    return !!user
   } catch (error) {
-    console.error('Erro ao verificar token de email:', error)
+    console.error('Erro ao verificar token:', error)
     return false
   }
 }
 
 async function sendWelcomeEmail(userId: string, userData: any) {
   try {
-    const db = getFirestoreDB()
-    if (!db) {
-      console.error('Erro de conexão com o banco de dados')
-      return
-    }
-    // Criar notificação de boas-vindas
-    await addDoc(collection(db, 'notifications'), {
-      userId,
-      type: 'welcome',
-      title: 'Bem-vindo ao Bebaby!',
-      message: 'Seu e-mail foi verificado com sucesso. Agora você pode aproveitar todos os recursos da plataforma!',
-      read: false,
-      createdAt: serverTimestamp()
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'api-key': process.env.BREVO_API_KEY!,
+        'Content-Type': 'application/json',
+        'accept': 'application/json',
+      },
+      body: JSON.stringify({
+        sender: { name: 'Bebaby App', email: 'no-reply@bebaby.app' },
+        to: [{ email: userData.email }],
+        subject: 'Bem-vindo ao Bebaby App!',
+        htmlContent: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: linear-gradient(135deg, #ec4899, #8b5cf6); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+              <h1 style="color: white; margin: 0; font-size: 28px;">🎉 Bem-vindo ao Bebaby App!</h1>
+            </div>
+            
+            <div style="background: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+              <h2 style="color: #333; margin-bottom: 20px;">Olá, ${userData.name || 'Usuário'}!</h2>
+              
+              <p style="color: #666; line-height: 1.6; margin-bottom: 25px;">
+                Seja bem-vindo ao Bebaby App! Estamos muito felizes em tê-lo conosco.
+              </p>
+              
+              <div style="text-align: center; margin-bottom: 25px;">
+                <a href="${process.env.NEXT_PUBLIC_APP_URL}" 
+                   style="background: linear-gradient(135deg, #ec4899, #8b5cf6); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; display: inline-block; font-weight: bold;">
+                  Começar a Explorar
+                </a>
+              </div>
+              
+              <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 25px;">
+                <h3 style="color: #333; margin-bottom: 10px; font-size: 16px;">Dicas para começar:</h3>
+                <ul style="color: #666; line-height: 1.6; margin: 0; padding-left: 20px; font-size: 14px;">
+                  <li>Complete seu perfil com fotos e informações</li>
+                  <li>Configure suas preferências de busca</li>
+                  <li>Explore perfis de outros usuários</li>
+                  <li>Envie mensagens para pessoas interessantes</li>
+                </ul>
+              </div>
+              
+              <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+                <p style="color: #999; font-size: 12px;">
+                  Se tiver alguma dúvida, entre em contato conosco!
+                </p>
+              </div>
+            </div>
+          </div>
+        `
+      })
     })
+
+    if (!res.ok) {
+      throw new Error(`Erro ao enviar email: ${res.status}`)
+    }
+
   } catch (error) {
-    console.error('Erro ao enviar e-mail de boas-vindas:', error)
+    console.error('Erro ao enviar email de boas-vindas:', error)
+    throw error
   }
 } 

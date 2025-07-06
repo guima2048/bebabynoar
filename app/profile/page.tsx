@@ -1,10 +1,8 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
-import { getFirestoreDB, getFirebaseStorage } from '@/lib/firebase'
-import { doc, getDoc, updateDoc } from 'firebase/firestore'
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { useAuth } from '@/hooks/useAuth'
+
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
@@ -92,18 +90,13 @@ export default function ProfilePage() {
   const fetchProfile = async () => {
     if (!user) { return }
     try {
-      const db = getFirestoreDB()
-      if (!db) {
-        console.error('[ProfilePage] Erro de configuração do banco de dados')
-        return
-      }
       setLoadingProfile(true)
-      const docRef = doc(db, 'users', user.id)
-      const docSnap = await getDoc(docRef)
-      console.log('[ProfilePage] docSnap.exists:', docSnap.exists())
-      if (docSnap.exists()) {
-        setProfile(docSnap.data() as ProfileData)
-        console.log('[ProfilePage] Perfil carregado:', docSnap.data())
+      const response = await fetch(`/api/user/profile/${user.id}`)
+      
+      if (response.ok) {
+        const data = await response.json()
+        setProfile(data.user as ProfileData)
+        console.log('[ProfilePage] Perfil carregado:', data.user)
       } else {
         console.warn('[ProfilePage] Perfil não encontrado, redirecionando para edição')
         router.push('/profile/edit')
@@ -127,26 +120,24 @@ export default function ProfilePage() {
     }
 
     try {
-      const storage = getFirebaseStorage()
-      if (!storage) {
-        throw new Error('Erro de configuração do storage')
-      }
       setUploadingPhoto(true)
-      const storageRef = ref(storage, `users/${user.id}/profile/${file.name}`)
-      await uploadBytes(storageRef, file)
-      const downloadURL = await getDownloadURL(storageRef)
       
-      // Atualiza o perfil no Firestore
-      const db = getFirestoreDB()
-      if (!db) {
-        toast.error('Serviço de banco de dados indisponível. Tente novamente mais tarde.')
-        return
+      const formData = new FormData()
+      formData.append('photo', file)
+      formData.append('type', 'profile')
+      
+      const response = await fetch('/api/upload-photo', {
+        method: 'POST',
+        body: formData
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setProfile(prev => prev ? { ...prev, photoURL: data.url } : null)
+        toast.success('Foto atualizada com sucesso!')
+      } else {
+        toast.error('Erro ao fazer upload da foto')
       }
-      const userRef = doc(db, 'users', user.id)
-      await updateDoc(userRef, { photoURL: downloadURL })
-      
-      setProfile(prev => prev ? { ...prev, photoURL: downloadURL } : null)
-      toast.success('Foto atualizada com sucesso!')
     } catch (error) {
       toast.error('Erro ao fazer upload da foto')
     } finally {
@@ -166,29 +157,31 @@ export default function ProfilePage() {
     }
     try {
       setUploadingPhoto(true);
-      const storage = getFirebaseStorage();
-      const storageRef = ref(storage, `users/${user.id}/photos/${Date.now()}_${file.name}`);
-      await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(storageRef);
-      // Atualiza o Firestore no campo 'photos'
-      const db = getFirestoreDB();
-      if (!db) {
-        toast.error('Serviço de banco de dados indisponível. Tente novamente mais tarde.')
-        return
+      
+      const formData = new FormData()
+      formData.append('photo', file)
+      formData.append('type', 'gallery')
+      formData.append('isPrivate', 'false')
+      
+      const response = await fetch('/api/upload-photo', {
+        method: 'POST',
+        body: formData
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        const newPhoto = {
+          id: `photo_${Date.now()}`,
+          url: data.url,
+          isPrivate: false,
+          uploadedAt: new Date().toISOString(),
+        };
+        const updatedPhotos = [...(profile?.photos || []), newPhoto];
+        setProfile(prev => prev ? { ...prev, photos: updatedPhotos } : null);
+        toast.success('Foto adicionada!');
+      } else {
+        toast.error('Erro ao fazer upload da foto');
       }
-      const userRef = doc(db, 'users', user.id);
-      const docSnap = await getDoc(userRef);
-      let photos = (docSnap.exists() && docSnap.data().photos) ? docSnap.data().photos : [];
-      const newPhoto = {
-        id: `photo_${Date.now()}`,
-        url: downloadURL,
-        isPrivate: false,
-        uploadedAt: new Date().toISOString(),
-      };
-      photos = [...photos, newPhoto];
-      await updateDoc(userRef, { photos });
-      setProfile(prev => prev ? { ...prev, photos } : null);
-      toast.success('Foto adicionada!');
     } catch (error) {
       toast.error('Erro ao fazer upload da foto');
     } finally {
@@ -205,29 +198,31 @@ export default function ProfilePage() {
     }
     try {
       setUploadingPhoto(true);
-      const storage = getFirebaseStorage();
-      const storageRef = ref(storage, `users/${user.id}/photos/${Date.now()}_${file.name}`);
-      await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(storageRef);
-      // Atualiza o Firestore no campo 'photos'
-      const db = getFirestoreDB();
-      if (!db) {
-        toast.error('Serviço de banco de dados indisponível. Tente novamente mais tarde.')
-        return
+      
+      const formData = new FormData()
+      formData.append('photo', file)
+      formData.append('type', 'gallery')
+      formData.append('isPrivate', 'true')
+      
+      const response = await fetch('/api/upload-photo', {
+        method: 'POST',
+        body: formData
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        const newPhoto = {
+          id: `photo_${Date.now()}`,
+          url: data.url,
+          isPrivate: true,
+          uploadedAt: new Date().toISOString(),
+        };
+        const updatedPhotos = [...(profile?.photos || []), newPhoto];
+        setProfile(prev => prev ? { ...prev, photos: updatedPhotos } : null);
+        toast.success('Foto privada adicionada!');
+      } else {
+        toast.error('Erro ao fazer upload da foto');
       }
-      const userRef = doc(db, 'users', user.id);
-      const docSnap = await getDoc(userRef);
-      let photos = (docSnap.exists() && docSnap.data().photos) ? docSnap.data().photos : [];
-      const newPhoto = {
-        id: `photo_${Date.now()}`,
-        url: downloadURL,
-        isPrivate: true,
-        uploadedAt: new Date().toISOString(),
-      };
-      photos = [...photos, newPhoto];
-      await updateDoc(userRef, { photos });
-      setProfile(prev => prev ? { ...prev, photos } : null);
-      toast.success('Foto privada adicionada!');
     } catch (error) {
       toast.error('Erro ao fazer upload da foto');
     } finally {

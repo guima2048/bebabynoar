@@ -20,7 +20,7 @@ export function middleware(request: NextRequest) {
   }
 
   // Proteção contra ataques de força bruta
-  const ip = request.ip || request.headers.get('x-forwarded-for') || 'unknown'
+  const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown'
   const userAgent = request.headers.get('user-agent') || 'unknown'
   
   // Proteção contra ataques de injeção

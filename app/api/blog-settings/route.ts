@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAdminFirestore } from '@/lib/firebase-admin';
+import { prisma } from '@/lib/prisma'
 
 // Interface para as configurações do blog
 interface BlogSettings {
@@ -78,14 +78,17 @@ const defaultSettings: BlogSettings = {
 
 export async function GET() {
   try {
-    const db = getAdminFirestore()
-    const settingsDoc = await db.collection('blog-settings').doc('main').get();
+    const settingsDoc = await prisma.blogSettings.findUnique({
+      where: { id: 'main' },
+    });
     
-    if (settingsDoc.exists) {
-      return NextResponse.json(settingsDoc.data());
+    if (settingsDoc) {
+      return NextResponse.json(settingsDoc);
     } else {
       // Criar configurações padrão se não existirem
-      await db.collection('blog-settings').doc('main').set(defaultSettings);
+      await prisma.blogSettings.create({
+        data: defaultSettings,
+      });
       return NextResponse.json(defaultSettings);
     }
   } catch (error) {
@@ -96,13 +99,15 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const db = getAdminFirestore()
     const settings: Partial<BlogSettings> = await request.json();
     
     // Adicionar timestamp de atualização
     settings.updatedAt = new Date().toISOString();
     
-    await db.collection('blog-settings').doc('main').update(settings);
+    await prisma.blogSettings.update({
+      where: { id: 'main' },
+      data: settings,
+    });
     
     return NextResponse.json({ success: true, message: 'Configurações atualizadas com sucesso' });
   } catch (error) {

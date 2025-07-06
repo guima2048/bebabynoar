@@ -1,117 +1,96 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAdminFirestore, getAdminStorage } from '@/lib/firebase-admin';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { writeFile, mkdir } from 'fs/promises';
+import { join } from 'path';
+import { existsSync } from 'fs';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('📸 [Upload] Iniciando upload de foto...');
+    const session = await getServerSession(authOptions);
     
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Não autorizado' },
+        { status: 401 }
+      );
+    }
+
     const formData = await request.formData();
     const file = formData.get('file') as File;
-    const userId = formData.get('userId') as string;
     const isPrivate = formData.get('isPrivate') === 'true';
 
-    console.log('📸 [Upload] Dados recebidos:', { 
-      fileName: file?.name, 
-      fileSize: file?.size, 
-      userId, 
-      isPrivate 
-    });
-
-    if (!file || !userId) {
-      console.error('📸 [Upload] Dados obrigatórios não fornecidos');
+    if (!file) {
       return NextResponse.json(
-        { error: 'Arquivo e ID do usuário são obrigatórios' },
+        { error: 'Nenhum arquivo enviado' },
         { status: 400 }
       );
     }
 
-    const db = getAdminFirestore();
-    const bucket = getAdminStorage();
-
-    if (!db || !bucket) {
-      console.error('📸 [Upload] Erro de configuração do Firebase');
+    // Validar tipo de arquivo
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
       return NextResponse.json(
-        { error: 'Erro de configuração do servidor' },
-        { status: 500 }
+        { error: 'Tipo de arquivo não suportado. Use JPEG, PNG ou WebP.' },
+        { status: 400 }
       );
     }
 
-    // Verificar se o usuário existe
-    console.log('📸 [Upload] Verificando usuário:', userId);
-    const userDoc = await db.collection('users').doc(userId).get();
-    if (!userDoc.exists) {
-      console.error('📸 [Upload] Usuário não encontrado:', userId);
+    // Validar tamanho (máximo 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
       return NextResponse.json(
-        { error: 'Usuário não encontrado' },
-        { status: 404 }
+        { error: 'Arquivo muito grande. Máximo 5MB.' },
+        { status: 400 }
       );
+    }
+
+    // Criar diretório de uploads se não existir
+    const uploadsDir = join(process.cwd(), 'public', 'uploads');
+    if (!existsSync(uploadsDir)) {
+      await mkdir(uploadsDir, { recursive: true });
     }
 
     // Gerar nome único para o arquivo
+    const timestamp = Date.now();
+    const randomString = Math.random().toString(36).substring(2, 15);
     const fileExtension = file.name.split('.').pop();
-    const fileName = `users/${userId}/photos/${Date.now()}.${fileExtension}`;
-    console.log('📸 [Upload] Nome do arquivo:', fileName);
+    const fileName = `${timestamp}-${randomString}.${fileExtension}`;
+    const filePath = join(uploadsDir, fileName);
 
     // Converter File para Buffer
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    console.log('📸 [Upload] Buffer criado, tamanho:', buffer.length);
 
-    // Upload para o Firebase Storage
-    console.log('📸 [Upload] Fazendo upload para Storage...');
-    const fileUpload = bucket.file(fileName);
-    await fileUpload.save(buffer, {
-      metadata: {
-        contentType: file.type,
-      },
+    // Salvar arquivo
+    await writeFile(filePath, buffer);
+
+    // Salvar no banco de dados
+    const photo = await prisma.photo.create({
+      data: {
+        url: `/uploads/${fileName}`,
+        fileName: fileName,
+        isPrivate: isPrivate,
+        userId: session.user.id
+      }
     });
-    console.log('📸 [Upload] Upload para Storage concluído');
 
-    // Gerar URL pública
-    console.log('📸 [Upload] Gerando URL pública...');
-    const [url] = await fileUpload.getSignedUrl({
-      action: 'read',
-      expires: '03-01-2500', // URL válida por muito tempo
-    });
-    console.log('📸 [Upload] URL gerada:', url);
-
-    // Salvar referência no Firestore
-    const photoData = {
-      id: `photo_${Date.now()}`,
-      url,
-      photoURL: url, // compatibilidade com admin
-      fileName,
-      isPrivate: isPrivate || false,
-      uploadedAt: new Date(),
-      userId,
-    };
-
-    console.log('📸 [Upload] Dados da foto:', photoData);
-
-    // Adicionar ao array de fotos do usuário (como objeto, igual ao admin)
-    const userRef = db.collection('users').doc(userId);
-    const userDocData = userDoc.data() || {};
-    const existingPhotos = Array.isArray(userDocData.photos) ? userDocData.photos : [];
-    
-    console.log('📸 [Upload] Fotos existentes:', existingPhotos.length);
-    
-    const updatedPhotos = [...existingPhotos, photoData];
-    console.log('📸 [Upload] Array atualizado:', updatedPhotos.length, 'fotos');
-    
-    await userRef.update({ photos: updatedPhotos });
-    console.log('📸 [Upload] Firestore atualizado com sucesso');
+    console.log('✅ Foto salva:', photo.url);
 
     return NextResponse.json({
       success: true,
-      url,
-      photo: photoData,
-      message: 'Foto enviada com sucesso',
+      photo: {
+        id: photo.id,
+        url: photo.url,
+        fileName: photo.fileName,
+        isPrivate: photo.isPrivate
+      }
     });
-
   } catch (error) {
-    console.error('📸 [Upload] Erro no upload:', error);
+    console.error('❌ Erro no upload:', error);
     return NextResponse.json(
-      { error: 'Erro interno do servidor', details: String(error) },
+      { error: 'Erro interno do servidor' },
       { status: 500 }
     );
   }
@@ -119,64 +98,64 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const db = getAdminFirestore()
-    const storage = getAdminStorage()
-    const { userId, photoUrl } = await request.json();
-
-    if (!userId || !photoUrl) {
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user?.id) {
       return NextResponse.json(
-        { error: 'ID do usuário e URL da foto são obrigatórios' },
+        { message: 'Não autorizado' },
+        { status: 401 }
+      );
+    }
+
+    const { searchParams } = new URL(request.url);
+    const photoId = searchParams.get('photoId');
+
+    if (!photoId) {
+      return NextResponse.json(
+        { message: 'ID da foto é obrigatório' },
         { status: 400 }
       );
     }
 
-    // Verificar se o usuário existe
-    const userRef = db.collection('users').doc(userId);
-    const userDoc = await userRef.get();
-    
-    if (!userDoc.exists) {
-      return NextResponse.json(
-        { error: 'Usuário não encontrado' },
-        { status: 404 }
-      );
-    }
-
-    const userData = userDoc.data();
-    if (!userData) {
-      return NextResponse.json(
-        { error: 'Dados do usuário não encontrados' },
-        { status: 404 }
-      );
-    }
-
-    // Deletar do Storage
-    try {
-      const photoRef = storage.file(photoUrl);
-      await photoRef.delete();
-    } catch (error) {
-      console.warn('Erro ao deletar foto do storage:', error);
-    }
-
-    // Remover da lista de fotos do usuário
-    const photos = userData.photos || [];
-    const updatedPhotos = photos.filter((photo: any) => photo.url !== photoUrl);
-
-    const updateData = {
-      photos: updatedPhotos,
-      lastPhotoUpdate: new Date(),
-    };
-
-    await userRef.update(updateData);
-
-    return NextResponse.json({
-      success: true,
-      message: 'Foto deletada com sucesso'
+    // Verificar se a foto pertence ao usuário
+    const photo = await prisma.photo.findFirst({
+      where: {
+        id: photoId,
+        userId: session.user.id
+      }
     });
 
+    if (!photo) {
+      return NextResponse.json(
+        { message: 'Foto não encontrada' },
+        { status: 404 }
+      );
+    }
+
+    // Deletar arquivo físico
+    const { unlink } = await import('fs/promises');
+    const { join } = await import('path');
+    const filePath = join(process.cwd(), 'public', photo.url);
+    
+    try {
+      await unlink(filePath);
+    } catch (error) {
+      console.error('Erro ao deletar arquivo físico:', error);
+      // Continuar mesmo se não conseguir deletar o arquivo físico
+    }
+
+    // Deletar do banco
+    await prisma.photo.delete({
+      where: { id: photoId }
+    });
+
+    return NextResponse.json({
+      message: 'Foto deletada com sucesso'
+    });
   } catch (error) {
     console.error('Erro ao deletar foto:', error);
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { message: 'Erro interno do servidor' },
       { status: 500 }
     );
   }

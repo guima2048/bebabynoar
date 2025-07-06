@@ -2,30 +2,22 @@
 
 import React, { useState } from 'react'
 import Link from 'next/link'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/hooks/useAuth'
 import { useNotifications } from '@/contexts/NotificationContext'
-import { signOut } from 'firebase/auth'
-import { auth } from '@/lib/firebase'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { Bell, User, LogOut, Menu, X } from 'lucide-react'
 
 const Header: React.FC = () => {
-  const { user, loading } = useAuth()
+  const { user, loading, logout } = useAuth()
   const { unreadCount } = useNotifications()
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false)
   const router = useRouter()
 
   const handleLogout = async () => {
     if (!user) { return }
-    
-    if (!auth) {
-      toast.error('Serviço de autenticação indisponível. Tente novamente mais tarde.');
-      return;
-    }
-    
     try {
-      await signOut(auth as any)
+      await logout()
       toast.success('Logout realizado com sucesso!')
       router.push('/')
     } catch (error) {

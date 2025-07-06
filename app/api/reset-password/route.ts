@@ -1,15 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getFirestoreDB } from '@/lib/firebase'
-import { doc, getDoc, updateDoc, collection, query, where, getDocs, serverTimestamp } from 'firebase/firestore'
+import { prisma } from '@/lib/prisma'
 import { resetPasswordSchema, validateAndSanitize, createErrorResponse } from '@/lib/schemas'
 import crypto from 'crypto'
 
 export async function POST(request: NextRequest) {
   try {
-    const db = getFirestoreDB()
-    if (!db) {
-      return NextResponse.json({ error: 'Erro de conexão com o banco de dados' }, { status: 500 })
-    }
     const { email } = await request.json()
 
     if (!email) {
@@ -20,11 +15,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Buscar usuário pelo email
-    const usersRef = collection(db, 'users')
-    const q = query(usersRef, where('email', '==', email.toLowerCase()))
-    const querySnapshot = await getDocs(q)
+    const user = await prisma.user.findUnique({
+      where: { email: email.toLowerCase() }
+    })
 
-    if (querySnapshot.empty) {
+    if (!user) {
       // Não revelar se o email existe ou não por segurança
       return NextResponse.json({ 
         success: true, 
@@ -32,17 +27,17 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    const userDoc = querySnapshot.docs[0]
-    const userData = userDoc.data()
-
     // Gerar token de reset
     const resetToken = crypto.randomBytes(32).toString('hex')
     const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000) // 1 hora
 
     // Salvar token no usuário
-    await updateDoc(userDoc.ref, {
-      passwordResetToken: resetToken,
-      passwordResetTokenExpiry: resetTokenExpiry,
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordResetToken: resetToken,
+        passwordResetTokenExpiry: resetTokenExpiry,
+      }
     })
 
     // Enviar email de reset se configurado
@@ -50,12 +45,12 @@ export async function POST(request: NextRequest) {
       const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`
       
       const emailData = {
-        to: [{ email: userData.email }],
+        to: [{ email: user.email }],
         subject: 'Reset de Senha - Bebaby App',
         htmlContent: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #ec4899;">Bebaby App</h2>
-            <p>Olá ${userData.name || 'Usuário'}!</p>
+            <p>Olá ${user.name || 'Usuário'}!</p>
             <p>Você solicitou um reset de senha para sua conta no Bebaby App.</p>
             <p>Clique no botão abaixo para criar uma nova senha:</p>
             <p style="margin: 30px 0;">
@@ -98,10 +93,6 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const db = getFirestoreDB()
-    if (!db) {
-      return NextResponse.json({ error: 'Erro de conexão com o banco de dados' }, { status: 500 })
-    }
     const { token, newPassword } = await request.json()
 
     if (!token || !newPassword) {
@@ -113,29 +104,28 @@ export async function PUT(request: NextRequest) {
     }
 
     // Buscar usuário pelo token de reset
-    const usersRef = collection(db, 'users')
-    const q = query(usersRef, where('passwordResetToken', '==', token))
-    const querySnapshot = await getDocs(q)
+    const user = await prisma.user.findFirst({
+      where: { 
+        passwordResetToken: token,
+        passwordResetTokenExpiry: {
+          gt: new Date()
+        }
+      }
+    })
 
-    if (querySnapshot.empty) {
+    if (!user) {
       return NextResponse.json({ error: 'Token inválido ou expirado' }, { status: 400 })
     }
 
-    const userDoc = querySnapshot.docs[0]
-    const userData = userDoc.data()
-
-    // Verificar se o token não expirou
-    const tokenExpiry = userData.passwordResetTokenExpiry?.toDate()
-    if (!tokenExpiry || new Date() > tokenExpiry) {
-      return NextResponse.json({ error: 'Token expirado' }, { status: 400 })
-    }
-
     // Atualizar senha (em produção, deve ser criptografada)
-    await updateDoc(userDoc.ref, {
-      password: newPassword, // Em produção, usar bcrypt ou similar
-      passwordResetToken: null,
-      passwordResetTokenExpiry: null,
-      passwordUpdatedAt: new Date(),
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: newPassword, // Em produção, usar bcrypt ou similar
+        passwordResetToken: null,
+        passwordResetTokenExpiry: null,
+        passwordUpdatedAt: new Date(),
+      }
     })
 
     return NextResponse.json({ 

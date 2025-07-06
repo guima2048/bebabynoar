@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { Calendar, MapPin, Users, Clock, Filter, Plus, Search } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/hooks/useAuth'
 import toast from 'react-hot-toast'
 
 interface Event {

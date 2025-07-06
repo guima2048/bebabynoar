@@ -114,6 +114,17 @@ export default function HomePage() {
   const activeSugarBabies = landingSettings.sugarBabies?.filter(b => b.isActive) || []
   const activeSugarDaddies = landingSettings.sugarDaddies?.filter(d => d.isActive) || []
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-white">
       {/* Navigation */}
@@ -448,27 +459,27 @@ export default function HomePage() {
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-white rounded-xl p-8 shadow-sm text-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-pink-400 to-rose-400 rounded-full flex items-center justify-center mx-auto mb-6">
-                <span className="text-white text-2xl font-bold">1</span>
+            <div className="text-center">
+              <div className="w-16 h-16 bg-gradient-to-r from-pink-500 to-rose-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                <span className="text-white font-bold text-xl">1</span>
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-4">Cadastro</h3>
               <p className="text-gray-600">
                 Quanto mais informações sobre você, mais fácil fica. Preencha seu perfil por inteiro e não deixe de adicionar fotos reais e claras.
               </p>
             </div>
-            <div className="bg-white rounded-xl p-8 shadow-sm text-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-purple-400 rounded-full flex items-center justify-center mx-auto mb-6">
-                <span className="text-white text-2xl font-bold">2</span>
+            <div className="text-center">
+              <div className="w-16 h-16 bg-gradient-to-r from-pink-500 to-rose-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                <span className="text-white font-bold text-xl">2</span>
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-4">Escolha seu perfil</h3>
               <p className="text-gray-600">
                 Selecione seu objetivo! Você é um sugar daddy/mommy ou sugar baby? Defina o que busca em um relacionamento.
               </p>
             </div>
-            <div className="bg-white rounded-xl p-8 shadow-sm text-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-teal-400 rounded-full flex items-center justify-center mx-auto mb-6">
-                <span className="text-white text-2xl font-bold">3</span>
+            <div className="text-center">
+              <div className="w-16 h-16 bg-gradient-to-r from-pink-500 to-rose-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                <span className="text-white font-bold text-xl">3</span>
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-4">Seleção</h3>
               <p className="text-gray-600">
@@ -479,87 +490,89 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="py-16 bg-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Histórias de Sucesso
-            </h2>
-            <p className="text-xl text-gray-600">
-              Veja como o Bebaby App transformou a vida de milhares de pessoas.
-            </p>
-          </div>
-          <div className="bg-gradient-to-br from-pink-50 to-purple-50 rounded-2xl p-8">
-            <div className="flex items-center justify-center mb-6">
-              <div className="relative w-16 h-16 mr-4">
-                {activeTestimonials.length > 0 && activeTestimonials[currentSlide] && (
-                  <DynamicImage
-                    src={activeTestimonials[currentSlide].photo}
-                    alt={activeTestimonials[currentSlide].name}
-                    fill
-                    className="rounded-full object-cover"
-                    sizes="64px"
-                    quality={75}
-                  />
-                )}
+      {/* Success Stories */}
+      {activeTestimonials.length > 0 && (
+        <section className="py-16 bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-12">
+              <h2 className="text-4xl font-bold text-gray-900 mb-4">
+                Histórias de Sucesso
+              </h2>
+              <p className="text-xl text-gray-600">
+                Veja como o Bebaby App transformou a vida de milhares de pessoas.
+              </p>
+            </div>
+            <div className="bg-gradient-to-br from-pink-50 to-purple-50 rounded-2xl p-8 md:p-12">
+              <div className="flex items-center justify-center mb-8">
+                <div className="mx-8 flex-1">
+                  <div className="flex items-center justify-center mb-6">
+                    <DynamicImage 
+                      src={activeTestimonials[currentSlide]?.photo || '/landing/padraomulher.webp'}
+                      alt={activeTestimonials[currentSlide]?.name || 'Usuário'} 
+                      width={80} 
+                      height={80} 
+                      className="rounded-full mr-4" 
+                    />
+                    <div>
+                      <h4 className="font-semibold text-gray-900 text-lg">
+                        {activeTestimonials[currentSlide]?.name || 'Usuário'}
+                      </h4>
+                      <p className="text-gray-500">
+                        {activeTestimonials[currentSlide]?.location || 'Brasil'}
+                      </p>
+                      <div className="flex text-yellow-400 mt-1">
+                        {[...Array(activeTestimonials[currentSlide]?.rating || 5)].map((_, i) => (
+                          <Star key={i} className="w-4 h-4 fill-current" />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-gray-700 italic text-lg leading-relaxed text-center max-w-3xl mx-auto">
+                    &ldquo;{activeTestimonials[currentSlide]?.story || 'O Bebaby mudou minha vida! Conheci pessoas incríveis e me sinto segura na plataforma.'}&rdquo;
+                  </p>
+                </div>
               </div>
-              <div className="text-left">
-                {activeTestimonials.length > 0 && activeTestimonials[currentSlide] && (
-                  <>
-                    <p className="font-semibold text-gray-900">{activeTestimonials[currentSlide].name}</p>
-                    <p className="text-gray-600">{activeTestimonials[currentSlide].location}</p>
-                  </>
-                )}
+              <div className="flex justify-center space-x-2">
+                {activeTestimonials.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentSlide(index)}
+                    className={`w-3 h-3 rounded-full transition-colors ${
+                      index === currentSlide ? 'bg-pink-500' : 'bg-gray-300'
+                    }`}
+                  />
+                ))}
               </div>
             </div>
-            <div className="flex justify-center mb-6">
-              {activeTestimonials.length > 0 && activeTestimonials[currentSlide] && (
-                [...Array(activeTestimonials[currentSlide].rating)].map((_, index) => (
-                  <Star 
-                    key={index} 
-                    className="w-5 h-5 text-yellow-400 fill-yellow-400 inline-block" 
-                  />
-                ))
-              )}
-            </div>
-            <p className="text-lg text-gray-700 italic text-center">
-              {activeTestimonials.length > 0 && activeTestimonials[currentSlide] && (
-                <>&ldquo;{activeTestimonials[currentSlide].story}&rdquo;</>
-              )}
-            </p>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* CTA Section */}
-      <section className="py-16 bg-gradient-to-r from-pink-500 to-rose-500">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-4xl font-bold text-white mb-6">
+      <section className="bg-gradient-to-r from-pink-500 to-rose-500 py-20">
+        <div className="max-w-4xl mx-auto text-center px-4">
+          <h2 className="text-3xl lg:text-5xl font-bold text-white mb-6">
             Cadastre-se hoje mesmo no Bebaby
           </h2>
-          <p className="text-xl text-pink-100 mb-8">
+          <p className="text-pink-100 text-xl mb-8 max-w-2xl mx-auto">
             E encontre pessoas que, como você, sabem o que querem e o que podem oferecer!
           </p>
           <Link 
-            href="/register"
-            className="inline-flex items-center bg-white text-pink-500 px-8 py-4 rounded-full font-semibold text-lg hover:bg-gray-50 transition-all duration-300 transform hover:scale-105 shadow-lg"
+            href="/register" 
+            className="inline-block px-8 py-4 bg-white text-pink-500 rounded-full font-bold text-lg shadow-lg hover:bg-pink-50 transition-all duration-300 transform hover:scale-105"
           >
-            <span className="flex items-center">
-              Cadastre-se Grátis
-              <ArrowRight className="ml-2 w-5 h-5" />
-            </span>
+            Cadastre-se Grátis
           </Link>
         </div>
       </section>
 
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="grid md:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center space-x-2 mb-4">
-                <Heart className="w-6 h-6 text-pink-500" />
+                <Heart className="w-8 h-8 text-pink-500" />
                 <span className="text-xl font-bold">Bebaby</span>
               </div>
               <p className="text-gray-400">
@@ -567,29 +580,29 @@ export default function HomePage() {
               </p>
             </div>
             <div>
-              <h3 className="font-semibold mb-4">Sobre</h3>
+              <h4 className="font-semibold mb-4">Sobre</h4>
               <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white transition-colors">O que é Sugar Baby</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">O que é Sugar Daddy</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Como funciona</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Sobre nós</a></li>
+                <li><a href="#sugar-baby" className="hover:text-white transition-colors">O que é Sugar Baby</a></li>
+                <li><a href="#sugar-daddy" className="hover:text-white transition-colors">O que é Sugar Daddy</a></li>
+                <li><a href="#como-funciona" className="hover:text-white transition-colors">Como funciona</a></li>
+                <li><a href="#sobre" className="hover:text-white transition-colors">Sobre nós</a></li>
               </ul>
             </div>
             <div>
-              <h3 className="font-semibold mb-4">Suporte</h3>
+              <h4 className="font-semibold mb-4">Suporte</h4>
               <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white transition-colors">Atendimento</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">FAQ</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Termos de uso</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Privacidade</a></li>
+                <li><Link href="/help" className="hover:text-white transition-colors">Atendimento</Link></li>
+                <li><Link href="/faq" className="hover:text-white transition-colors">FAQ</Link></li>
+                <li><Link href="/terms" className="hover:text-white transition-colors">Termos de uso</Link></li>
+                <li><Link href="/privacy" className="hover:text-white transition-colors">Privacidade</Link></li>
               </ul>
             </div>
             <div>
-              <h3 className="font-semibold mb-4">Blog</h3>
+              <h4 className="font-semibold mb-4">Blog</h4>
               <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white transition-colors">Dicas de relacionamento</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Histórias de sucesso</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Novidades</a></li>
+                <li><Link href="/blog/dicas" className="hover:text-white transition-colors">Dicas de relacionamento</Link></li>
+                <li><Link href="/blog/historias" className="hover:text-white transition-colors">Histórias de sucesso</Link></li>
+                <li><Link href="/blog/novidades" className="hover:text-white transition-colors">Novidades</Link></li>
               </ul>
             </div>
           </div>

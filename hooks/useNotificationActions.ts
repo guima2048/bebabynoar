@@ -1,6 +1,6 @@
 import { useNotifications } from '@/contexts/NotificationContext'
 import toast from 'react-hot-toast'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/hooks/useAuth'
 
 export const useNotificationActions = () => {
   const { markAsRead, markAllAsRead } = useNotifications()
