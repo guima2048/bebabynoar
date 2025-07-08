@@ -15,7 +15,8 @@ export async function GET(req: NextRequest) {
     const now = Date.now();
     let posts = snapshot.map((post: any) => ({
       id: post.id,
-      ...post
+      ...post,
+      featuredImage: post.imageURL || ''
     }))
 
     // Se status for published, incluir agendados cuja data já passou
@@ -88,7 +89,7 @@ export async function POST(req: NextRequest) {
       readTime: Math.ceil(content.split(/\s+/).length / 200),
       author: 'Admin',
       tags: [],
-      featuredImage: featuredImage || '',
+      imageURL: featuredImage || '',
     }
     if (status === 'published') {
       postData.publishedAt = new Date();
@@ -98,7 +99,7 @@ export async function POST(req: NextRequest) {
     const docRef = await prisma.blogPost.create({
       data: postData
     })
-    return NextResponse.json({ id: docRef.id, ...postData })
+    return NextResponse.json({ id: docRef.id, ...postData, featuredImage: postData.imageURL })
   } catch (error) {
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
   }
@@ -117,7 +118,7 @@ export async function PUT(req: NextRequest) {
       content,
       excerpt: excerpt || content.substring(0, 160) + '...',
       slug,
-      featuredImage,
+      imageURL: featuredImage,
       metaTitle,
       metaDescription,
       status,
@@ -132,13 +133,13 @@ export async function PUT(req: NextRequest) {
       updateData.scheduledFor = scheduledFor;
       updateData.publishedAt = null;
     }
-    await prisma.blogPost.update({
+    const updated = await prisma.blogPost.update({
       where: {
         id: id
       },
       data: updateData
     })
-    return NextResponse.json({ success: true, message: 'Post atualizado com sucesso!' })
+    return NextResponse.json({ ...updated, featuredImage: updated.imageURL })
   } catch (err) {
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }

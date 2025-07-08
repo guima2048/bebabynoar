@@ -80,6 +80,8 @@ model User {
   blockedByUsers    Block[] @relation("TargetUserBlocks")
   favorites         Favorite[] @relation("UserFavorites")
   favoritedByUsers  Favorite[] @relation("TargetUserFavorites")
+  reviews           Review[] @relation("UserReviews")
+  receivedReviews   Review[] @relation("TargetUserReviews")
   
   // Admin
   isAdmin           Boolean  @default(false)
@@ -300,12 +302,13 @@ model BlogPost {
   publishedAt DateTime?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
-  // SEO
   metaTitle       String?
   metaDescription String?
   tags            String[]
-  
+  status      String   @default("draft") // status do post: draft, published, scheduled
+  scheduledFor DateTime?                 // data de agendamento
+  author      String?                    // autor do post
+  readTime    Int? // tempo estimado de leitura
   @@map("blog_posts")
 }
 
@@ -354,6 +357,28 @@ model ProfileCard {
   type       String   // 'sugar_baby' ou 'sugar_daddy'
   
   @@map("profile_cards")
+}
+
+// ========================================
+// MODELO DE REVIEWS
+// ========================================
+
+model Review {
+  id            String   @id @default(cuid())
+  rating        Int      // 1-5 estrelas
+  comment       String?
+  status        ReviewStatus @default(PENDING)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relacionamentos
+  reviewerId    String
+  reviewer      User     @relation("UserReviews", fields: [reviewerId], references: [id], onDelete: Cascade)
+  targetUserId  String
+  targetUser    User     @relation("TargetUserReviews", fields: [targetUserId], references: [id], onDelete: Cascade)
+  
+  @@unique([reviewerId, targetUserId])
+  @@map("reviews")
 }
 
 // ========================================
@@ -413,6 +438,12 @@ enum ReportStatus {
   INVESTIGATING
   RESOLVED
   DISMISSED
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 // ========================================

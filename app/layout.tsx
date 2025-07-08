@@ -88,9 +88,6 @@ export default function RootLayout({
         }} />
         
         {/* Preconnect para domínios críticos */}
-        <link rel="preconnect" href="https://firebase.googleapis.com" />
-        <link rel="preconnect" href="https://firebaseinstallations.googleapis.com" />
-        <link rel="preconnect" href="https://bebaby-56627.firebaseapp.com" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         
