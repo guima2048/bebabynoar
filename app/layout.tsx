@@ -1,14 +1,6 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
 import './globals.css'
 import { Providers } from './providers'
-
-const inter = Inter({ 
-  subsets: ['latin'],
-  display: 'swap',
-  preload: true,
-  fallback: ['system-ui', 'arial']
-})
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://bebaby.app'),
@@ -58,6 +50,43 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <head>
+        {/* CSS Crítico Inline - Estilos essenciais para renderização inicial */}
+        <style dangerouslySetInnerHTML={{
+          __html: `
+            /* CSS Crítico - Carregamento imediato */
+            html { font-family: 'Inter', system-ui, sans-serif; }
+            body { 
+              margin: 0; 
+              padding: 0; 
+              background-color: #f9fafb; 
+              color: #111827; 
+              font-family: 'Inter', sans-serif;
+              line-height: 1.5;
+            }
+            /* Prevenção de CLS */
+            * { box-sizing: border-box; }
+            img { max-width: 100%; height: auto; }
+            /* Loading state */
+            .loading { opacity: 0; transition: opacity 0.3s ease; }
+            .loaded { opacity: 1; }
+            /* Font display swap para carregamento rápido */
+            @font-face {
+              font-family: 'Inter';
+              src: url('/fonts/inter/Inter-Regular.woff2') format('woff2');
+              font-weight: 400;
+              font-style: normal;
+              font-display: swap;
+            }
+            @font-face {
+              font-family: 'Inter';
+              src: url('/fonts/inter/Inter-Bold.woff2') format('woff2');
+              font-weight: 700;
+              font-style: normal;
+              font-display: swap;
+            }
+          `
+        }} />
+        
         {/* Preconnect para domínios críticos */}
         <link rel="preconnect" href="https://firebase.googleapis.com" />
         <link rel="preconnect" href="https://firebaseinstallations.googleapis.com" />
@@ -70,11 +99,18 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="https://www.google-analytics.com" />
         <link rel="dns-prefetch" href="https://apis.google.com" />
         
+        {/* Preload de recursos críticos */}
+        <link rel="preload" href="/fonts/inter/Inter-Regular.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+        <link rel="preload" href="/fonts/inter/Inter-Bold.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+        
         {/* Meta tags de performance */}
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+        
+        {/* Resource hints para performance */}
+        <link rel="prefetch" href="/_next/static/css/app/globals.css" as="style" />
       </head>
-      <body className={inter.className}>
+      <body>
         <Providers>
           {children}
         </Providers>

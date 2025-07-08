@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
-import crypto from 'crypto'
 
 const resetPasswordSchema = z.object({
   email: z.string().email(),
@@ -25,9 +24,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Gerar token de reset
-    const resetToken = crypto.randomBytes(32).toString('hex')
-    const resetTokenExpiry = new Date(Date.now() + 3600000) // 1 hora
+    // Gerar token de reset (implementar quando necessário)
+    // const resetToken = crypto.randomBytes(32).toString('hex')
+    // const resetTokenExpiry = new Date(Date.now() + 3600000) // 1 hora
 
     // Salvar token no banco (você pode criar uma tabela separada para isso)
     // Por simplicidade, vou usar um campo no usuário

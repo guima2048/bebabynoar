@@ -18,6 +18,52 @@ const nextConfig = {
   },
   experimental: {
     optimizeCss: true,
+    optimizePackageImports: ['lucide-react', '@heroicons/react'],
+    // Otimizações agressivas para CSS
+    optimizeServerReact: true,
+    serverComponentsExternalPackages: [],
+  },
+  // Otimizações de performance
+  swcMinify: true,
+  // Configuração para CSS crítico
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY',
+          },
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block',
+          },
+        ],
+      },
+      {
+        source: '/_next/static/css/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        source: '/_next/static/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+    ]
   },
   webpack: (config, { dev, isServer }) => {
     // Configuração básica do webpack
@@ -28,6 +74,28 @@ const nextConfig = {
         net: false,
         tls: false,
       }
+    }
+    
+    // Otimização para CSS crítico
+    if (!dev && !isServer) {
+      config.optimization.splitChunks.cacheGroups.styles = {
+        name: 'styles',
+        test: /\.(css|scss)$/,
+        chunks: 'all',
+        enforce: true,
+        priority: 20,
+      }
+      
+      // Otimização agressiva de CSS
+      config.optimization.splitChunks.cacheGroups.vendor = {
+        test: /[\\/]node_modules[\\/]/,
+        name: 'vendors',
+        chunks: 'all',
+        priority: 10,
+      }
+      
+      // Minimizar CSS
+      config.optimization.minimize = true
     }
     
     return config

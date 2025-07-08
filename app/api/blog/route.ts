@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    const { id, title, content, excerpt, slug, featuredImage, metaTitle, metaDescription, status, publishedAt, scheduledFor } = await req.json()
+    const { id, title, content, excerpt, slug, featuredImage, metaTitle, metaDescription, status, scheduledFor } = await req.json()
     if (!id || !title || !content || !slug) {
       return NextResponse.json({ error: 'ID, título, conteúdo e slug são obrigatórios' }, { status: 400 })
     }
@@ -132,7 +132,7 @@ export async function PUT(req: NextRequest) {
       updateData.scheduledFor = scheduledFor;
       updateData.publishedAt = null;
     }
-    const docRef = await prisma.blogPost.update({
+    await prisma.blogPost.update({
       where: {
         id: id
       },

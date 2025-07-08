@@ -31,7 +31,7 @@ export const useNotificationActions = () => {
     type: 'message' | 'interest' | 'profile_view' | 'private_photo_request' | 'payment_approved' | 'payment_rejected'
     title: string
     message: string
-    data?: any
+    data?: Record<string, string | number | boolean>
   }) => {
     if (!user) { return }
 

@@ -56,7 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         id: session.user.id,
         email: session.user.email,
         name: session.user.name,
-        photoURL: session.user.image,
+        photoURL: session.user.image || '',
         premium: session.user.premium,
         verified: session.user.verified,
         userType: session.user.userType,

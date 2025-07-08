@@ -1,33 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
 import { cookies } from 'next/headers'
-
-// Função para enviar e-mail
-async function sendEmail({ to, subject, htmlContent }: { to: string, subject: string, htmlContent: string }) {
-  try {
-    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: {
-        'api-key': process.env.BREVO_API_KEY!,
-        'Content-Type': 'application/json',
-        'accept': 'application/json',
-      },
-      body: JSON.stringify({
-        sender: { name: 'Bebaby App', email: 'no-reply@bebaby.app' },
-        to: [{ email: to }],
-        subject,
-        htmlContent
-      })
-    })
-
-    if (!response.ok) {
-      throw new Error('Erro ao enviar e-mail')
-    }
-  } catch (error) {
-    console.error('Erro ao enviar e-mail:', error)
-    throw error
-  }
-}
 
 export async function PUT(req: NextRequest) {
   try {
@@ -39,7 +11,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
 
-    const { contentId, contentType, action, adminNotes } = await req.json()
+    const { contentId, contentType, action } = await req.json()
     
     if (!contentId || !contentType || !action) {
       return NextResponse.json({ 
@@ -75,7 +47,7 @@ export async function PUT(req: NextRequest) {
   }
 }
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     // Verificar se é uma requisição administrativa
     const cookieStore = await cookies();

@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
       data: {
         senderId: session.user.id,
         receiverId,
-        message,
+        message: message ?? null,
         status: 'PENDING'
       },
       include: {
@@ -211,7 +211,7 @@ export async function PUT(request: NextRequest) {
       data: {
         userId: interest.senderId,
         title: notificationTitle,
-        message: message || (response === 'ACCEPTED' ? 'Vocês podem começar a conversar!' : 'Não desanime, continue tentando!'),
+        message: message ?? (response === 'ACCEPTED' ? 'Vocês podem começar a conversar!' : 'Não desanime, continue tentando!'),
         type: 'INTEREST',
         data: {
           interestId,

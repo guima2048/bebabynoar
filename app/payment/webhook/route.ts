@@ -64,7 +64,7 @@ async function handlePaymentSuccess(paymentIntent: any) {
       await prisma.payment.create({
         data: {
           userId: user.id,
-          stripePaymentIntentId: id,
+          stripePaymentIntentId: id ?? null,
           amount: amount / 100,
           currency: currency,
           status: 'COMPLETED',

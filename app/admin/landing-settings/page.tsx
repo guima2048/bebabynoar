@@ -2,12 +2,10 @@
 
 import React, { useState, useEffect } from 'react'
 import { 
-  Upload, 
   Save, 
   ArrowLeft,
   Plus,
   Trash2,
-  Edit,
   Eye,
   EyeOff
 } from 'lucide-react'
@@ -387,7 +385,7 @@ export default function LandingSettingsPage() {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
                   <div>
                     <ImageUpload
-                      currentImageUrl={formData.heroBaby1Image}
+                      currentImageUrl={formData.heroBaby1Image || ''}
                       onImageUpload={url => setFormData(prev => ({ ...prev, heroBaby1Image: url }))}
                       onImageRemove={() => setFormData(prev => ({ ...prev, heroBaby1Image: '' }))}
                       label="Hero Sugar Baby 1"
@@ -395,7 +393,7 @@ export default function LandingSettingsPage() {
                   </div>
                   <div>
                     <ImageUpload
-                      currentImageUrl={formData.heroDaddy1Image}
+                      currentImageUrl={formData.heroDaddy1Image || ''}
                       onImageUpload={url => setFormData(prev => ({ ...prev, heroDaddy1Image: url }))}
                       onImageRemove={() => setFormData(prev => ({ ...prev, heroDaddy1Image: '' }))}
                       label="Hero Sugar Daddy 1"
@@ -403,7 +401,7 @@ export default function LandingSettingsPage() {
                   </div>
                   <div>
                     <ImageUpload
-                      currentImageUrl={formData.heroBaby2Image}
+                      currentImageUrl={formData.heroBaby2Image || ''}
                       onImageUpload={url => setFormData(prev => ({ ...prev, heroBaby2Image: url }))}
                       onImageRemove={() => setFormData(prev => ({ ...prev, heroBaby2Image: '' }))}
                       label="Hero Sugar Baby 2"
@@ -411,7 +409,7 @@ export default function LandingSettingsPage() {
                   </div>
                   <div>
                     <ImageUpload
-                      currentImageUrl={formData.heroDaddy2Image}
+                      currentImageUrl={formData.heroDaddy2Image || ''}
                       onImageUpload={url => setFormData(prev => ({ ...prev, heroDaddy2Image: url }))}
                       onImageRemove={() => setFormData(prev => ({ ...prev, heroDaddy2Image: '' }))}
                       label="Hero Sugar Daddy 2"

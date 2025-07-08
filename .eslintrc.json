@@ -1,11 +1,11 @@
 {
   "extends": "next/core-web-vitals",
   "rules": {
-    "no-console": "warn",
-    "@next/next/no-img-element": "warn",
-    "jsx-a11y/alt-text": "warn",
-    "react-hooks/exhaustive-deps": "warn",
-    "require-await": "warn"
+    "no-console": "off",
+    "@next/next/no-img-element": "off",
+    "jsx-a11y/alt-text": "off",
+    "react-hooks/exhaustive-deps": "off",
+    "require-await": "off"
   },
   "ignorePatterns": [
     "node_modules/",

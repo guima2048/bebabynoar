@@ -1,8 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     // Autenticação admin
     const cookieStore = await cookies();
@@ -13,9 +12,9 @@ export async function GET(req: NextRequest) {
 
     // Por enquanto, retornar array vazio
     // TODO: Implementar busca de usuários no Prisma
-    return NextResponse.json({ users: [], total: 0 });
+    return NextResponse.json({ users: [] });
   } catch (error) {
     console.error('Erro ao buscar usuários:', error);
-    return NextResponse.json({ users: [], total: 0 });
+    return NextResponse.json({ users: [] });
   }
 } 

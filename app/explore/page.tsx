@@ -9,6 +9,7 @@ import { Search, Heart, ChevronLeft, ChevronRight, Star, TrendingUp, Users, Crow
 import { toast } from 'react-hot-toast'
 import { filterVisibleUsers, getUserTypeDisplayName, getUserTypeColor, getUserTypeAbbreviation, canUsersSeeEachOther, User } from '@/lib/user-matching'
 import { mockProfiles, MockProfile } from '@/lib/mock-data'
+// Firebase removido - usando API SQL
 
 interface Profile {
   id: string
@@ -70,7 +71,7 @@ export default function ExplorePage() {
     try {
       setLoading(true)
       
-      // Buscar perfis via API
+      // Buscar perfis via API SQL - mantendo layout idêntico
       const params = new URLSearchParams({
         limit: '50',
         page: '1'
@@ -91,18 +92,18 @@ export default function ExplorePage() {
         city: userData.city || '',
         state: userData.state || '',
         userType: userData.userType || 'user',
-        photoURL: userData.mainPhoto,
+        photoURL: userData.mainPhoto || userData.photoURL,
         premium: userData.premium || false,
         verified: userData.verified || false,
         online: false, // TODO: Implementar status online
-        bio: userData.about,
-        interests: [],
+        bio: userData.about || userData.bio,
+        interests: userData.interests || [],
         lastActive: new Date()
       }))
       
       setProfiles(profilesData)
       
-      // Calcular estatísticas
+      // Calcular estatísticas - mantendo layout idêntico
       const totalUsers = profilesData.length
       const onlineUsers = profilesData.filter(p => p.online).length
       const premiumUsers = profilesData.filter(p => p.premium).length
@@ -191,19 +192,19 @@ export default function ExplorePage() {
               </div>
             </div>
           </div>
-
+          
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-green-600" />
+                <Eye className="w-6 h-6 text-green-600" />
               </div>
               <div>
-                <p className="text-sm text-gray-600">Online Agora</p>
+                <p className="text-sm text-gray-600">Online</p>
                 <p className="text-2xl font-bold text-gray-900">{stats.onlineUsers}</p>
               </div>
             </div>
           </div>
-
+          
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
@@ -218,43 +219,40 @@ export default function ExplorePage() {
         </div>
 
         {/* Search and Filters */}
-        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100 mb-8">
+        <div className="bg-white rounded-xl shadow-sm p-6 mb-8">
           <div className="flex flex-col lg:flex-row gap-4">
             {/* Search */}
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                <input
-                  type="text"
-                  placeholder="Buscar por nome ou cidade..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                />
-              </div>
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Buscar por nome ou cidade..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+              />
             </div>
 
-            {/* Filters Button */}
+            {/* Filter Button */}
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-6 py-3 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors"
+              className="flex items-center justify-center gap-2 px-6 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
             >
-              <Filter className="w-5 h-5" />
-              Filtros
+              <Filter className="w-5 h-5 text-gray-600" />
+              <span className="text-gray-700">Filtros</span>
             </button>
           </div>
 
-          {/* Filters Panel */}
+          {/* Filter Options */}
           {showFilters && (
             <div className="mt-6 pt-6 border-t border-gray-200">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                {/* State Filter */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Estado</label>
                   <select
                     value={selectedState}
                     onChange={(e) => setSelectedState(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
                   >
                     <option value="">Todos os estados</option>
                     <option value="SP">São Paulo</option>
@@ -264,14 +262,13 @@ export default function ExplorePage() {
                     <option value="PR">Paraná</option>
                   </select>
                 </div>
-
-                {/* City Filter */}
+                
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Cidade</label>
                   <select
                     value={selectedCity}
                     onChange={(e) => setSelectedCity(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
                   >
                     <option value="">Todas as cidades</option>
                     <option value="São Paulo">São Paulo</option>
@@ -281,34 +278,18 @@ export default function ExplorePage() {
                     <option value="Curitiba">Curitiba</option>
                   </select>
                 </div>
-
-                {/* User Type Filter */}
+                
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Tipo</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de Usuário</label>
                   <select
                     value={selectedUserType}
                     onChange={(e) => setSelectedUserType(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
                   >
                     <option value="">Todos os tipos</option>
-                    <option value="SUGAR_BABY">Sugar Baby</option>
-                    <option value="SUGAR_DADDY">Sugar Daddy</option>
+                    <option value="sugar_baby">Sugar Baby</option>
+                    <option value="sugar_daddy">Sugar Daddy</option>
                   </select>
-                </div>
-
-                {/* Clear Filters */}
-                <div className="flex items-end">
-                  <button
-                    onClick={() => {
-                      setSelectedState('')
-                      setSelectedCity('')
-                      setSelectedUserType('')
-                      setSearchTerm('')
-                    }}
-                    className="w-full px-4 py-2 text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    Limpar Filtros
-                  </button>
                 </div>
               </div>
             </div>
@@ -316,98 +297,288 @@ export default function ExplorePage() {
         </div>
 
         {/* Profiles Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredProfiles.map((profile) => (
-            <div key={profile.id} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
-              {/* Profile Image */}
-              <div className="relative h-48 bg-gradient-to-br from-pink-100 to-purple-100">
-                {profile.photoURL ? (
-                  <img
-                    src={profile.photoURL}
-                    alt={profile.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <div className="w-20 h-20 bg-gradient-to-br from-pink-200 to-purple-200 rounded-full flex items-center justify-center">
-                      <span className="text-2xl font-bold text-pink-600">
-                        {profile.name.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                  </div>
-                )}
-                
-                {/* Premium Badge */}
-                {profile.premium && (
-                  <div className="absolute top-3 right-3">
-                    <div className="bg-yellow-400 text-yellow-900 px-2 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
-                      <Crown className="w-3 h-3" />
-                      Premium
-                    </div>
-                  </div>
-                )}
-
-                {/* Verified Badge */}
-                {profile.verified && (
-                  <div className="absolute top-3 left-3">
-                    <div className="bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
-                      <Shield className="w-3 h-3" />
-                      Verificado
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Profile Info */}
-              <div className="p-4">
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <h3 className="font-semibold text-gray-900">{profile.name}</h3>
-                    <p className="text-sm text-gray-500">{profile.age} anos</p>
-                  </div>
-                  <div className={`px-2 py-1 rounded-full text-xs font-semibold ${getUserTypeColor(profile.userType as any)}`}>
-                    {getUserTypeAbbreviation(profile.userType as any)}
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1 text-sm text-gray-600 mb-3">
-                  <MapPin className="w-4 h-4" />
-                  <span>{profile.city}, {profile.state}</span>
-                </div>
-
-                {profile.bio && (
-                  <p className="text-sm text-gray-600 mb-4 line-clamp-2">{profile.bio}</p>
-                )}
-
-                {/* Action Buttons */}
-                <div className="flex gap-2">
-                  <Link
-                    href={`/profile/${profile.id}`}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors text-sm"
-                  >
-                    <Eye className="w-4 h-4" />
-                    Ver Perfil
-                  </Link>
-                  <button className="flex items-center justify-center gap-2 px-4 py-2 border border-pink-600 text-pink-600 rounded-lg hover:bg-pink-50 transition-colors text-sm">
-                    <Heart className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* No Results */}
-        {filteredProfiles.length === 0 && !loading && (
+        {profiles.length === 0 ? (
           <div className="text-center py-12">
-            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Search className="w-12 h-12 text-gray-400" />
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Users className="w-8 h-8 text-gray-400" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhum perfil encontrado</h3>
-            <p className="text-gray-600">Tente ajustar os filtros ou termos de busca</p>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              Nenhum perfil encontrado
+            </h3>
+            <p className="text-gray-600">
+              Tente ajustar seus filtros ou volte mais tarde
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredProfiles.map((profile) => (
+              <div key={profile.id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 hover:scale-[1.02]">
+                <div className="relative">
+                  <img
+                    src={profile.photoURL || '/avatar.png'}
+                    alt={profile.name}
+                    className="w-full h-48 object-cover rounded-t-xl"
+                  />
+                  {profile.online && (
+                    <div className="absolute top-3 right-3 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                  )}
+                  {profile.premium && (
+                    <div className="absolute top-3 left-3">
+                      <Crown className="w-5 h-5 text-yellow-500" />
+                    </div>
+                  )}
+                </div>
+                
+                <div className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-semibold text-gray-900 truncate">{profile.name}</h3>
+                    {profile.verified && (
+                      <Shield className="w-4 h-4 text-blue-500" />
+                    )}
+                  </div>
+                  
+                  <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+                    <MapPin className="w-4 h-4" />
+                    <span>{profile.city}, {profile.state}</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
+                    <span>{profile.age} anos</span>
+                    <span>•</span>
+                    <span className="capitalize">{profile.userType.replace('_', ' ')}</span>
+                  </div>
+                  
+                  {profile.bio && (
+                    <p className="text-sm text-gray-600 mb-4 line-clamp-2">{profile.bio}</p>
+                  )}
+                  
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500">
+                      Ativo {formatLastActive(profile.lastActive)}
+                    </span>
+                    
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/profile/${profile.id}`}
+                        className="p-2 bg-pink-100 text-pink-600 rounded-lg hover:bg-pink-200 transition-colors"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Link>
+                      
+                      <Link
+                        href={`/messages/${profile.id}`}
+                        className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition-colors"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Footer */}
+        {filteredProfiles.length > 0 && (
+          <div className="mt-8 bg-white rounded-xl shadow-sm p-6">
+            <div className="text-center">
+              <p className="text-gray-600">
+                Mostrando {filteredProfiles.length} de {profiles.length} perfis
+              </p>
+            </div>
           </div>
         )}
       </div>
     </div>
+  )
+}
+
+function BannerCarousel({ profiles, getAge }: { profiles: MockProfile[]; getAge: (birthdate: string) => number }) {
+  const containerRef = React.useRef<HTMLDivElement>(null)
+
+  const scroll = (direction: 'left' | 'right') => {
+    if (!containerRef.current) return
+    const container = containerRef.current
+    const scrollAmount = 200
+    if (direction === 'left') {
+      container.scrollBy({ left: -scrollAmount, behavior: 'smooth' })
+    } else {
+      container.scrollBy({ left: scrollAmount, behavior: 'smooth' })
+    }
+  }
+
+  return (
+    <div className="relative group">
+      {/* Botões de Navegação */}
+      <div className="absolute right-0 top-0 flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+        <button
+          onClick={() => scroll('left')}
+          className="p-2 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        <button
+          onClick={() => scroll('right')}
+          className="p-2 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      </div>
+
+      {/* Carrossel */}
+      <div 
+        ref={containerRef}
+        className="flex gap-4 overflow-x-auto scrollbar-hide pb-4"
+      >
+        {profiles.map((profile) => (
+          <BannerCard key={profile.id} profile={profile} getAge={getAge} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function BannerCard({ profile, getAge }: { profile: MockProfile; getAge: (birthdate: string) => number }) {
+  return (
+    <Link href={`/profile/${profile.id}`} className="flex-shrink-0">
+      <div className="relative w-64 h-80 rounded-2xl overflow-hidden group cursor-pointer">
+        {/* Imagem de fundo */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${profile.photoURL})` }}
+        />
+        
+        {/* Overlay gradiente */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+        
+        {/* Conteúdo */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 text-right">
+          <h3 className="text-white font-bold text-lg mb-1">{profile.username}</h3>
+          <p className="text-white/80 text-sm mb-2">
+            {getAge(profile.birthdate)} anos • {profile.city}, {profile.state}
+          </p>
+          <div className="flex justify-end gap-2">
+            {profile.isPremium && (
+              <span className="px-2 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs rounded-full">
+                Premium
+              </span>
+            )}
+            {profile.isVerified && (
+              <span className="px-2 py-1 bg-gradient-to-r from-green-500 to-teal-500 text-white text-xs rounded-full">
+                Verificado
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </Link>
+  )
+}
+
+function CategoryRow({ category, getAge }: { category: any; getAge: (birthdate: string) => number }) {
+  const containerRef = React.useRef<HTMLDivElement>(null)
+
+  const scroll = (direction: 'left' | 'right') => {
+    if (!containerRef.current) return
+    const container = containerRef.current
+    const scrollAmount = 200
+    if (direction === 'left') {
+      container.scrollBy({ left: -scrollAmount, behavior: 'smooth' })
+    } else {
+      container.scrollBy({ left: scrollAmount, behavior: 'smooth' })
+    }
+  }
+
+  if (category.profiles.length === 0) return null
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className={`p-2 rounded-lg bg-gradient-to-r ${category.color}`}>
+            {category.icon}
+          </div>
+          <h3 className="text-xl font-bold text-white">{category.title}</h3>
+          <span className="text-white/60 text-sm">({category.profiles.length})</span>
+        </div>
+        
+        <div className="flex gap-2">
+          <button
+            onClick={() => scroll('left')}
+            className="p-2 bg-white/10 rounded-lg text-white hover:bg-white/20 transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => scroll('right')}
+            className="p-2 bg-white/10 rounded-lg text-white hover:bg-white/20 transition-colors"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
+      <div 
+        ref={containerRef}
+        className="flex gap-4 overflow-x-auto scrollbar-hide pb-4"
+      >
+        {category.profiles.map((profile: MockProfile) => (
+          <ProfileCard 
+            key={profile.id} 
+            profile={profile} 
+            getAge={getAge}
+            categoryColor={category.color}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function ProfileCard({ profile, getAge, categoryColor }: { profile: MockProfile; getAge: (birthdate: string) => number; categoryColor: string }) {
+  return (
+    <Link href={`/profile/${profile.id}`} className="flex-shrink-0">
+      <div className="relative w-48 h-64 rounded-2xl overflow-hidden group cursor-pointer">
+        {/* Imagem de fundo */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center group-hover:scale-110 transition-transform duration-300"
+          style={{ backgroundImage: `url(${profile.photoURL})` }}
+        />
+        
+        {/* Overlay gradiente */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+        
+        {/* Badges */}
+        <div className="absolute top-3 left-3 flex gap-2">
+          {profile.isPremium && (
+            <span className="px-2 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs rounded-full">
+              Premium
+            </span>
+          )}
+          {profile.isVerified && (
+            <span className="px-2 py-1 bg-gradient-to-r from-green-500 to-teal-500 text-white text-xs rounded-full">
+              ✓
+            </span>
+          )}
+        </div>
+        
+        {/* Conteúdo */}
+        <div className="absolute bottom-0 left-0 right-0 p-4">
+          <h3 className="text-white font-bold text-base mb-1">{profile.username}</h3>
+          <p className="text-white/80 text-sm mb-2">
+            {getAge(profile.birthdate)} anos • {profile.city}
+          </p>
+          <div className="flex items-center gap-2">
+                         <span className={`px-2 py-1 bg-gradient-to-r ${categoryColor} text-white text-xs rounded-full`}>
+               {getUserTypeAbbreviation(profile.userType as any)}
+             </span>
+            <button className="p-2 bg-white/20 rounded-full text-white hover:bg-white/30 transition-colors">
+              <Heart className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </Link>
   )
 } 

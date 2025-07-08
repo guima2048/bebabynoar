@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
         amount: selectedPlan.amount / 100,
         currency: selectedPlan.currency,
         status: paymentIntent.status === 'succeeded' ? 'COMPLETED' : 'FAILED',
-        stripePaymentIntentId: paymentIntent.id,
+        stripePaymentIntentId: paymentIntent.id ?? null,
       }
     })
 

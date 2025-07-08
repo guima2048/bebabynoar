@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
-import { Settings } from 'lucide-react'
 
 interface AdminLayoutProps {
   children: React.ReactNode

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 export function usePremiumFeatures() {
-  const [features, setFeatures] = useState<any>({});
+  const [features, setFeatures] = useState<Record<string, string | number | boolean>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

@@ -1,91 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { resetPasswordSchema, validateAndSanitize, createErrorResponse } from '@/lib/schemas'
-import crypto from 'crypto'
 
 export async function POST(request: NextRequest) {
   try {
-    const { email } = await request.json()
+    const body = await request.json()
+    const { email } = body
 
-    if (!email) {
-      return NextResponse.json(
-        { error: 'Email é obrigatório' },
-        { status: 400 }
-      )
-    }
-
-    // Buscar usuário pelo email
+    // Verificar se o usuário existe
     const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() }
+      where: { email }
     })
 
     if (!user) {
-      // Não revelar se o email existe ou não por segurança
-      return NextResponse.json({ 
-        success: true, 
-        message: 'Se o email existir, você receberá um link para resetar sua senha' 
-      })
+      // Por segurança, não revelar se o email existe ou não
+      return NextResponse.json(
+        { message: 'Se o email existir, você receberá um link de recuperação' },
+        { status: 200 }
+      )
     }
 
-    // Gerar token de reset
-    const resetToken = crypto.randomBytes(32).toString('hex')
-    const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000) // 1 hora
+    // Simulação: não gera token nem salva nada
 
-    // Salvar token no usuário
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        passwordResetToken: resetToken,
-        passwordResetTokenExpiry: resetTokenExpiry,
-      }
-    })
-
-    // Enviar email de reset se configurado
-    if (process.env.BREVO_API_KEY) {
-      const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/reset-password?token=${resetToken}`
-      
-      const emailData = {
-        to: [{ email: user.email }],
-        subject: 'Reset de Senha - Bebaby App',
-        htmlContent: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #ec4899;">Bebaby App</h2>
-            <p>Olá ${user.name || 'Usuário'}!</p>
-            <p>Você solicitou um reset de senha para sua conta no Bebaby App.</p>
-            <p>Clique no botão abaixo para criar uma nova senha:</p>
-            <p style="margin: 30px 0;">
-              <a href="${resetUrl}" 
-                 style="background-color: #ec4899; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">
-                Resetar Senha
-              </a>
-            </p>
-            <p>Este link expira em 1 hora por motivos de segurança.</p>
-            <p>Se você não solicitou este reset, ignore este email.</p>
-            <p>Atenciosamente,<br>Equipe Bebaby App</p>
-          </div>
-        `
-      }
-
-      await fetch('https://api.brevo.com/v3/smtp/email', {
-        method: 'POST',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json',
-          'api-key': process.env.BREVO_API_KEY,
-        },
-        body: JSON.stringify(emailData),
-      })
-    }
-
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Se o email existir, você receberá um link para resetar sua senha' 
-    })
-
-  } catch (error) {
-    console.error('Erro ao solicitar reset de senha:', error)
     return NextResponse.json(
-      { error: 'Erro interno do servidor' },
+      { message: 'Se o email existir, você receberá um link de recuperação' },
+      { status: 200 }
+    )
+  } catch (error) {
+    console.error('Erro no reset de senha:', error)
+    return NextResponse.json(
+      { message: 'Erro interno do servidor' },
       { status: 500 }
     )
   }

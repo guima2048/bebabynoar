@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { verifyEmailSchema, validateAndSanitize, createErrorResponse } from '@/lib/schemas'
 import crypto from 'crypto'
 
 export async function POST(req: NextRequest) {
@@ -325,66 +324,26 @@ async function verifyEmailToken(token: string) {
   }
 }
 
-async function sendWelcomeEmail(userId: string, userData: any) {
-  try {
-    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: {
-        'api-key': process.env.BREVO_API_KEY!,
-        'Content-Type': 'application/json',
-        'accept': 'application/json',
-      },
-      body: JSON.stringify({
-        sender: { name: 'Bebaby App', email: 'no-reply@bebaby.app' },
-        to: [{ email: userData.email }],
-        subject: 'Bem-vindo ao Bebaby App!',
-        htmlContent: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background: linear-gradient(135deg, #ec4899, #8b5cf6); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-              <h1 style="color: white; margin: 0; font-size: 28px;">🎉 Bem-vindo ao Bebaby App!</h1>
-            </div>
-            
-            <div style="background: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-              <h2 style="color: #333; margin-bottom: 20px;">Olá, ${userData.name || 'Usuário'}!</h2>
-              
-              <p style="color: #666; line-height: 1.6; margin-bottom: 25px;">
-                Seja bem-vindo ao Bebaby App! Estamos muito felizes em tê-lo conosco.
-              </p>
-              
-              <div style="text-align: center; margin-bottom: 25px;">
-                <a href="${process.env.NEXT_PUBLIC_APP_URL}" 
-                   style="background: linear-gradient(135deg, #ec4899, #8b5cf6); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; display: inline-block; font-weight: bold;">
-                  Começar a Explorar
-                </a>
-              </div>
-              
-              <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin-top: 25px;">
-                <h3 style="color: #333; margin-bottom: 10px; font-size: 16px;">Dicas para começar:</h3>
-                <ul style="color: #666; line-height: 1.6; margin: 0; padding-left: 20px; font-size: 14px;">
-                  <li>Complete seu perfil com fotos e informações</li>
-                  <li>Configure suas preferências de busca</li>
-                  <li>Explore perfis de outros usuários</li>
-                  <li>Envie mensagens para pessoas interessantes</li>
-                </ul>
-              </div>
-              
-              <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
-                <p style="color: #999; font-size: 12px;">
-                  Se tiver alguma dúvida, entre em contato conosco!
-                </p>
-              </div>
-            </div>
-          </div>
-        `
-      })
-    })
-
-    if (!res.ok) {
-      throw new Error(`Erro ao enviar email: ${res.status}`)
-    }
-
-  } catch (error) {
-    console.error('Erro ao enviar email de boas-vindas:', error)
-    throw error
-  }
-} 
+// async function sendWelcomeEmail(userId: string, userData: any) {
+//   try {
+//     const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+//       method: 'POST',
+//       headers: {
+//         'api-key': process.env.BREVO_API_KEY!,
+//         'Content-Type': 'application/json',
+//         'accept': 'application/json',
+//       },
+//       body: JSON.stringify({
+//         sender: { name: 'Bebaby App', email: 'no-reply@bebaby.app' },
+//         to: [{ email: userData.email }],
+//         subject: 'Bem-vindo ao Bebaby App!',
+//         htmlContent: `<h2>Bem-vindo, ${userData.name || 'usuário'}!</h2><p>Seu cadastro foi realizado com sucesso.</p>`
+//       })
+//     })
+//     if (!res.ok) {
+//       throw new Error('Erro ao enviar e-mail de boas-vindas')
+//     }
+//   } catch (error) {
+//     console.error('Erro ao enviar e-mail de boas-vindas:', error)
+//   }
+// } 

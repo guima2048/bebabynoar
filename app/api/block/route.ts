@@ -1,28 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-// Interfaces TypeScript
-interface BlockData {
-  id: string
-  userId: string
-  targetUserId: string
-  reason: string
-  createdAt: Date
-  userType: string
-  targetUserType: string
-}
-
-interface UserData {
-  name?: string
-  email: string
-  userType: string
-  age?: number
-  location?: string
-  bio?: string
-  photos?: string[]
-  isPremium?: boolean
-}
-
 export async function POST(request: NextRequest) {
   try {
     const { userId, targetUserId, reason } = await request.json()
@@ -147,9 +125,9 @@ export async function DELETE(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
+    const { searchParams } = new URL(_request.url)
     const userId = searchParams.get('userId')
 
     if (!userId) {

@@ -7,7 +7,7 @@ interface RouteContext {
 }
 
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   context: RouteContext
 ) {
   try {
@@ -80,7 +80,7 @@ export async function PUT(
 }
 
 export async function DELETE(
-  req: NextRequest,
+  _req: NextRequest,
   context: RouteContext
 ) {
   try {

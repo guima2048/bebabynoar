@@ -2,14 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { z } from 'zod'
-
-const sendMessageSchema = z.object({
-  receiverId: z.string(),
-  content: z.string().min(1),
-  type: z.enum(['TEXT', 'IMAGE']).default('TEXT'),
-  imageURL: z.string().url().optional(),
-})
 
 export async function POST(request: NextRequest) {
   try {
@@ -52,7 +44,7 @@ export async function POST(request: NextRequest) {
       data: {
         content: content,
         type: type,
-        imageURL: imageURL,
+        imageURL: imageURL ?? null,
         conversationId: conversationId,
         senderId: session.user.id,
         receiverId: receiverId
@@ -119,7 +111,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     
@@ -130,7 +122,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const { searchParams } = new URL(request.url)
+    const { searchParams } = new URL(_request.url)
     const conversationId = searchParams.get('conversationId')
     const limit = parseInt(searchParams.get('limit') || '50')
     const offset = parseInt(searchParams.get('offset') || '0')

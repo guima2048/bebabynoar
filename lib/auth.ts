@@ -61,7 +61,7 @@ export const authOptions: NextAuthOptions = {
           id: user.id,
           email: user.email,
           name: user.name || user.username,
-          image: user.photoURL ?? undefined,
+          image: user.photoURL ?? '',
           userType: user.userType,
           premium: user.premium,
           verified: user.verified,
@@ -102,6 +102,6 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: '/login'
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET || '',
   debug: process.env.NODE_ENV === 'development'
 } 

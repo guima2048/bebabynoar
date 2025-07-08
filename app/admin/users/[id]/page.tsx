@@ -2,11 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
-import Link from "next/link";
 import toast from "react-hot-toast";
-import Image from "next/image";
-
-
 
 interface UserData {
   id: string;
@@ -66,15 +62,7 @@ interface Conversation {
   lastMessageAt: string;
 }
 
-interface SocialMediaHistory {
-  id: string;
-  field: string;
-  oldValue: string;
-  newValue: string;
-  changedBy: string;
-  changedAt: string;
-  adminId?: string;
-}
+
 
 interface Trip {
   id: string;

@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
@@ -123,7 +122,7 @@ export default function ProfilePage() {
       setUploadingPhoto(true)
       
       const formData = new FormData()
-      formData.append('photo', file)
+      formData.append('file', file)
       formData.append('type', 'profile')
       
       const response = await fetch('/api/upload-photo', {
@@ -133,7 +132,7 @@ export default function ProfilePage() {
       
       if (response.ok) {
         const data = await response.json()
-        setProfile(prev => prev ? { ...prev, photoURL: data.url } : null)
+        setProfile(prev => prev ? { ...prev, photoURL: data.photo.url } : null)
         toast.success('Foto atualizada com sucesso!')
       } else {
         toast.error('Erro ao fazer upload da foto')
@@ -145,8 +144,8 @@ export default function ProfilePage() {
     }
   }
 
-  const publicPhotos = profile && profile.photos ? profile.photos.filter((p: any) => !p.isPrivate) : [];
-  const privatePhotos = profile && profile.photos ? profile.photos.filter((p: any) => p.isPrivate) : [];
+  const publicPhotos = profile && profile.photos ? profile.photos.filter((p: { id: string; url: string; isPrivate: boolean; uploadedAt: string }) => !p.isPrivate) : [];
+  const privatePhotos = profile && profile.photos ? profile.photos.filter((p: { id: string; url: string; isPrivate: boolean; uploadedAt: string }) => p.isPrivate) : [];
 
   const handleAddPublicPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!user || !e.target.files || !e.target.files[0]) return;
@@ -159,7 +158,7 @@ export default function ProfilePage() {
       setUploadingPhoto(true);
       
       const formData = new FormData()
-      formData.append('photo', file)
+      formData.append('file', file)
       formData.append('type', 'gallery')
       formData.append('isPrivate', 'false')
       
@@ -172,7 +171,7 @@ export default function ProfilePage() {
         const data = await response.json()
         const newPhoto = {
           id: `photo_${Date.now()}`,
-          url: data.url,
+          url: data.photo.url,
           isPrivate: false,
           uploadedAt: new Date().toISOString(),
         };
@@ -200,7 +199,7 @@ export default function ProfilePage() {
       setUploadingPhoto(true);
       
       const formData = new FormData()
-      formData.append('photo', file)
+      formData.append('file', file)
       formData.append('type', 'gallery')
       formData.append('isPrivate', 'true')
       
@@ -213,7 +212,7 @@ export default function ProfilePage() {
         const data = await response.json()
         const newPhoto = {
           id: `photo_${Date.now()}`,
-          url: data.url,
+          url: data.photo.url,
           isPrivate: true,
           uploadedAt: new Date().toISOString(),
         };

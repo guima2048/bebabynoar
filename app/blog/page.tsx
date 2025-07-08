@@ -58,111 +58,111 @@ interface BlogSettings {
   h2LineHeight: string
 }
 
-async function getBlogPosts(): Promise<BlogPost[]> {
-  try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'https://123124239.vercel.app'}/api/blog?status=published`, {
-      cache: 'no-store'
-    })
-    
-    if (!response.ok) {
-      console.error('Erro na API:', response.status)
-      return []
-    }
-    
-    const posts = await response.json()
-    console.log('Posts recebidos:', posts.length)
-    return posts
-  } catch (error) {
-    console.error('Erro ao buscar posts:', error)
-    return []
-  }
-}
+// async function getBlogPosts(): Promise<BlogPost[]> {
+//   try {
+//     const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'https://123124239.vercel.app'}/api/blog?status=published`, {
+//       cache: 'no-store'
+//     })
+//     
+//     if (!response.ok) {
+//       console.error('Erro na API:', response.status)
+//       return []
+//     }
+//     
+//     const posts = await response.json()
+//     console.log('Posts recebidos:', posts.length)
+//     return posts
+//   } catch (error) {
+//     console.error('Erro ao buscar posts:', error)
+//     return []
+//   }
+// }
 
-async function getBlogSettings(): Promise<BlogSettings> {
-  try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'https://123124239.vercel.app'}/api/blog-settings`, {
-      cache: 'no-store'
-    })
-    
-    if (!response.ok) {
-      console.error('Erro ao buscar configurações:', response.status)
-      return {
-        primaryColor: '#D4AF37',
-        secondaryColor: '#4A1E3A',
-        accentColor: '#FFD700',
-        backgroundColor: '#FAFAFA',
-        textColor: '#2D3748',
-        titleColor: '#D4AF37',
-        titleFont: 'Playfair Display',
-        bodyFont: 'Open Sans',
-        heroTitle: 'Universo Sugar - O Melhor Site de Relacionamento Sugar',
-        heroSubtitle: 'Descubra o mundo exclusivo dos relacionamentos sugar. Conecte-se com sugar daddies e sugar babies de qualidade.',
-        heroBackgroundImage: '',
-        heroBackgroundAlt: 'Universo Sugar - Site de relacionamento sugar',
-        siteTitle: 'Universo Sugar - Site de Relacionamento Sugar | Sugar Daddy e Sugar Baby',
-        siteDescription: 'O melhor site de relacionamento sugar do Brasil. Conecte-se com sugar daddies e sugar babies de qualidade. Patrocinador confiável para relacionamentos sugar.',
-        defaultKeywords: 'Universo sugar, Patrocinador, Sugar baby, sugar daddy, site de relacionamento sugar',
-        searchPlaceholder: 'Pesquise artigos sobre relacionamentos sugar...',
-        recentArticlesTitle: 'Artigos Recentes',
-        popularArticlesTitle: 'Artigos Populares',
-        readMoreText: 'Ler Mais',
-        noArticlesText: 'Nenhum artigo encontrado',
-        footerText: '© 2024 Universo Sugar. Todos os direitos reservados.',
-        privacyPolicyText: 'Política de Privacidade',
-        termsText: 'Termos de Uso',
-        contactText: 'Contato',
-        metaTitle: 'Universo Sugar - O Melhor Site de Relacionamento Sugar',
-        metaDescription: 'Conecte-se com sugar daddies e sugar babies de qualidade. Nosso site de relacionamento sugar oferece a melhor experiência.',
-        metaKeywords: 'universo sugar, patrocinador, sugar baby, sugar daddy, site de relacionamento sugar',
-        h1FontSize: '2.5rem',
-        h1Align: 'center',
-        h1LineHeight: '1.2',
-        h2FontSize: '1.5rem',
-        h2Align: 'center',
-        h2LineHeight: '1.2',
-      }
-    }
-    
-    return await response.json()
-  } catch (error) {
-    console.error('Erro ao buscar configurações:', error)
-    return {
-      primaryColor: '#D4AF37',
-      secondaryColor: '#4A1E3A',
-      accentColor: '#FFD700',
-      backgroundColor: '#FAFAFA',
-      textColor: '#2D3748',
-      titleColor: '#D4AF37',
-      titleFont: 'Playfair Display',
-      bodyFont: 'Open Sans',
-      heroTitle: 'Universo Sugar - O Melhor Site de Relacionamento Sugar',
-      heroSubtitle: 'Descubra o mundo exclusivo dos relacionamentos sugar. Conecte-se com sugar daddies e sugar babies de qualidade.',
-      heroBackgroundImage: '',
-      heroBackgroundAlt: 'Universo Sugar - Site de relacionamento sugar',
-      siteTitle: 'Universo Sugar - Site de Relacionamento Sugar | Sugar Daddy e Sugar Baby',
-      siteDescription: 'O melhor site de relacionamento sugar do Brasil. Conecte-se com sugar daddies e sugar babies de qualidade. Patrocinador confiável para relacionamentos sugar.',
-      defaultKeywords: 'Universo sugar, Patrocinador, Sugar baby, sugar daddy, site de relacionamento sugar',
-      searchPlaceholder: 'Pesquise artigos sobre relacionamentos sugar...',
-      recentArticlesTitle: 'Artigos Recentes',
-      popularArticlesTitle: 'Artigos Populares',
-      readMoreText: 'Ler Mais',
-      noArticlesText: 'Nenhum artigo encontrado',
-      footerText: '© 2024 Universo Sugar. Todos os direitos reservados.',
-      privacyPolicyText: 'Política de Privacidade',
-      termsText: 'Termos de Uso',
-      contactText: 'Contato',
-      metaTitle: 'Universo Sugar - O Melhor Site de Relacionamento Sugar',
-      metaDescription: 'Conecte-se com sugar daddies e sugar babies de qualidade. Nosso site de relacionamento sugar oferece a melhor experiência.',
-      metaKeywords: 'universo sugar, patrocinador, sugar baby, sugar daddy, site de relacionamento sugar',
-      h1FontSize: '2.5rem',
-      h1Align: 'center',
-      h1LineHeight: '1.2',
-      h2FontSize: '1.5rem',
-      h2Align: 'center',
-      h2LineHeight: '1.2',
-    }
-  }
-}
+// async function getBlogSettings(): Promise<BlogSettings> {
+//   try {
+//     const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'https://123124239.vercel.app'}/api/blog-settings`, {
+//       cache: 'no-store'
+//     })
+//     
+//     if (!response.ok) {
+//       console.error('Erro ao buscar configurações:', response.status)
+//       return {
+//         primaryColor: '#D4AF37',
+//         secondaryColor: '#4A1E3A',
+//         accentColor: '#FFD700',
+//         backgroundColor: '#FAFAFA',
+//         textColor: '#2D3748',
+//         titleColor: '#D4AF37',
+//         titleFont: 'Playfair Display',
+//         bodyFont: 'Open Sans',
+//         heroTitle: 'Universo Sugar - O Melhor Site de Relacionamento Sugar',
+//         heroSubtitle: 'Descubra o mundo exclusivo dos relacionamentos sugar. Conecte-se com sugar daddies e sugar babies de qualidade.',
+//         heroBackgroundImage: '',
+//         heroBackgroundAlt: 'Universo Sugar - Site de relacionamento sugar',
+//         siteTitle: 'Universo Sugar - Site de Relacionamento Sugar | Sugar Daddy e Sugar Baby',
+//         siteDescription: 'O melhor site de relacionamento sugar do Brasil. Conecte-se com sugar daddies e sugar babies de qualidade. Patrocinador confiável para relacionamentos sugar.',
+//         defaultKeywords: 'Universo sugar, Patrocinador, Sugar baby, sugar daddy, site de relacionamento sugar',
+//         searchPlaceholder: 'Pesquise artigos sobre relacionamentos sugar...',
+//         recentArticlesTitle: 'Artigos Recentes',
+//         popularArticlesTitle: 'Artigos Populares',
+//         readMoreText: 'Ler Mais',
+//         noArticlesText: 'Nenhum artigo encontrado',
+//         footerText: '© 2024 Universo Sugar. Todos os direitos reservados.',
+//         privacyPolicyText: 'Política de Privacidade',
+//         termsText: 'Termos de Uso',
+//         contactText: 'Contato',
+//         metaTitle: 'Universo Sugar - O Melhor Site de Relacionamento Sugar',
+//         metaDescription: 'Conecte-se com sugar daddies e sugar babies de qualidade. Nosso site de relacionamento sugar oferece a melhor experiência.',
+//         metaKeywords: 'universo sugar, patrocinador, sugar baby, sugar daddy, site de relacionamento sugar',
+//         h1FontSize: '2.5rem',
+//         h1Align: 'center',
+//         h1LineHeight: '1.2',
+//         h2FontSize: '1.5rem',
+//         h2Align: 'center',
+//         h2LineHeight: '1.2',
+//       }
+//     }
+//     
+//     return await response.json()
+//   } catch (error) {
+//     console.error('Erro ao buscar configurações:', error)
+//     return {
+//       primaryColor: '#D4AF37',
+//       secondaryColor: '#4A1E3A',
+//       accentColor: '#FFD700',
+//       backgroundColor: '#FAFAFA',
+//       textColor: '#2D3748',
+//       titleColor: '#D4AF37',
+//       titleFont: 'Playfair Display',
+//       bodyFont: 'Open Sans',
+//       heroTitle: 'Universo Sugar - O Melhor Site de Relacionamento Sugar',
+//       heroSubtitle: 'Descubra o mundo exclusivo dos relacionamentos sugar. Conecte-se com sugar daddies e sugar babies de qualidade.',
+//       heroBackgroundImage: '',
+//       heroBackgroundAlt: 'Universo Sugar - Site de relacionamento sugar',
+//       siteTitle: 'Universo Sugar - Site de Relacionamento Sugar | Sugar Daddy e Sugar Baby',
+//       siteDescription: 'O melhor site de relacionamento sugar do Brasil. Conecte-se com sugar daddies e sugar babies de qualidade. Patrocinador confiável para relacionamentos sugar.',
+//       defaultKeywords: 'Universo sugar, patrocinador, sugar baby, sugar daddy, site de relacionamento sugar',
+//       searchPlaceholder: 'Pesquise artigos sobre relacionamentos sugar...',
+//       recentArticlesTitle: 'Artigos Recentes',
+//       popularArticlesTitle: 'Artigos Populares',
+//       readMoreText: 'Ler Mais',
+//       noArticlesText: 'Nenhum artigo encontrado',
+//       footerText: '© 2024 Universo Sugar. Todos os direitos reservados.',
+//       privacyPolicyText: 'Política de Privacidade',
+//       termsText: 'Termos de Uso',
+//       contactText: 'Contato',
+//       metaTitle: 'Universo Sugar - O Melhor Site de Relacionamento Sugar',
+//       metaDescription: 'Conecte-se com sugar daddies e sugar babies de qualidade. Nosso site de relacionamento sugar oferece a melhor experiência.',
+//       metaKeywords: 'universo sugar, patrocinador, sugar baby, sugar daddy, site de relacionamento sugar',
+//       h1FontSize: '2.5rem',
+//       h1Align: 'center',
+//       h1LineHeight: '1.2',
+//       h2FontSize: '1.5rem',
+//       h2Align: 'center',
+//       h2LineHeight: '1.2',
+//     }
+//   }
+// }
 
 function parseFirestoreDate(date: any): Date | null {
   if (!date) { return null; }
@@ -181,11 +181,11 @@ function parseFirestoreDate(date: any): Date | null {
   return null;
 }
 
-function formatDate(date: any) {
-  const d = parseFirestoreDate(date);
-  if (!d) { return 'Data não definida'; }
-  return format(d, 'dd/MM/yyyy', { locale: ptBR });
-}
+// function formatDate(date: any) {
+//   const d = parseFirestoreDate(date);
+//   if (!d) { return 'Data não definida'; }
+//   return format(d, 'dd/MM/yyyy', { locale: ptBR });
+// }
 
 export default function BlogPage() {
   const [posts, setPosts] = useState<BlogPost[]>([])
@@ -224,7 +224,6 @@ export default function BlogPage() {
     h2Align: 'center',
     h2LineHeight: '1.2',
   })
-  const [loading, setLoading] = useState(true)
   const [postsLoading, setPostsLoading] = useState(true)
 
   useEffect(() => {
@@ -241,8 +240,6 @@ export default function BlogPage() {
       }
     } catch (error) {
       console.error('Erro ao carregar configurações:', error)
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -261,15 +258,11 @@ export default function BlogPage() {
   }
 
   // Estilos dinâmicos baseados nas configurações
-  const dynamicStyles = {
-    '--primary-color': settings.primaryColor,
-    '--secondary-color': settings.secondaryColor,
-    '--background-color': settings.backgroundColor,
-    '--text-color': settings.textColor,
-    '--title-color': settings.titleColor,
-    '--title-font': settings.titleFont,
-    '--body-font': settings.bodyFont,
-  } as React.CSSProperties;
+  // const dynamicStyles = {
+  //   '--primary-color': settings.primaryColor,
+  //   '--secondary-color': settings.secondaryColor,
+  //   '--background-color': settings.backgroundColor,
+  // }
 
   const h1Style = {
     fontSize: settings.h1FontSize,

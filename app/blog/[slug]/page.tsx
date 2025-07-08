@@ -1,13 +1,13 @@
 import React from 'react'
 import Link from 'next/link'
-import { Metadata } from 'next'
-import { notFound } from 'next/navigation'
+// import { Metadata } from 'next'
+// import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { Calendar, Clock, User, ArrowLeft, Share2, Heart, MessageCircle } from 'lucide-react'
-import Image from 'next/image' // Importar o componente Image do next/image
-import { toast } from 'react-hot-toast'
+import { Calendar, ArrowLeft, Share2, Heart, MessageCircle } from 'lucide-react'
+import Image from 'next/image'
+// import { toast } from 'react-hot-toast'
 
 interface BlogPost {
   id: string

@@ -11,7 +11,7 @@ export interface User {
   lookingFor: LookingFor
   username: string
   photoURL?: string
-  [key: string]: any
+  [key: string]: string | number | boolean | undefined
 }
 
 // Grupos de usuários

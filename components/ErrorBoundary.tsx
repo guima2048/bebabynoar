@@ -10,13 +10,13 @@ interface Props {
 
 interface State {
   hasError: boolean
-  error?: Error
+  error: Error | undefined
 }
 
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props)
-    this.state = { hasError: false }
+    this.state = { hasError: false, error: undefined }
   }
 
   static getDerivedStateFromError(error: Error): State {

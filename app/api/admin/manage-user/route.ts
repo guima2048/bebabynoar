@@ -11,7 +11,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
 
-    const { userId, action, adminNotes, fields, photoId, isPrivate } = await req.json()
+    const { userId, action, fields, photoId, isPrivate } = await req.json()
     
     if (!userId || !action) {
       return NextResponse.json({ error: 'Dados obrigatórios não fornecidos' }, { status: 400 })
@@ -118,7 +118,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
 
-    const { userId, adminNotes } = await req.json()
+    const { userId } = await req.json()
     
     if (!userId) {
       return NextResponse.json({ error: 'ID do usuário não fornecido' }, { status: 400 })

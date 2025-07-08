@@ -36,9 +36,14 @@ export async function PUT(request: NextRequest) {
     const body = await request.json()
     const validatedData = profileUpdateSchema.parse(body)
 
+    // Converter undefined para null em todos os campos opcionais
+    const sanitizedData = Object.fromEntries(
+      Object.entries(validatedData).map(([k, v]) => [k, v === undefined ? null : v])
+    )
+
     const updatedUser = await prisma.user.update({
       where: { id: session.user.id },
-      data: validatedData,
+      data: sanitizedData,
       select: {
         id: true,
         email: true,
@@ -96,7 +101,7 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     

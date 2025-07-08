@@ -309,7 +309,7 @@ export default function AdminUsersPage() {
                     {user.signupIp || '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {user.ipLocation || <IpLocationLoader ip={user.signupIp} userId={user.id} />}
+                    {user.ipLocation || <IpLocationLoader ip={user.signupIp || null} />}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
@@ -420,7 +420,7 @@ export default function AdminUsersPage() {
   )
 }
 
-function IpLocationLoader({ ip, userId }: { ip?: string, userId: string }) {
+function IpLocationLoader({ ip }: { ip: string | null }) {
   const [location, setLocation] = useState<string>('');
 
   useEffect(() => {

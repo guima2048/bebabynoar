@@ -1,8 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   // Autenticação admin
   const cookieStore = await cookies();
   const adminSession = cookieStore.get('admin_session');
@@ -14,7 +13,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ features: {} });
 }
 
-export async function POST(req: NextRequest) {
+export async function POST() {
   // Autenticação admin
   const cookieStore = await cookies();
   const adminSession = cookieStore.get('admin_session');

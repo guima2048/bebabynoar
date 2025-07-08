@@ -82,31 +82,35 @@ export async function POST(request: NextRequest) {
     // Hash da senha
     const hashedPassword = await bcrypt.hash(validatedData.password, 12)
     // Criar usuário
+    const userData: any = {
+      email: validatedData.email,
+      password: hashedPassword,
+      username: validatedData.username,
+      birthdate: new Date(validatedData.birthdate),
+      gender: (genderMap[validatedData.gender] as any) || 'OTHER',
+      userType: (userTypeMap[validatedData.userType] as any) || 'SUGAR_BABY',
+      lookingFor: lookingFor as any,
+      state: validatedData.state,
+      city: validatedData.city,
+    }
+
+    // Adicionar campos opcionais apenas se existirem
+    if (validatedData.location) userData.location = validatedData.location
+    if (validatedData.about) userData.about = validatedData.about
+    if (validatedData.height) userData.height = validatedData.height
+    if (validatedData.weight) userData.weight = validatedData.weight
+    if (validatedData.education) userData.education = validatedData.education
+    if (validatedData.profession) userData.profession = validatedData.profession
+    if (validatedData.hasChildren !== undefined) userData.hasChildren = validatedData.hasChildren
+    if (validatedData.smokes !== undefined) userData.smokes = validatedData.smokes
+    if (validatedData.drinks !== undefined) userData.drinks = validatedData.drinks
+    if (validatedData.relationshipType) userData.relationshipType = validatedData.relationshipType
+    if (validatedData.availableForTravel !== undefined) userData.availableForTravel = validatedData.availableForTravel
+    if (validatedData.receiveTravelers !== undefined) userData.receiveTravelers = validatedData.receiveTravelers
+    if (validatedData.social) userData.social = validatedData.social
+
     const user = await prisma.user.create({
-      data: {
-        email: validatedData.email,
-        password: hashedPassword,
-        username: validatedData.username,
-        birthdate: new Date(validatedData.birthdate),
-        gender: (genderMap[validatedData.gender] as any) || 'OTHER',
-        userType: (userTypeMap[validatedData.userType] as any) || 'SUGAR_BABY',
-        lookingFor: lookingFor as any,
-        state: validatedData.state,
-        city: validatedData.city,
-        location: validatedData.location,
-        about: validatedData.about,
-        height: validatedData.height,
-        weight: validatedData.weight,
-        education: validatedData.education,
-        profession: validatedData.profession,
-        hasChildren: validatedData.hasChildren,
-        smokes: validatedData.smokes,
-        drinks: validatedData.drinks,
-        relationshipType: validatedData.relationshipType,
-        availableForTravel: validatedData.availableForTravel,
-        receiveTravelers: validatedData.receiveTravelers,
-        social: validatedData.social,
-      }
+      data: userData
     })
     // Remover senha do response
     const { password, ...userWithoutPassword } = user

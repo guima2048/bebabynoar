@@ -26,7 +26,7 @@ interface ProfileData {
   location?: string
   gender?: string
   status?: string
-  photos?: any[]
+  photos?: Array<{ url: string; isPrivate: boolean; id?: string }>
   relationshipType?: string
   height?: string
   weight?: string
@@ -103,13 +103,13 @@ export default function ProfileViewPage() {
       console.log('📸 [Profile] Array de fotos:', photos)
       
       const publicPhotos = photos
-        .filter((photo: any) => !photo.isPrivate)
-        .map((photo: any) => photo.url)
+        .filter((photo: { url: string; isPrivate: boolean; id?: string }) => !photo.isPrivate)
+        .map((photo: { url: string; isPrivate: boolean; id?: string }) => photo.url)
       setGalleryPublic(publicPhotos)
       
       const privatePhotos = photos
-        .filter((photo: any) => photo.isPrivate)
-        .map((photo: any) => photo.url)
+        .filter((photo: { url: string; isPrivate: boolean; id?: string }) => photo.isPrivate)
+        .map((photo: { url: string; isPrivate: boolean; id?: string }) => photo.url)
       setGalleryPrivate(privatePhotos)
       
       // Registrar visualização do perfil

@@ -8,18 +8,23 @@ import { existsSync } from 'fs';
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('📸 Upload iniciado');
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
+      console.log('❌ Usuário não autorizado');
       return NextResponse.json(
         { error: 'Não autorizado' },
         { status: 401 }
       );
     }
 
+    console.log('✅ Usuário autorizado:', session.user.id);
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const isPrivate = formData.get('isPrivate') === 'true';
+    
+    console.log('📁 Arquivo recebido:', file?.name, 'Tamanho:', file?.size);
 
     if (!file) {
       return NextResponse.json(
@@ -71,7 +76,7 @@ export async function POST(request: NextRequest) {
       data: {
         url: `/uploads/${fileName}`,
         fileName: fileName,
-        isPrivate: isPrivate,
+        isPrivate: isPrivate ?? null,
         userId: session.user.id
       }
     });
