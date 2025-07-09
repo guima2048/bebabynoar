@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
@@ -9,11 +8,13 @@ import { existsSync } from 'fs'
 // POST - Upload de imagem
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    // Verificar autenticação admin
+    const cookieStore = await cookies()
+    const adminSession = cookieStore.get('admin_session')
     
-    if (!session?.user?.id) {
+    if (!adminSession || adminSession.value !== 'authenticated') {
       return NextResponse.json(
-        { error: 'Não autorizado' },
+        { error: 'Não autorizado - Acesso administrativo necessário' },
         { status: 401 }
       )
     }
@@ -69,6 +70,18 @@ export async function POST(request: NextRequest) {
     // URL pública do arquivo
     const fileUrl = `/uploads/blog/${filename}`
 
+    // Buscar usuário admin para associar ao upload
+    const adminUser = await prisma.user.findFirst({
+      where: { isAdmin: true }
+    })
+
+    if (!adminUser) {
+      return NextResponse.json(
+        { error: 'Usuário administrador não encontrado' },
+        { status: 500 }
+      )
+    }
+
     // Salvar informações no banco
     const imageRecord = await prisma.blogImage.create({
       data: {
@@ -79,7 +92,7 @@ export async function POST(request: NextRequest) {
         url: fileUrl,
         alt: alt || '',
         postId: postId || null,
-        uploadedBy: session.user.id,
+        uploadedBy: adminUser.id,
       }
     })
 
@@ -109,11 +122,13 @@ export async function POST(request: NextRequest) {
 // GET - Listar imagens do usuário
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    // Verificar autenticação admin
+    const cookieStore = await cookies()
+    const adminSession = cookieStore.get('admin_session')
     
-    if (!session?.user?.id) {
+    if (!adminSession || adminSession.value !== 'authenticated') {
       return NextResponse.json(
-        { error: 'Não autorizado' },
+        { error: 'Não autorizado - Acesso administrativo necessário' },
         { status: 401 }
       )
     }
@@ -125,9 +140,21 @@ export async function GET(request: NextRequest) {
 
     const offset = (page - 1) * limit
 
+    // Buscar usuário admin
+    const adminUser = await prisma.user.findFirst({
+      where: { isAdmin: true }
+    })
+
+    if (!adminUser) {
+      return NextResponse.json(
+        { error: 'Usuário administrador não encontrado' },
+        { status: 500 }
+      )
+    }
+
     // Construir filtros
     const where: any = {
-      uploadedBy: session.user.id
+      uploadedBy: adminUser.id
     }
 
     if (postId) {
@@ -183,11 +210,13 @@ export async function GET(request: NextRequest) {
 // DELETE - Deletar imagem
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    // Verificar autenticação admin
+    const cookieStore = await cookies()
+    const adminSession = cookieStore.get('admin_session')
     
-    if (!session?.user?.id) {
+    if (!adminSession || adminSession.value !== 'authenticated') {
       return NextResponse.json(
-        { error: 'Não autorizado' },
+        { error: 'Não autorizado - Acesso administrativo necessário' },
         { status: 401 }
       )
     }
@@ -214,9 +243,22 @@ export async function DELETE(request: NextRequest) {
       )
     }
 
-    if (image.uploadedBy !== session.user.id && !session.user.isAdmin) {
+    // Buscar usuário admin
+    const adminUser = await prisma.user.findFirst({
+      where: { isAdmin: true }
+    })
+
+    if (!adminUser) {
       return NextResponse.json(
-        { error: 'Não autorizado' },
+        { error: 'Usuário administrador não encontrado' },
+        { status: 500 }
+      )
+    }
+
+    // Verificar se a imagem pertence ao admin
+    if (image.uploadedBy !== adminUser.id) {
+      return NextResponse.json(
+        { error: 'Não autorizado - Apenas o administrador pode deletar esta imagem' },
         { status: 403 }
       )
     }

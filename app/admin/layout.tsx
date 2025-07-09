@@ -89,14 +89,23 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     )
   }
 
-  if (pathname === '/admin/') {
+  // Verificar se é a página de login (com ou sem barra no final)
+  if (pathname === '/admin' || pathname === '/admin/') {
     console.log('🔐 AdminLayout: Página de login, renderizando children')
     return <>{children}</>
   }
 
   if (!isAuthenticated) {
-    console.log('❌ AdminLayout: Não autenticado, retornando null')
-    return null
+    console.log('❌ AdminLayout: Não autenticado, redirecionando para login')
+    router.push('/admin')
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Redirecionando para login...</p>
+        </div>
+      </div>
+    )
   }
 
   console.log('✅ AdminLayout: Renderizando layout completo')

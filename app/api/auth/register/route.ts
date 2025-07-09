@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { authLimiter } from '@/lib/rate-limit'
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -30,6 +31,17 @@ const registerSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const ip = request.headers.get('x-forwarded-for') || request.ip || 'unknown'
+    const { success } = await authLimiter.check(3, ip) // 3 registros por 15 minutos
+    
+    if (!success) {
+      return NextResponse.json(
+        { message: 'Muitas tentativas de registro. Tente novamente em 15 minutos.' },
+        { status: 429 }
+      )
+    }
+
     const body = await request.json()
     const validatedData = registerSchema.parse(body)
 

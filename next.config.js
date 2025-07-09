@@ -1,7 +1,20 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: ['lh3.googleusercontent.com'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'bebaby.app',
+      },
+      {
+        protocol: 'http',
+        hostname: 'bebaby.app',
+      },
+    ],
     formats: ['image/webp', 'image/avif'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
@@ -17,9 +30,8 @@ const nextConfig = {
     removeConsole: process.env.NODE_ENV === 'production',
   },
   experimental: {
-    // optimizeCss: true, // Desabilitado temporariamente
+    optimizeCss: true, // Habilitado para otimização de CSS
     optimizePackageImports: ['lucide-react', '@heroicons/react'],
-    // Otimizações agressivas para CSS
     optimizeServerReact: true,
     serverComponentsExternalPackages: [],
   },
@@ -43,6 +55,10 @@ const nextConfig = {
             key: 'X-XSS-Protection',
             value: '1; mode=block',
           },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin',
+          },
         ],
       },
       {
@@ -56,6 +72,24 @@ const nextConfig = {
       },
       {
         source: '/_next/static/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        source: '/uploads/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=86400, stale-while-revalidate=604800',
+          },
+        ],
+      },
+      {
+        source: '/landing/(.*)',
         headers: [
           {
             key: 'Cache-Control',

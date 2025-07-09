@@ -5,26 +5,50 @@ import { prisma } from '@/lib/prisma';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
+import { isValidImageFile, sanitizeString } from '@/lib/validation';
+import { uploadLimiter } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('📸 Upload iniciado');
+    // Rate limiting
+    const ip = request.headers.get('x-forwarded-for') || request.ip || 'unknown';
+    const { success } = await uploadLimiter.check(10, ip); // 10 uploads por minuto
+    
+    if (!success) {
+      return NextResponse.json(
+        { error: 'Muitos uploads. Tente novamente em 1 minuto.' },
+        { status: 429 }
+      );
+    }
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('📸 Upload iniciado');
+    }
+    
     const session = await getServerSession(authOptions);
     
     if (!session?.user?.id) {
-      console.log('❌ Usuário não autorizado');
+      if (process.env.NODE_ENV === 'development') {
+        console.log('❌ Usuário não autorizado');
+      }
       return NextResponse.json(
         { error: 'Não autorizado' },
         { status: 401 }
       );
     }
 
-    console.log('✅ Usuário autorizado:', session.user.id);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('✅ Usuário autorizado:', session.user.id);
+    }
+    
     const formData = await request.formData();
     const file = formData.get('file') as File;
+    const type = formData.get('type') as string;
     const isPrivate = formData.get('isPrivate') === 'true';
     
-    console.log('📁 Arquivo recebido:', file?.name, 'Tamanho:', file?.size);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('📁 Arquivo recebido:', file?.name, 'Tamanho:', file?.size);
+    }
 
     if (!file) {
       return NextResponse.json(
@@ -33,20 +57,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validar tipo de arquivo
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    if (!allowedTypes.includes(file.type)) {
+    // Validar arquivo usando utilitário de validação
+    if (!isValidImageFile(file)) {
       return NextResponse.json(
-        { error: 'Tipo de arquivo não suportado. Use JPEG, PNG ou WebP.' },
+        { error: 'Arquivo inválido. Use JPEG, PNG ou WebP com máximo 5MB.' },
         { status: 400 }
       );
     }
 
-    // Validar tamanho (máximo 5MB)
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    if (file.size > maxSize) {
+    // Validar tipo de upload
+    if (!['profile', 'gallery'].includes(type)) {
       return NextResponse.json(
-        { error: 'Arquivo muito grande. Máximo 5MB.' },
+        { error: 'Tipo de upload inválido' },
         { status: 400 }
       );
     }
@@ -57,12 +79,18 @@ export async function POST(request: NextRequest) {
       await mkdir(uploadsDir, { recursive: true });
     }
 
+    // Criar subdiretório por tipo se necessário
+    const typeDir = join(uploadsDir, type);
+    if (!existsSync(typeDir)) {
+      await mkdir(typeDir, { recursive: true });
+    }
+
     // Gerar nome único para o arquivo
     const timestamp = Date.now();
     const randomString = Math.random().toString(36).substring(2, 15);
-    const fileExtension = file.name.split('.').pop();
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
     const fileName = `${timestamp}-${randomString}.${fileExtension}`;
-    const filePath = join(uploadsDir, fileName);
+    const filePath = join(typeDir, fileName);
 
     // Converter File para Buffer
     const bytes = await file.arrayBuffer();
@@ -71,17 +99,22 @@ export async function POST(request: NextRequest) {
     // Salvar arquivo
     await writeFile(filePath, buffer);
 
+    // URL relativa para o banco de dados
+    const relativeUrl = `/uploads/${type}/${fileName}`;
+
     // Salvar no banco de dados
     const photo = await prisma.photo.create({
       data: {
-        url: `/uploads/${fileName}`,
+        url: relativeUrl,
         fileName: fileName,
-        isPrivate: isPrivate ?? null,
+        isPrivate: isPrivate ?? false,
         userId: session.user.id
       }
     });
 
-    console.log('✅ Foto salva:', photo.url);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('✅ Foto salva:', photo.url);
+    }
 
     return NextResponse.json({
       success: true,
@@ -93,7 +126,10 @@ export async function POST(request: NextRequest) {
       }
     });
   } catch (error) {
-    console.error('❌ Erro no upload:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('❌ Erro no upload:', error);
+    }
+    
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
@@ -145,7 +181,9 @@ export async function DELETE(request: NextRequest) {
     try {
       await unlink(filePath);
     } catch (error) {
-      console.error('Erro ao deletar arquivo físico:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Erro ao deletar arquivo físico:', error);
+      }
       // Continuar mesmo se não conseguir deletar o arquivo físico
     }
 
@@ -158,7 +196,10 @@ export async function DELETE(request: NextRequest) {
       message: 'Foto deletada com sucesso'
     });
   } catch (error) {
-    console.error('Erro ao deletar foto:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Erro ao deletar foto:', error);
+    }
+    
     return NextResponse.json(
       { message: 'Erro interno do servidor' },
       { status: 500 }

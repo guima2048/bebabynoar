@@ -61,6 +61,20 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
   }
 }
 
+// Função utilitária para garantir que o src seja relativo
+function getRelativeImageUrl(url: string) {
+  if (!url) return '';
+  if (url.startsWith('http')) {
+    try {
+      const u = new URL(url);
+      return u.pathname;
+    } catch {
+      return url;
+    }
+  }
+  return url;
+}
+
 export default async function PostPage({ params }: PostPageProps) {
   const post = await getPost(params.slug)
 
@@ -81,7 +95,7 @@ export default async function PostPage({ params }: PostPageProps) {
       {post.featuredImage && (
         <div className="relative h-96 md:h-[500px] w-full">
           <Image
-            src={post.featuredImage}
+            src={getRelativeImageUrl(post.featuredImage)}
             alt={post.title}
             fill
             className="object-cover"
@@ -129,7 +143,7 @@ export default async function PostPage({ params }: PostPageProps) {
               <div className="flex items-center gap-2">
                 {post.author.photoURL ? (
                   <Image
-                    src={post.author.photoURL}
+                    src={getRelativeImageUrl(post.author.photoURL)}
                     alt={post.author.name || post.author.username}
                     width={24}
                     height={24}

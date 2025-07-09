@@ -35,17 +35,19 @@ export default function BlogImageUpload({ onImageUpload, currentImage, className
 
     try {
       const formData = new FormData()
-      formData.append('image', file)
+      formData.append('file', file)
+      // Se quiser adicionar alt ou postId, adicione aqui
+      // formData.append('alt', 'Imagem de destaque do post')
 
-      const response = await fetch('/api/blog/upload-image', {
+      const response = await fetch('/api/blog/upload', {
         method: 'POST',
         body: formData,
       })
 
       const data = await response.json()
 
-      if (response.ok) {
-        onImageUpload(data.imageUrl)
+      if (response.ok && data.success && data.image?.url) {
+        onImageUpload(data.image.url)
         toast.success('Imagem enviada com sucesso!')
       } else {
         toast.error(data.error || 'Erro ao enviar imagem')

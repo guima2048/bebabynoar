@@ -14,10 +14,14 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' }
       },
       async authorize(credentials) {
-        console.log('🔐 NextAuth authorize called with:', { email: credentials?.email })
+        if (process.env.NODE_ENV === 'development') {
+          console.log('🔐 NextAuth authorize called with:', { email: credentials?.email })
+        }
         
         if (!credentials?.email || !credentials?.password) {
-          console.log('❌ Missing credentials')
+          if (process.env.NODE_ENV === 'development') {
+            console.log('❌ Missing credentials')
+          }
           return null
         }
 
@@ -28,35 +32,40 @@ export const authOptions: NextAuthOptions = {
         })
 
         if (!user) {
-          console.log('❌ User not found:', credentials.email)
+          if (process.env.NODE_ENV === 'development') {
+            console.log('❌ User not found:', credentials.email)
+          }
           return null
         }
 
-        console.log('✅ User found:', { id: user.id, email: user.email })
+        if (process.env.NODE_ENV === 'development') {
+          console.log('✅ User found:', { id: user.id, email: user.email })
+        }
 
-        // Para compatibilidade com dados existentes, verificar se tem senha hash
-        // Se não tiver, criar uma senha temporária
+        // Verificar se o usuário tem senha definida
         if (!user.password) {
-          console.log('⚠️ User has no password, creating temporary one')
-          // Se não tem senha, criar uma hash temporária
-          const hashedPassword = await bcrypt.hash('temp123', 12)
-          await prisma.user.update({
-            where: { id: user.id },
-            data: { password: hashedPassword }
-          })
+          if (process.env.NODE_ENV === 'development') {
+            console.log('❌ User has no password - require password reset')
+          }
+          return null // Não permitir login sem senha
         }
 
         const isPasswordValid = await bcrypt.compare(
           credentials.password,
-          user.password || ''
+          user.password
         )
 
         if (!isPasswordValid) {
-          console.log('❌ Invalid password for user:', credentials.email)
+          if (process.env.NODE_ENV === 'development') {
+            console.log('❌ Invalid password for user:', credentials.email)
+          }
           return null
         }
 
-        console.log('✅ Password valid, returning user data')
+        if (process.env.NODE_ENV === 'development') {
+          console.log('✅ Password valid, returning user data')
+        }
+        
         return {
           id: user.id,
           email: user.email,
@@ -76,25 +85,33 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user }) {
-      console.log('🔄 JWT callback:', { token: token.sub, user: user?.email })
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔄 JWT callback:', { token: token.sub, user: user?.email })
+      }
       if (user) {
         token.userType = user.userType
         token.premium = user.premium
         token.verified = user.verified
         token.isAdmin = user.isAdmin
-        console.log('✅ JWT updated with user data')
+        if (process.env.NODE_ENV === 'development') {
+          console.log('✅ JWT updated with user data')
+        }
       }
       return token
     },
     async session({ session, token }) {
-      console.log('🔄 Session callback:', { session: session.user?.email, token: token.sub })
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔄 Session callback:', { session: session.user?.email, token: token.sub })
+      }
       if (token) {
         session.user.id = token.sub!
         session.user.userType = token.userType
         session.user.premium = token.premium
         session.user.verified = token.verified
         session.user.isAdmin = token.isAdmin
-        console.log('✅ Session updated with token data')
+        if (process.env.NODE_ENV === 'development') {
+          console.log('✅ Session updated with token data')
+        }
       }
       return session
     }

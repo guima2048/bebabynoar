@@ -28,8 +28,8 @@ export default function DynamicImage({
 }: DynamicImageProps) {
   const [imageError, setImageError] = useState(false);
   
-  // Se é uma URL completa (começa com http), usar diretamente
-  if (src.startsWith('http')) {
+  // Se é uma URL completa ou caminho local, usar Image do Next.js
+  if (src.startsWith('http') || src.startsWith('/')) {
     if (imageError) {
       return (
         <div className={`bg-gray-200 flex items-center justify-center ${className}`}>
@@ -55,7 +55,7 @@ export default function DynamicImage({
     );
   }
   
-  // Para imagens locais, usar fallback imediato
+  // Para imagens que não existem ou são placeholders, mostrar placeholder adequado
   const getPlaceholderColor = (imageName: string) => {
     const colors: Record<string, string> = {
       'hero-baby-1': 'bg-pink-200',
@@ -67,7 +67,6 @@ export default function DynamicImage({
     return colors[imageName] || colors.default;
   };
   
-  // Mostrar placeholder colorido para imagens locais
   return (
     <div className={`${getPlaceholderColor(src)} flex items-center justify-center ${className}`}>
       <div className="text-center">
