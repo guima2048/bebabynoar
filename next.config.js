@@ -17,7 +17,7 @@ const nextConfig = {
     removeConsole: process.env.NODE_ENV === 'production',
   },
   experimental: {
-    optimizeCss: true,
+    // optimizeCss: true, // Desabilitado temporariamente
     optimizePackageImports: ['lucide-react', '@heroicons/react'],
     // Otimizações agressivas para CSS
     optimizeServerReact: true,

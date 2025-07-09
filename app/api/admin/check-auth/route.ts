@@ -10,7 +10,12 @@ export async function GET() {
     console.log('🔐 Check Auth: Cookie encontrado:', adminSession ? 'Sim' : 'Não')
     if (adminSession) {
       console.log('🔐 Check Auth: Valor do cookie:', adminSession.value)
+      console.log('🔐 Check Auth: Nome do cookie:', adminSession.name)
     }
+    
+    // Listar todos os cookies para debug
+    const allCookies = cookieStore.getAll()
+    console.log('🔐 Check Auth: Todos os cookies:', allCookies.map(c => ({ name: c.name, value: c.value })))
     
     if (adminSession && adminSession.value === 'authenticated') {
       console.log('✅ Check Auth: Usuário autenticado')

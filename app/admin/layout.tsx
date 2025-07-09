@@ -27,20 +27,31 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       console.log('🔐 AdminLayout: Resposta da API:', response.status)
       
       if (response.ok) {
-        console.log('✅ AdminLayout: Usuário autenticado')
-        setIsAuthenticated(true)
+        const data = await response.json()
+        console.log('🔐 AdminLayout: Dados da resposta:', data)
+        
+        if (data.authenticated) {
+          console.log('✅ AdminLayout: Usuário autenticado')
+          setIsAuthenticated(true)
+        } else {
+          console.log('❌ AdminLayout: Usuário não autenticado')
+          if (pathname !== '/admin/') {
+            console.log('🔄 AdminLayout: Redirecionando para login...')
+            router.push('/admin/')
+          }
+        }
       } else {
-        console.log('❌ AdminLayout: Usuário não autenticado')
-        if (pathname !== '/admin/login') {
-          console.log('🔄 AdminLayout: Redirecionando para login...')
-          router.push('/admin/login')
+        console.log('❌ AdminLayout: Erro na resposta da API')
+        if (pathname !== '/admin/') {
+          console.log('🔄 AdminLayout: Redirecionando para login devido a erro...')
+          router.push('/admin/')
         }
       }
     } catch (error) {
       console.error('❌ AdminLayout: Erro ao verificar autenticação:', error)
-      if (pathname !== '/admin/login') {
+      if (pathname !== '/admin/') {
         console.log('🔄 AdminLayout: Redirecionando para login devido a erro...')
-        router.push('/admin/login')
+        router.push('/admin/')
       }
     } finally {
       console.log('✅ AdminLayout: Verificação de autenticação concluída')
@@ -53,7 +64,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       await fetch('/api/admin/login', { method: 'DELETE' })
       setIsAuthenticated(false)
       toast.success('Logout realizado com sucesso')
-      router.push('/admin/login')
+      router.push('/admin/')
     } catch (error) {
       console.error('Erro no logout:', error)
       toast.error('Erro ao fazer logout')
@@ -78,7 +89,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     )
   }
 
-  if (pathname === '/admin/login') {
+  if (pathname === '/admin/') {
     console.log('🔐 AdminLayout: Página de login, renderizando children')
     return <>{children}</>
   }

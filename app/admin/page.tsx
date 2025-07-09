@@ -1,14 +1,38 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import toast from 'react-hot-toast'
 
-export default function AdminLoginPage() {
+export default function AdminPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true)
   const router = useRouter()
+  const searchParams = useSearchParams()
+
+  // Verificar se já está autenticado
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const response = await fetch('/api/admin/check-auth')
+        const data = await response.json()
+        
+        if (data.authenticated) {
+          // Se já está autenticado, redirecionar para a página desejada
+          const redirectTo = searchParams.get('redirect') || '/admin/dashboard'
+          router.push(redirectTo)
+        }
+      } catch (error) {
+        console.error('Erro ao verificar autenticação:', error)
+      } finally {
+        setIsCheckingAuth(false)
+      }
+    }
+
+    checkAuth()
+  }, [router, searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -33,7 +57,10 @@ export default function AdminLoginPage() {
 
       if (response.ok) {
         toast.success('Login realizado com sucesso')
-        router.push('/admin/dashboard')
+        
+        // Redirecionamento inteligente
+        const redirectTo = searchParams.get('redirect') || '/admin/dashboard'
+        router.push(redirectTo)
       } else {
         toast.error(data.error || 'Credenciais inválidas')
       }
@@ -43,6 +70,23 @@ export default function AdminLoginPage() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleTestLogin = () => {
+    setUsername('admin')
+    setPassword('admin123')
+  }
+
+  // Mostrar loading enquanto verifica autenticação
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Verificando autenticação...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -106,6 +150,16 @@ export default function AdminLoginPage() {
             </div>
           </form>
 
+          {/* Botão de teste */}
+          <div className="mt-4">
+            <button
+              onClick={handleTestLogin}
+              className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
+            >
+              🧪 Preencher Credenciais de Teste
+            </button>
+          </div>
+
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -118,6 +172,9 @@ export default function AdminLoginPage() {
             <div className="mt-6 text-center">
               <p className="text-xs text-gray-500">
                 Este painel é de acesso exclusivo para administradores autorizados.
+              </p>
+              <p className="text-xs text-gray-400 mt-2">
+                Usuário: admin | Senha: admin123
               </p>
             </div>
           </div>

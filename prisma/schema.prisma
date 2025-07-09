@@ -82,6 +82,12 @@ model User {
   favoritedByUsers  Favorite[] @relation("TargetUserFavorites")
   reviews           Review[] @relation("UserReviews")
   receivedReviews   Review[] @relation("TargetUserReviews")
+  blogPosts         BlogPost[] @relation("BlogPosts")
+  blogComments      BlogComment[] @relation("BlogComments")
+  blogLikes         BlogLike[] @relation("BlogLikes")
+  blogViews         BlogView[] @relation("BlogViews")
+  blogAnalytics     BlogAnalytics[] @relation("BlogAnalytics")
+  blogImageUploads  BlogImage[] @relation("BlogImageUploads")
   
   // Admin
   isAdmin           Boolean  @default(false)
@@ -292,24 +298,150 @@ model LoginHistory {
 // ========================================
 
 model BlogPost {
+  id                String   @id @default(cuid())
+  title             String
+  slug              String   @unique
+  content           String
+  excerpt           String?
+  featuredImage     String?
+  status            BlogPostStatus @default(DRAFT)
+  publishedAt       DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  scheduledFor      DateTime?
+  
+  // SEO
+  metaTitle         String?
+  metaDescription   String?
+  tags              String[]
+  
+  // Analytics
+  viewsCount        Int      @default(0)
+  likesCount        Int      @default(0)
+  readTime          Int?
+  
+  // Relacionamentos
+  authorId          String
+  author            User     @relation("BlogPosts", fields: [authorId], references: [id])
+  categories        BlogPostCategory[]
+  comments          BlogComment[]
+  likes             BlogLike[]
+  views             BlogView[]
+  analytics         BlogAnalytics[]
+  images            BlogImage[] @relation("BlogImages")
+  
+  @@map("blog_posts")
+}
+
+model BlogCategory {
   id          String   @id @default(cuid())
-  title       String
+  name        String
   slug        String   @unique
-  content     String
-  excerpt     String?
-  imageURL    String?
-  published   Boolean  @default(false)
-  publishedAt DateTime?
+  description String?
+  color       String   @default("#EC4899")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  metaTitle       String?
-  metaDescription String?
-  tags            String[]
-  status      String   @default("draft") // status do post: draft, published, scheduled
-  scheduledFor DateTime?                 // data de agendamento
-  author      String?                    // autor do post
-  readTime    Int? // tempo estimado de leitura
-  @@map("blog_posts")
+  
+  // Relacionamentos
+  posts       BlogPostCategory[]
+  
+  @@map("blog_categories")
+}
+
+model BlogPostCategory {
+  postId     String
+  categoryId String
+  
+  // Relacionamentos
+  post       BlogPost     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  category   BlogCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  
+  @@id([postId, categoryId])
+  @@map("blog_post_categories")
+}
+
+model BlogComment {
+  id        String   @id @default(cuid())
+  content   String
+  status    CommentStatus @default(PENDING)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relacionamentos
+  postId    String
+  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation("BlogComments", fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("blog_comments")
+}
+
+model BlogLike {
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+  
+  // Relacionamentos
+  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User     @relation("BlogLikes", fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@id([postId, userId])
+  @@map("blog_likes")
+}
+
+model BlogView {
+  id          String   @id @default(cuid())
+  sessionId   String
+  pageView    Boolean  @default(true)
+  timeSpent   Int?     // segundos
+  scrollDepth Int?     // porcentagem
+  bounce      Boolean  @default(false)
+  ipAddress   String?
+  userAgent   String?
+  referrer    String?
+  createdAt   DateTime @default(now())
+  
+  // Relacionamentos
+  postId      String
+  post        BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId      String?
+  user        User?    @relation("BlogViews", fields: [userId], references: [id], onDelete: SetNull)
+  
+  @@map("blog_views")
+}
+
+model BlogAnalytics {
+  id        String   @id @default(cuid())
+  eventType String   // view, like, comment, share
+  eventData Json?
+  createdAt DateTime @default(now())
+  
+  // Relacionamentos
+  postId    String
+  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?    @relation("BlogAnalytics", fields: [userId], references: [id], onDelete: SetNull)
+  
+  @@map("blog_analytics")
+}
+
+model BlogImage {
+  id          String   @id @default(cuid())
+  filename    String
+  originalName String
+  mimeType    String
+  size        Int
+  url         String
+  alt         String?
+  createdAt   DateTime @default(now())
+  
+  // Relacionamentos
+  postId      String?
+  post        BlogPost? @relation("BlogImages", fields: [postId], references: [id], onDelete: SetNull)
+  uploadedBy  String
+  user        User     @relation("BlogImageUploads", fields: [uploadedBy], references: [id])
+  
+  @@map("blog_images")
 }
 
 // ========================================
@@ -444,6 +576,20 @@ enum ReviewStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+enum BlogPostStatus {
+  DRAFT
+  PUBLISHED
+  SCHEDULED
+  ARCHIVED
+}
+
+enum CommentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SPAM
 }
 
 // ========================================

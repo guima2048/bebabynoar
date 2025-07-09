@@ -145,10 +145,6 @@ export default function RegisterPage() {
         userType: data.userType,
         gender: getGenderFromUserType(data.userType), // Gênero definido automaticamente
         lookingFor: data.lookingFor,
-        createdAt: new Date().toISOString(),
-        status: 'active',
-        premium: false,
-        signupIp: signupIp || '',
         password: data.password
       }
       console.log('Dados do usuário:', userData)

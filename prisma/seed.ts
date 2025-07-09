@@ -209,7 +209,10 @@ async function main() {
     await prisma.blogPost.upsert({
       where: { slug: post.slug },
       update: {},
-      create: post,
+      create: {
+        ...post,
+        authorId: admin.id,
+      },
     })
   }
 
