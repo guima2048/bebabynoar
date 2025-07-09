@@ -23,7 +23,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const checkAuth = async () => {
     try {
       console.log('🔐 AdminLayout: Verificando autenticação...')
-      const response = await fetch('/api/admin/check-auth')
+      const response = await fetch('/api/admin/check-auth', {
+        credentials: 'include'
+      })
       console.log('🔐 AdminLayout: Resposta da API:', response.status)
       
       if (response.ok) {
@@ -61,7 +63,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/admin/login', { method: 'DELETE' })
+      await fetch('/api/admin/login', { 
+        method: 'DELETE',
+        credentials: 'include'
+      })
       setIsAuthenticated(false)
       toast.success('Logout realizado com sucesso')
       router.push('/admin/')
