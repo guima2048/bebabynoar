@@ -18,6 +18,18 @@ interface User {
   signupIp?: string
   ipLocation?: string
   lookingFor?: string
+  verified?: boolean
+  lastActive?: string
+  isAdmin?: boolean
+  emailVerified?: boolean
+  premiumExpiry?: string
+  photoCount?: number
+  messageCount?: number
+  interestCount?: number
+  reportCount?: number
+  profileViewCount?: number
+  viewedByCount?: number
+  mainPhoto?: string | null
 }
 
 export default function AdminUsersPage() {
@@ -32,12 +44,20 @@ export default function AdminUsersPage() {
 
   const fetchUsers = async () => {
     try {
+      console.log('🔍 Buscando usuários...')
       const response = await fetch('/api/admin/premium-users')
+      console.log('📡 Response status:', response.status)
+      
       if (!response.ok) {
         const errorData = await response.json()
+        console.error('❌ Erro na resposta:', errorData)
         throw new Error(`Erro ao buscar usuários: ${errorData.error || response.statusText}`)
       }
+      
       const data = await response.json()
+      console.log('📊 Dados recebidos:', data)
+      console.log('👥 Número de usuários:', data.users?.length || 0)
+      
       // Adaptar para o formato esperado pela interface User
       const realUsers: User[] = (data.users || []).map((u: any) => ({
         id: u.id,
@@ -49,15 +69,29 @@ export default function AdminUsersPage() {
         city: u.city || '',
         state: u.state || '',
         ativo: u.ativo !== undefined ? u.ativo : true,
-        premium: u.isPremium || u.premium || false,
-        createdAt: u.createdAt ? (typeof u.createdAt === 'string' ? u.createdAt : new Date(u.createdAt).toISOString()) : '',
+        premium: u.premium || false,
+        createdAt: u.createdAt || '',
         signupIp: u.signupIp,
         ipLocation: u.ipLocation,
-        lookingFor: u.lookingFor
+        lookingFor: u.lookingFor,
+        verified: u.verified,
+        lastActive: u.lastActive,
+        isAdmin: u.isAdmin,
+        emailVerified: u.emailVerified,
+        premiumExpiry: u.premiumExpiry,
+        photoCount: u.photoCount,
+        messageCount: u.messageCount,
+        interestCount: u.interestCount,
+        reportCount: u.reportCount,
+        profileViewCount: u.profileViewCount,
+        viewedByCount: u.viewedByCount,
+        mainPhoto: u.mainPhoto
       }))
+      
+      console.log('✅ Usuários formatados:', realUsers.length)
       setUsers(realUsers)
     } catch (error) {
-      console.error('Erro ao buscar usuários:', error)
+      console.error('❌ Erro ao buscar usuários:', error)
       toast.error('Erro ao carregar usuários')
     } finally {
       setLoading(false)
