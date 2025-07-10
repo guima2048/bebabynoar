@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, BlogPostStatus } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
@@ -177,7 +177,7 @@ async function main() {
         <p>A discrição é essencial em relacionamentos sugar.</p>
       `,
       excerpt: 'Aprenda como manter um relacionamento sugar saudável e gratificante.',
-      published: true,
+      status: BlogPostStatus.PUBLISHED,
       publishedAt: new Date(),
       metaTitle: 'Relacionamento Sugar Saudável - Dicas e Conselhos',
       metaDescription: 'Descubra como ter um relacionamento sugar saudável baseado em respeito e comunicação.',
@@ -197,7 +197,7 @@ async function main() {
         <p>Nunca deixe de usar proteção em relações íntimas.</p>
       `,
       excerpt: 'Dicas essenciais de segurança para relacionamentos sugar.',
-      published: true,
+      status: BlogPostStatus.PUBLISHED,
       publishedAt: new Date(),
       metaTitle: 'Segurança em Relacionamentos Sugar - Guia Completo',
       metaDescription: 'Aprenda como se manter seguro em relacionamentos sugar.',

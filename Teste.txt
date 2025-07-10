@@ -1,1 +1,0 @@
-Estou testando a função que o Cursor pediu eu coloquei um arquivo de texto simples na pasta C:\Bebabynoar\bebabynoar e depois acessei essa pagina http://localhost:3000/teste.txt

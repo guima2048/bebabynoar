@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
+import { useCSRF } from '@/hooks/useCSRF'
 
 interface User {
   id: string
@@ -37,6 +38,11 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterType, setFilterType] = useState('all')
+  const [showPremiumModal, setShowPremiumModal] = useState(false)
+  const [premiumDays, setPremiumDays] = useState('')
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
+  const [loadingActions, setLoadingActions] = useState<Record<string, boolean>>({})
+  const { csrfToken } = useCSRF()
 
   useEffect(() => {
     fetchUsers()
@@ -99,10 +105,16 @@ export default function AdminUsersPage() {
   }
 
   const handleToggleStatus = async (userId: string, currentStatus: boolean) => {
+    const actionKey = `toggle-status-${userId}`
+    setLoadingActions(prev => ({ ...prev, [actionKey]: true }))
+    
     try {
       const response = await fetch('/api/admin/manage-user', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(csrfToken && { 'X-CSRF-Token': csrfToken })
+        },
         body: JSON.stringify({
           userId,
           action: currentStatus ? 'block' : 'unblock',
@@ -121,76 +133,130 @@ export default function AdminUsersPage() {
     } catch (error) {
       console.error('Erro:', error)
       toast.error('Erro ao alterar status do usuário')
+    } finally {
+      setLoadingActions(prev => ({ ...prev, [actionKey]: false }))
     }
   }
 
   const handleTogglePremium = async (userId: string, currentPremium: boolean) => {
     if (!currentPremium) {
-      // Se for ativar premium, pedir quantidade de dias
-      const diasStr = prompt('Quantos dias de premium? (ex: 30)');
-      if (!diasStr) return;
-      const dias = parseInt(diasStr, 10);
-      if (isNaN(dias) || dias <= 0) {
-        toast.error('Digite um número válido de dias.');
-        return;
-      }
+      // Se for ativar premium, abrir modal
+      setSelectedUserId(userId)
+      setShowPremiumModal(true)
+      return
+    }
+    
+    // Desativar premium normalmente
+    const actionKey = `toggle-premium-${userId}`
+    setLoadingActions(prev => ({ ...prev, [actionKey]: true }))
+    
     try {
       const response = await fetch('/api/admin/manage-user', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(csrfToken && { 'X-CSRF-Token': csrfToken })
+        },
         body: JSON.stringify({
           userId,
-            action: 'activate_premium',
-            adminNotes: 'Premium ativado por admin',
-            days: dias,
-          })
-        });
-        if (response.ok) {
-          setUsers(prev => prev.map(user => 
-            user.id === userId ? { ...user, premium: true } : user
-          ));
-          toast.success('Status premium ativado com sucesso');
-        } else {
-          toast.error('Erro ao alterar status premium');
-        }
-      } catch (error) {
-        console.error('Erro:', error);
-        toast.error('Erro ao alterar status premium');
-      }
-    } else {
-      // Desativar premium normalmente
-      try {
-        const response = await fetch('/api/admin/manage-user', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId,
-            action: 'deactivate_premium',
-            adminNotes: 'Premium desativado por admin'
+          action: 'deactivate_premium',
+          adminNotes: 'Premium desativado por admin'
         })
-        });
+      })
       if (response.ok) {
         setUsers(prev => prev.map(user => 
-            user.id === userId ? { ...user, premium: false } : user
-          ));
-          toast.success('Status premium desativado com sucesso');
+          user.id === userId ? { ...user, premium: false } : user
+        ))
+        toast.success('Status premium desativado com sucesso')
       } else {
-          toast.error('Erro ao alterar status premium');
+        toast.error('Erro ao alterar status premium')
       }
     } catch (error) {
-        console.error('Erro:', error);
-        toast.error('Erro ao alterar status premium');
+      console.error('Erro:', error)
+      toast.error('Erro ao alterar status premium')
+    } finally {
+      setLoadingActions(prev => ({ ...prev, [actionKey]: false }))
+    }
+  }
+
+  const handleActivatePremium = async () => {
+    // Validação robusta
+    if (!selectedUserId) {
+      toast.error('Usuário não selecionado')
+      return
+    }
+    
+    if (!premiumDays.trim()) {
+      toast.error('Digite um número válido de dias')
+      return
+    }
+
+    const dias = parseInt(premiumDays, 10)
+    if (isNaN(dias)) {
+      toast.error('Digite um número válido')
+      return
+    }
+    
+    if (dias <= 0) {
+      toast.error('Dias deve ser maior que zero')
+      return
+    }
+    
+    if (dias > 365) {
+      toast.error('Dias deve ser no máximo 365')
+      return
+    }
+
+    const actionKey = `activate-premium-${selectedUserId}`
+    setLoadingActions(prev => ({ ...prev, [actionKey]: true }))
+
+    try {
+      const response = await fetch('/api/admin/manage-user', {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(csrfToken && { 'X-CSRF-Token': csrfToken })
+        },
+        body: JSON.stringify({
+          userId: selectedUserId,
+          action: 'activate_premium',
+          adminNotes: 'Premium ativado por admin',
+          days: dias,
+        })
+      })
+      
+      if (response.ok) {
+        setUsers(prev => prev.map(user => 
+          user.id === selectedUserId ? { ...user, premium: true } : user
+        ))
+        toast.success('Status premium ativado com sucesso')
+        setShowPremiumModal(false)
+        setPremiumDays('')
+        setSelectedUserId(null)
+      } else {
+        toast.error('Erro ao alterar status premium')
       }
+    } catch (error) {
+      console.error('Erro:', error)
+      toast.error('Erro ao alterar status premium')
+    } finally {
+      setLoadingActions(prev => ({ ...prev, [actionKey]: false }))
     }
   }
 
   const handleDeleteUser = async (userId: string) => {
     if (!confirm('Tem certeza que deseja excluir este usuário?')) { return }
 
+    const actionKey = `delete-user-${userId}`
+    setLoadingActions(prev => ({ ...prev, [actionKey]: true }))
+
     try {
       const response = await fetch('/api/admin/manage-user', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(csrfToken && { 'X-CSRF-Token': csrfToken })
+        },
         body: JSON.stringify({
           userId,
           adminNotes: 'Usuário excluído por admin'
@@ -207,6 +273,8 @@ export default function AdminUsersPage() {
     } catch (error) {
       console.error('Erro:', error)
       toast.error('Erro ao excluir usuário')
+    } finally {
+      setLoadingActions(prev => ({ ...prev, [actionKey]: false }))
     }
   }
 
@@ -283,7 +351,7 @@ export default function AdminUsersPage() {
       {/* Tabela de Usuários */}
       <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[800px]">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -399,36 +467,60 @@ export default function AdminUsersPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-1 sm:gap-2">
                       <button
                         onClick={() => handleToggleStatus(user.id, user.ativo)}
-                        className={`text-xs px-3 py-1 rounded-md ${
+                        disabled={loadingActions[`toggle-status-${user.id}`]}
+                        className={`text-xs px-2 sm:px-3 py-1 rounded-md flex items-center gap-1 ${
                           user.ativo 
-                            ? 'bg-red-100 text-red-700 hover:bg-red-200' 
-                            : 'bg-green-100 text-green-700 hover:bg-green-200'
+                            ? 'bg-red-100 text-red-700 hover:bg-red-200 disabled:opacity-50' 
+                            : 'bg-green-100 text-green-700 hover:bg-green-200 disabled:opacity-50'
                         }`}
                       >
-                        {user.ativo ? 'Bloquear' : 'Desbloquear'}
+                        {loadingActions[`toggle-status-${user.id}`] ? (
+                          <>
+                            <div className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin"></div>
+                            Processando...
+                          </>
+                        ) : (
+                          user.ativo ? 'Bloquear' : 'Desbloquear'
+                        )}
                       </button>
                       <button
                         onClick={() => handleTogglePremium(user.id, user.premium)}
-                        className={`text-xs px-3 py-1 rounded-md ${
+                        disabled={loadingActions[`toggle-premium-${user.id}`]}
+                        className={`text-xs px-2 sm:px-3 py-1 rounded-md flex items-center gap-1 ${
                           user.premium 
-                            ? 'bg-gray-100 text-gray-700 hover:bg-gray-200' 
-                            : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+                            ? 'bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50' 
+                            : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 disabled:opacity-50'
                         }`}
                       >
-                        {user.premium ? 'Remover Premium' : 'Tornar Premium'}
+                        {loadingActions[`toggle-premium-${user.id}`] ? (
+                          <>
+                            <div className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin"></div>
+                            Processando...
+                          </>
+                        ) : (
+                          user.premium ? 'Remover Premium' : 'Tornar Premium'
+                        )}
                       </button>
                       <button
                         onClick={() => handleDeleteUser(user.id)}
-                        className="text-xs px-3 py-1 rounded-md bg-red-100 text-red-700 hover:bg-red-200"
+                        disabled={loadingActions[`delete-user-${user.id}`]}
+                        className="text-xs px-2 sm:px-3 py-1 rounded-md bg-red-100 text-red-700 hover:bg-red-200 disabled:opacity-50 flex items-center gap-1"
                       >
-                        Excluir
+                        {loadingActions[`delete-user-${user.id}`] ? (
+                          <>
+                            <div className="w-3 h-3 border border-current border-t-transparent rounded-full animate-spin"></div>
+                            Excluindo...
+                          </>
+                        ) : (
+                          'Excluir'
+                        )}
                       </button>
                       <button
                         onClick={() => window.location.href = `/admin/users/${user.id}`}
-                        className="text-xs px-3 py-1 rounded-md bg-blue-100 text-blue-700 hover:bg-blue-200"
+                        className="text-xs px-2 sm:px-3 py-1 rounded-md bg-blue-100 text-blue-700 hover:bg-blue-200"
                       >
                         Editar
                       </button>
@@ -450,6 +542,82 @@ export default function AdminUsersPage() {
       <div className="mt-4 text-sm text-gray-600">
         Total: {filteredUsers.length} usuário(s)
       </div>
+
+      {/* Modal para Ativar Premium */}
+      {showPremiumModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-4 sm:p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Ativar Premium
+              </h3>
+              <button
+                onClick={() => {
+                  setShowPremiumModal(false)
+                  setPremiumDays('')
+                  setSelectedUserId(null)
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Quantos dias de premium?
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="365"
+                value={premiumDays}
+                onChange={(e) => setPremiumDays(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleActivatePremium()
+                  }
+                }}
+                placeholder="Ex: 30"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                autoFocus
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Digite um número entre 1 e 365 dias
+              </p>
+            </div>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={handleActivatePremium}
+                disabled={!!selectedUserId && loadingActions[`activate-premium-${selectedUserId}`]}
+                className="flex-1 bg-pink-600 text-white py-2 px-4 rounded-md hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {!!selectedUserId && loadingActions[`activate-premium-${selectedUserId}`] ? (
+                  <>
+                    <div className="w-4 h-4 border border-white border-t-transparent rounded-full animate-spin"></div>
+                    Ativando...
+                  </>
+                ) : (
+                  'Ativar Premium'
+                )}
+              </button>
+              <button
+                onClick={() => {
+                  setShowPremiumModal(false)
+                  setPremiumDays('')
+                  setSelectedUserId(null)
+                }}
+                className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

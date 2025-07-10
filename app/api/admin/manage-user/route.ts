@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { cookies } from 'next/headers'
+import { validateCSRFMiddleware } from '@/lib/csrf-middleware'
 
 export async function PUT(req: NextRequest) {
   try {
+    // Validar CSRF
+    const csrfValidation = await validateCSRFMiddleware(req)
+    if (csrfValidation) {
+      return csrfValidation
+    }
+
     // Autenticação admin
     const cookieStore = await cookies();
     const adminSession = cookieStore.get('admin_session');
@@ -111,6 +118,12 @@ export async function PUT(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
+    // Validar CSRF
+    const csrfValidation = await validateCSRFMiddleware(req)
+    if (csrfValidation) {
+      return csrfValidation
+    }
+
     // Autenticação admin
     const cookieStore = await cookies();
     const adminSession = cookieStore.get('admin_session');

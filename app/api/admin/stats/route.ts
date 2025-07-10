@@ -3,34 +3,64 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET() {
   try {
-    console.log('📊 Buscando estatísticas administrativas...')
     
-    // Buscar dados reais do banco
-    const [
-      totalUsers,
-      premiumUsers,
-      pendingReports,
-      totalBlogPosts
-    ] = await Promise.all([
-      prisma.user.count(),
-      prisma.user.count({ where: { premium: true } }),
-      prisma.report.count({ where: { status: 'PENDING' } }),
-      prisma.blogPost.count()
-    ])
+    // Buscar dados reais do banco com tratamento de erro individual
+    let totalUsers = 0, activeUsers = 0, premiumUsers = 0, pendingReports = 0
+    let totalBlogPosts = 0, newUsersToday = 0, pendingContent = 0
 
-    console.log('✅ Estatísticas carregadas:', {
-      totalUsers,
-      premiumUsers,
-      pendingReports,
-      totalBlogPosts
-    })
+    try {
+      totalUsers = await prisma.user.count()
+    } catch (error) {
+      console.error('Erro ao contar usuários totais:', error)
+    }
 
-    // Calcular estatísticas derivadas
-    const activeUsers = Math.floor(totalUsers * 0.7) // 70% dos usuários ativos
-    const newUsersToday = Math.floor(totalUsers * 0.05) // 5% novos hoje
-    const onlineUsers = Math.floor(totalUsers * 0.1) // 10% online
-    const activeConversations = Math.floor(totalUsers * 0.3) // 30% em conversas
-    const pendingContent = Math.floor(totalUsers * 0.02) // 2% com conteúdo pendente
+    try {
+      activeUsers = await prisma.user.count({ where: { status: 'ACTIVE' } })
+    } catch (error) {
+      console.error('Erro ao contar usuários ativos:', error)
+    }
+
+    try {
+      premiumUsers = await prisma.user.count({ where: { premium: true } })
+    } catch (error) {
+      console.error('Erro ao contar usuários premium:', error)
+    }
+
+    try {
+      pendingReports = await prisma.report.count({ where: { status: 'PENDING' } })
+    } catch (error) {
+      console.error('Erro ao contar denúncias pendentes:', error)
+    }
+
+    try {
+      totalBlogPosts = await prisma.blogPost.count()
+    } catch (error) {
+      console.error('Erro ao contar posts do blog:', error)
+    }
+
+    try {
+      newUsersToday = await prisma.user.count({ 
+        where: { 
+          createdAt: { 
+            gte: new Date(new Date().setHours(0, 0, 0, 0)) 
+          } 
+        } 
+      })
+    } catch (error) {
+      console.error('Erro ao contar novos usuários hoje:', error)
+    }
+
+    try {
+      pendingContent = await prisma.user.count({ where: { status: 'PENDING' } })
+    } catch (error) {
+      console.error('Erro ao contar conteúdo pendente:', error)
+    }
+
+
+
+    // Calcular estatísticas derivadas (estimativas baseadas em dados reais)
+    const onlineUsers = Math.floor(activeUsers * 0.15) // 15% dos ativos online
+    const activeConversations = Math.floor(activeUsers * 0.4) // 40% dos ativos em conversas
 
     const stats = {
       totalUsers,
@@ -44,8 +74,6 @@ export async function GET() {
       onlineUsers,
       lastUpdated: new Date().toISOString()
     }
-
-    console.log('📈 Retornando estatísticas:', stats)
 
     return NextResponse.json(stats)
   } catch (error) {

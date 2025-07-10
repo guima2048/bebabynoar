@@ -39,7 +39,7 @@ export default function CommentsPage() {
     if (status === 'loading') return
     
     if (!session?.user?.id || !session.user.isAdmin) {
-      router.push('/admin/login')
+      router.push('/admin/')
     }
   }, [session, status, router])
 

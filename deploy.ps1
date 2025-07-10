@@ -90,6 +90,10 @@ npx prisma migrate deploy
 echo "🔨 Fazendo build..."
 npm run build
 
+# Criar usuários admin
+echo "🔐 Criando usuários admin..."
+node scripts/create-admin-users.js
+
 # Configurar PM2
 echo "⚙️ Configurando PM2..."
 pm2 delete bebaby-app 2>/dev/null || true

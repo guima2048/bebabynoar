@@ -1,46 +1,53 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import toast from 'react-hot-toast'
+import { useCSRF } from '@/hooks/useCSRF'
+
+// Validação de entrada
+const validateUsername = (username: string): string | null => {
+  if (!username.trim()) return 'Username é obrigatório'
+  if (username.length < 3) return 'Username deve ter pelo menos 3 caracteres'
+  if (username.length > 20) return 'Username deve ter no máximo 20 caracteres'
+  if (!/^[a-zA-Z0-9_]+$/.test(username)) return 'Username deve conter apenas letras, números e underscore'
+  return null
+}
+
+const validatePassword = (password: string): string | null => {
+  if (!password) return 'Senha é obrigatória'
+  if (password.length < 6) return 'Senha deve ter pelo menos 6 caracteres'
+  if (password.length > 100) return 'Senha muito longa'
+  return null
+}
 
 export default function AdminPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true)
+  const [errors, setErrors] = useState<{ username?: string; password?: string }>({})
   const router = useRouter()
   const searchParams = useSearchParams()
-
-  // Verificar se já está autenticado
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const response = await fetch('/api/admin/check-auth', {
-          credentials: 'include'
-        })
-        const data = await response.json()
-        
-        if (data.authenticated) {
-          // Se já está autenticado, redirecionar para a página desejada
-          const redirectTo = searchParams.get('redirect') || '/admin/dashboard'
-          router.push(redirectTo)
-        }
-      } catch (error) {
-        console.error('Erro ao verificar autenticação:', error)
-      } finally {
-        setIsCheckingAuth(false)
-      }
-    }
-
-    checkAuth()
-  }, [router, searchParams])
+  const { csrfToken, loading: csrfLoading, error: csrfError, refreshToken } = useCSRF()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!username || !password) {
-      toast.error('Preencha todos os campos')
+    // Limpar erros anteriores
+    setErrors({})
+    
+    // Validar campos
+    const usernameError = validateUsername(username)
+    const passwordError = validatePassword(password)
+    
+    if (usernameError || passwordError) {
+      setErrors({
+        ...(usernameError && { username: usernameError }),
+        ...(passwordError && { password: passwordError })
+      })
+      
+      if (usernameError) toast.error(usernameError)
+      if (passwordError) toast.error(passwordError)
       return
     }
 
@@ -51,6 +58,7 @@ export default function AdminPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(csrfToken && { 'X-CSRF-Token': csrfToken })
         },
         body: JSON.stringify({ username, password }),
         credentials: 'include'
@@ -59,13 +67,15 @@ export default function AdminPage() {
       const data = await response.json()
 
       if (response.ok) {
-        toast.success('Login realizado com sucesso')
-        
-        // Redirecionamento inteligente
+        toast.success('Login realizado com sucesso! Redirecionando em 2 segundos...')
         const redirectTo = searchParams.get('redirect') || '/admin/dashboard'
-        router.push(redirectTo)
+        
+        // Aguardar 2 segundos antes de redirecionar
+        setTimeout(() => {
+          router.push(redirectTo)
+        }, 2000)
       } else {
-        toast.error(data.error || 'Credenciais inválidas')
+        toast.error(data.error || 'Erro ao fazer login')
       }
     } catch (error) {
       console.error('Erro no login:', error)
@@ -80,17 +90,7 @@ export default function AdminPage() {
     setPassword('admin123')
   }
 
-  // Mostrar loading enquanto verifica autenticação
-  if (isCheckingAuth) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Verificando autenticação...</p>
-        </div>
-      </div>
-    )
-  }
+
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -117,10 +117,26 @@ export default function AdminPage() {
                   type="text"
                   required
                   value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-pink-500 focus:border-pink-500 sm:text-sm"
+                  onChange={(e) => {
+                    setUsername(e.target.value)
+                    if (errors.username) {
+                      setErrors(prev => {
+                        const newErrors = { ...prev }
+                        delete newErrors.username
+                        return newErrors
+                      })
+                    }
+                  }}
+                  className={`appearance-none block w-full px-3 py-2 border rounded-md placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 sm:text-sm ${
+                    errors.username 
+                      ? 'border-red-300 focus:border-red-500' 
+                      : 'border-gray-300 focus:border-pink-500'
+                  }`}
                   placeholder="Digite seu usuário"
                 />
+                {errors.username && (
+                  <p className="mt-1 text-sm text-red-600">{errors.username}</p>
+                )}
               </div>
             </div>
 
@@ -135,10 +151,26 @@ export default function AdminPage() {
                   type="password"
                   required
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-pink-500 focus:border-pink-500 sm:text-sm"
+                  onChange={(e) => {
+                    setPassword(e.target.value)
+                    if (errors.password) {
+                      setErrors(prev => {
+                        const newErrors = { ...prev }
+                        delete newErrors.password
+                        return newErrors
+                      })
+                    }
+                  }}
+                  className={`appearance-none block w-full px-3 py-2 border rounded-md placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 sm:text-sm ${
+                    errors.password 
+                      ? 'border-red-300 focus:border-red-500' 
+                      : 'border-gray-300 focus:border-pink-500'
+                  }`}
                   placeholder="Digite sua senha"
                 />
+                {errors.password && (
+                  <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+                )}
               </div>
             </div>
 
@@ -151,36 +183,17 @@ export default function AdminPage() {
                 {isLoading ? 'Entrando...' : 'Entrar'}
               </button>
             </div>
+            
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={handleTestLogin}
+                className="text-sm text-pink-600 hover:text-pink-500"
+              >
+                Testar com credenciais padrão
+              </button>
+            </div>
           </form>
-
-          {/* Botão de teste */}
-          <div className="mt-4">
-            <button
-              onClick={handleTestLogin}
-              className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
-            >
-              🧪 Preencher Credenciais de Teste
-            </button>
-          </div>
-
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Acesso Restrito</span>
-              </div>
-            </div>
-            <div className="mt-6 text-center">
-              <p className="text-xs text-gray-500">
-                Este painel é de acesso exclusivo para administradores autorizados.
-              </p>
-              <p className="text-xs text-gray-400 mt-2">
-                Usuário: admin | Senha: admin123
-              </p>
-            </div>
-          </div>
         </div>
       </div>
     </div>

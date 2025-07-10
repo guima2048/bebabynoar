@@ -40,7 +40,7 @@ export default function CategoriesPage() {
     if (status === 'loading') return
     
     if (!session?.user?.id || !session.user.isAdmin) {
-      router.push('/admin/login')
+      router.push('/admin/')
     }
   }, [session, status, router])
 
