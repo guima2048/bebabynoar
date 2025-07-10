@@ -83,10 +83,11 @@ export async function POST(req: NextRequest) {
         message: 'Login realizado com sucesso'
       })
       
+      const isProd = process.env.NODE_ENV === 'production'
       response.cookies.set('admin_session', 'authenticated', {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production' ? true : false,
-        sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+        secure: isProd, // true só em produção HTTPS
+        sameSite: isProd ? 'strict' : 'lax',
         maxAge: 60 * 60 * 24, // 24 horas
         path: '/'
       })
