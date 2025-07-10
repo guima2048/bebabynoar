@@ -5,8 +5,12 @@ import { Save, Eye, ArrowLeft, Upload } from 'lucide-react'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import BlogImageUpload from '@/components/BlogImageUpload'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 export default function BlogEditorPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const postId = searchParams.get('id');
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [excerpt, setExcerpt] = useState('')
@@ -14,11 +18,42 @@ export default function BlogEditorPage() {
   const [status, setStatus] = useState('DRAFT')
   const [isLoading, setIsLoading] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [loadingPost, setLoadingPost] = useState(false);
 
   // Verificar autenticação
   useEffect(() => {
     checkAuth()
   }, [])
+
+  // Buscar post para edição se houver id
+  useEffect(() => {
+    if (postId && typeof postId === 'string' && postId.length >= 5) {
+      setLoadingPost(true);
+      fetch(`/api/blog/posts/${postId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.post) {
+            setTitle(data.post.title || '');
+            setContent(data.post.content || '');
+            setExcerpt(data.post.excerpt || '');
+            setFeaturedImage(data.post.featuredImage || '');
+            setStatus(data.post.status || 'DRAFT');
+          } else {
+            toast.error('Post não encontrado para edição');
+            router.push('/admin/blog');
+          }
+        })
+        .catch((err) => {
+          console.error('Erro ao buscar post:', err);
+          toast.error('Erro ao carregar post para edição');
+          router.push('/admin/blog');
+        })
+        .finally(() => setLoadingPost(false));
+    } else if (postId) {
+      toast.error('ID de post inválido para edição');
+      router.push('/admin/blog');
+    }
+  }, [postId]);
 
   const checkAuth = async () => {
     try {
@@ -48,8 +83,11 @@ export default function BlogEditorPage() {
     setIsLoading(true)
 
     try {
-      const response = await fetch('/api/blog/posts', {
-        method: 'POST',
+      const url = postId ? `/api/blog/posts/${postId}` : '/api/blog/posts';
+      const method = postId ? 'PATCH' : 'POST';
+      
+      const response = await fetch(url, {
+        method: method,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -74,7 +112,11 @@ export default function BlogEditorPage() {
         setFeaturedImage('')
         setStatus('DRAFT')
       } else {
-        toast.error(data.error || 'Erro ao salvar o post')
+        if (data.error && data.error.includes('título')) {
+          toast.error('Já existe um post com este título! Escolha outro.');
+        } else {
+          toast.error(data.error || 'Erro ao salvar o post')
+        }
       }
     } catch (error) {
       console.error('Erro ao salvar:', error)
@@ -93,8 +135,10 @@ export default function BlogEditorPage() {
     setIsLoading(true)
 
     try {
-      const response = await fetch('/api/blog/posts', {
-        method: 'POST',
+      const url = postId ? `/api/blog/posts/${postId}` : '/api/blog/posts';
+      const method = postId ? 'PATCH' : 'POST';
+      const response = await fetch(url, {
+        method: method,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -119,7 +163,11 @@ export default function BlogEditorPage() {
         setFeaturedImage('')
         setStatus('DRAFT')
       } else {
-        toast.error(data.error || 'Erro ao publicar o post')
+        if (data.error && data.error.includes('título')) {
+          toast.error('Já existe um post com este título! Escolha outro.');
+        } else {
+          toast.error(data.error || 'Erro ao publicar o post')
+        }
       }
     } catch (error) {
       console.error('Erro ao publicar:', error)
@@ -144,6 +192,17 @@ export default function BlogEditorPage() {
         </div>
       </div>
     )
+  }
+
+  if (loadingPost) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Carregando post para edição...</p>
+        </div>
+      </div>
+    );
   }
 
   return (

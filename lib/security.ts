@@ -53,6 +53,13 @@ export const SECURITY_CONFIG = {
     LOG_SENSITIVE_ACTIONS: true,
     LOG_FAILED_LOGINS: true,
   },
+
+  // CSRF Protection
+  CSRF: {
+    TOKEN_LENGTH: 32,
+    TOKEN_EXPIRY: 60 * 60 * 1000, // 1 hora
+    COOKIE_NAME: 'csrf_token',
+  },
 }
 
 // Funções de validação de segurança
@@ -79,6 +86,45 @@ export function sanitizeInput(input: string): string {
 
 export function generateSecureToken(): string {
   return crypto.randomUUID()
+}
+
+// Funções para proteção CSRF
+export function generateCSRFToken(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  let result = ''
+  for (let i = 0; i < SECURITY_CONFIG.CSRF.TOKEN_LENGTH; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  return result
+}
+
+export function validateCSRFToken(token: string, storedToken: string): boolean {
+  if (!token || !storedToken) return false
+  return token === storedToken
+}
+
+// Cache para tokens CSRF (em produção, usar Redis)
+const csrfTokenCache = new Map<string, { token: string; expiry: number }>()
+
+export function storeCSRFToken(sessionId: string, token: string): void {
+  const expiry = Date.now() + SECURITY_CONFIG.CSRF.TOKEN_EXPIRY
+  csrfTokenCache.set(sessionId, { token, expiry })
+  
+  // Limpar tokens expirados
+  for (const [key, value] of csrfTokenCache.entries()) {
+    if (Date.now() > value.expiry) {
+      csrfTokenCache.delete(key)
+    }
+  }
+}
+
+export function getCSRFToken(sessionId: string): string | null {
+  const record = csrfTokenCache.get(sessionId)
+  if (!record || Date.now() > record.expiry) {
+    csrfTokenCache.delete(sessionId)
+    return null
+  }
+  return record.token
 }
 
 export function validateFileType(file: File): boolean {

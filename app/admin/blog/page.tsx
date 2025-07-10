@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Edit, Trash2, Eye, BarChart3, MessageSquare, Heart } from 'lucide-react'
+import { Plus, Edit, Trash2, Eye, BarChart3, MessageSquare, Heart, Calendar, User, Tag, Search, Filter } from 'lucide-react'
 import Link from 'next/link'
+import toast from 'react-hot-toast'
 
 interface BlogStats {
   totalPosts: number
@@ -11,6 +12,35 @@ interface BlogStats {
   totalViews: number
   totalLikes: number
   totalComments: number
+}
+
+interface BlogPost {
+  id: string
+  title: string
+  slug: string
+  excerpt: string
+  status: 'PUBLISHED' | 'DRAFT' | 'ARCHIVED'
+  featuredImage?: string
+  publishedAt?: string
+  createdAt: string
+  updatedAt: string
+  author: {
+    id: string
+    name: string
+    username: string
+  }
+  categories: Array<{
+    category: {
+      id: string
+      name: string
+      slug: string
+    }
+  }>
+  _count: {
+    views: number
+    likes: number
+    comments: number
+  }
 }
 
 export default function AdminBlogPage() {
@@ -23,40 +53,24 @@ export default function AdminBlogPage() {
     totalComments: 0,
   })
   const [loading, setLoading] = useState(true)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [posts, setPosts] = useState<BlogPost[]>([])
+  const [postsLoading, setPostsLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'PUBLISHED' | 'DRAFT' | 'ARCHIVED'>('ALL')
+  const [deletingPost, setDeletingPost] = useState<string | null>(null)
 
-  // Verificar autenticação
+  // Carregar estatísticas
   useEffect(() => {
-    checkAuth()
+    fetchStats()
   }, [])
 
-  const checkAuth = async () => {
-    try {
-      const response = await fetch('/api/admin/check-auth')
-      if (response.ok) {
-        const data = await response.json()
-        if (data.authenticated) {
-          setIsAuthenticated(true)
-          fetchStats()
-        } else {
-          // Redirecionar para login com parâmetro de retorno
-          window.location.href = '/admin/?redirect=/admin/blog'
-        }
-      } else {
-        // Redirecionar para login com parâmetro de retorno
-        window.location.href = '/admin/?redirect=/admin/blog'
-      }
-    } catch (error) {
-      console.error('Erro ao verificar autenticação:', error)
-      // Redirecionar para login com parâmetro de retorno
-      window.location.href = '/admin/?redirect=/admin/blog'
-    } finally {
-      setLoading(false)
-    }
-  }
+  useEffect(() => {
+    fetchPosts()
+  }, [statusFilter])
 
   const fetchStats = async () => {
     try {
+      setLoading(true)
       // Buscar posts para calcular estatísticas
       const response = await fetch('/api/blog/posts?admin=true&limit=1000')
       const data = await response.json()
@@ -67,9 +81,9 @@ export default function AdminBlogPage() {
         const totalPosts = posts.length
         const publishedPosts = posts.filter((post: any) => post.status === 'PUBLISHED').length
         const draftPosts = posts.filter((post: any) => post.status === 'DRAFT').length
-        const totalViews = posts.reduce((sum: number, post: any) => sum + post._count.views, 0)
-        const totalLikes = posts.reduce((sum: number, post: any) => sum + post._count.likes, 0)
-        const totalComments = posts.reduce((sum: number, post: any) => sum + post._count.comments, 0)
+        const totalViews = posts.reduce((sum: number, post: any) => sum + (post._count?.views || 0), 0)
+        const totalLikes = posts.reduce((sum: number, post: any) => sum + (post._count?.likes || 0), 0)
+        const totalComments = posts.reduce((sum: number, post: any) => sum + (post._count?.comments || 0), 0)
 
         setStats({
           totalPosts,
@@ -82,13 +96,56 @@ export default function AdminBlogPage() {
       }
     } catch (error) {
       console.error('Erro ao buscar estatísticas:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const fetchPosts = async () => {
+    try {
+      setPostsLoading(true)
+      const statusParam = statusFilter === 'ALL' ? '' : `&status=${statusFilter}`
+      const response = await fetch(`/api/blog/posts?admin=true&limit=1000${statusParam}`)
+      const data = await response.json()
+      if (response.ok) {
+        setPosts(data.posts || [])
+      } else {
+        toast.error('Erro ao carregar posts')
+      }
+    } catch (error) {
+      toast.error('Erro ao carregar posts')
+    } finally {
+      setPostsLoading(false)
+    }
+  }
+
+  const handleDelete = async (postId: string) => {
+    if (!confirm('Tem certeza que deseja excluir este post? Esta ação não pode ser desfeita.')) {
+      return
+    }
+    setDeletingPost(postId)
+    try {
+      const response = await fetch(`/api/blog/posts/${postId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      })
+      if (response.ok) {
+        toast.success('Post excluído com sucesso!')
+        setPosts(posts.filter(post => post.id !== postId))
+      } else {
+        const errorData = await response.json()
+        toast.error(errorData.error || 'Erro ao excluir post')
+      }
+    } catch (error) {
+      toast.error('Erro ao excluir post')
+    } finally {
+      setDeletingPost(null)
     }
   }
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/admin/login', { method: 'DELETE' })
-      setIsAuthenticated(false)
+      await fetch('/api/admin/logout', { method: 'POST' })
       window.location.href = '/admin/'
     } catch (error) {
       console.error('Erro no logout:', error)
@@ -115,6 +172,39 @@ export default function AdminBlogPage() {
     }
   }
 
+  const getStatusBadge = (status: string) => {
+    const styles = {
+      PUBLISHED: 'bg-green-100 text-green-800',
+      DRAFT: 'bg-yellow-100 text-yellow-800',
+      ARCHIVED: 'bg-gray-100 text-gray-800'
+    }
+    const labels = {
+      PUBLISHED: 'Publicado',
+      DRAFT: 'Rascunho',
+      ARCHIVED: 'Arquivado'
+    }
+    return (
+      <span className={`px-2 py-1 text-xs font-medium rounded-full ${styles[status as keyof typeof styles]}`}>
+        {labels[status as keyof typeof labels]}
+      </span>
+    )
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
+  const filteredPosts = posts.filter(post =>
+    post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    post.excerpt.toLowerCase().includes(searchTerm.toLowerCase())
+  )
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -123,68 +213,36 @@ export default function AdminBlogPage() {
     )
   }
 
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Acesso Negado</h2>
-          <p className="text-gray-600 mb-4">Você precisa estar logado como administrador.</p>
-          <Link
-            href="/admin/?redirect=/admin/blog"
-            className="bg-pink-600 text-white px-4 py-2 rounded-lg hover:bg-pink-700"
-          >
-            Fazer Login
-          </Link>
-        </div>
-      </div>
-    )
-  }
+
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link
-                href="/admin/dashboard"
-                className="text-gray-600 hover:text-gray-900"
-              >
-                ← Voltar ao Dashboard
-              </Link>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Gerenciar Blog</h1>
-                <p className="text-gray-600">Crie e gerencie posts do blog</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={createSamplePosts}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-              >
-                🌱 Criar Posts de Exemplo
-              </button>
-              <Link
-                href="/admin/blog/editor"
-                className="flex items-center gap-2 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                Novo Post
-              </Link>
-              <button
-                onClick={handleLogout}
-                className="text-gray-600 hover:text-gray-900 text-sm font-medium px-3 py-2 rounded-md hover:bg-gray-100 transition-colors"
-              >
-                Sair
-              </button>
-            </div>
+    <div>
+      <div className="mb-8">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Gerenciar Blog</h1>
+            <p className="text-gray-600 mt-2">Crie e gerencie posts do blog</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={createSamplePosts}
+              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            >
+              🌱 Criar Posts de Exemplo
+            </button>
+            <Link
+              href="/admin/blog/editor"
+              className="flex items-center gap-2 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Novo Post
+            </Link>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* Stats Cards */}
-      <div className="container mx-auto px-4 py-8">
+      <div className="mb-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <div className="flex items-center justify-between">
@@ -234,6 +292,154 @@ export default function AdminBlogPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Listagem de Posts */}
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mb-8">
+        <div className="p-6 border-b border-gray-100 flex flex-col md:flex-row gap-4 items-center justify-between">
+          <div className="flex-1">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <input
+                type="text"
+                placeholder="Buscar posts..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-gray-400" />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as any)}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+            >
+              <option value="ALL">Todos os Status</option>
+              <option value="PUBLISHED">Publicados</option>
+              <option value="DRAFT">Rascunhos</option>
+              <option value="ARCHIVED">Arquivados</option>
+            </select>
+          </div>
+        </div>
+        {postsLoading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Carregando posts...</p>
+          </div>
+        ) : filteredPosts.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="text-gray-400 mb-4">
+              <Edit className="w-16 h-16 mx-auto" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              {searchTerm || statusFilter !== 'ALL' ? 'Nenhum post encontrado' : 'Nenhum post criado'}
+            </h3>
+            <p className="text-gray-600 mb-6">
+              {searchTerm || statusFilter !== 'ALL' 
+                ? 'Tente ajustar os filtros de busca' 
+                : 'Comece criando seu primeiro post do blog'
+              }
+            </p>
+            <Link
+              href="/admin/blog/editor"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700"
+            >
+              <Plus className="w-4 h-4" />
+              Criar Primeiro Post
+            </Link>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-200">
+            {filteredPosts.map((post) => (
+              <div key={post.id} className="p-6 hover:bg-gray-50 transition-colors">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="text-lg font-medium text-gray-900">{post.title}</h3>
+                      {getStatusBadge(post.status)}
+                    </div>
+                    <p className="text-gray-600 mb-3 line-clamp-2">{post.excerpt}</p>
+                    <div className="flex items-center gap-6 text-sm text-gray-500">
+                      <div className="flex items-center gap-1">
+                        <User className="w-4 h-4" />
+                        <span>{post.author.name}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
+                        <span>
+                          {post.status === 'PUBLISHED' && post.publishedAt
+                            ? `Publicado em ${formatDate(post.publishedAt)}`
+                            : `Criado em ${formatDate(post.createdAt)}`
+                          }
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Eye className="w-4 h-4" />
+                        <span>{post._count.views} visualizações</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Tag className="w-4 h-4" />
+                        <span>{post._count.likes} likes</span>
+                      </div>
+                    </div>
+                    {post.categories.length > 0 && (
+                      <div className="flex items-center gap-2 mt-3">
+                        <span className="text-sm text-gray-500">Categorias:</span>
+                        {post.categories.map((cat) => (
+                          <span
+                            key={cat.category.id}
+                            className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded-full"
+                          >
+                            {cat.category.name}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 ml-4">
+                    <Link
+                      href={`/blog/${post.slug}`}
+                      target="_blank"
+                      className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                      title="Ver post"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </Link>
+                    <Link
+                      href={`/admin/blog/editor?id=${post.id}`}
+                      className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                      title="Editar post"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Link>
+                    <button
+                      onClick={() => handleDelete(post.id)}
+                      disabled={deletingPost === post.id}
+                      className="p-2 text-gray-400 hover:text-red-600 transition-colors disabled:opacity-50"
+                      title="Excluir post"
+                    >
+                      {deletingPost === post.id ? (
+                        <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        <Trash2 className="w-4 h-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      {/* Fim da listagem de posts */}
+
+      {/* Stats */}
+      <div className="mt-6 text-center text-sm text-gray-500">
+        {filteredPosts.length} post{filteredPosts.length !== 1 ? 's' : ''} encontrado{filteredPosts.length !== 1 ? 's' : ''}
+        {searchTerm && ` para "${searchTerm}"`}
+        {statusFilter !== 'ALL' && ` com status "${statusFilter}"`}
       </div>
 
       {/* Quick Actions */}
@@ -292,62 +498,6 @@ export default function AdminBlogPage() {
                 <p className="text-sm text-gray-600">Moderar comentários</p>
               </div>
             </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* Recent Posts */}
-      <div className="container mx-auto px-4 mb-8">
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Posts Recentes</h2>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-              <div>
-                <h3 className="font-medium text-gray-900">Como Encontrar um Sugar Daddy Ideal</h3>
-                <p className="text-sm text-gray-600">Publicado em 15/01/2024</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">Publicado</span>
-                <button className="p-2 text-gray-400 hover:text-gray-600">
-                  <Edit className="w-4 h-4" />
-                </button>
-                <button className="p-2 text-gray-400 hover:text-red-600">
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-              <div>
-                <h3 className="font-medium text-gray-900">Finanças Pessoais para Sugar Babies</h3>
-                <p className="text-sm text-gray-600">Publicado em 10/01/2024</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">Publicado</span>
-                <button className="p-2 text-gray-400 hover:text-gray-600">
-                  <Edit className="w-4 h-4" />
-                </button>
-                <button className="p-2 text-gray-400 hover:text-red-600">
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-              <div>
-                <h3 className="font-medium text-gray-900">Viagens e Experiências Únicas</h3>
-                <p className="text-sm text-gray-600">Rascunho</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full">Rascunho</span>
-                <button className="p-2 text-gray-400 hover:text-gray-600">
-                  <Edit className="w-4 h-4" />
-                </button>
-                <button className="p-2 text-gray-400 hover:text-red-600">
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       </div>

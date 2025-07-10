@@ -9,7 +9,8 @@ const rateLimitCache = new Map<string, { count: number; resetTime: number }>()
 const RATE_LIMIT_WINDOW = 60 * 1000 // 1 minuto
 const RATE_LIMIT_MAX_REQUESTS = 100 // 100 requests por minuto
 const UPLOAD_RATE_LIMIT_MAX_REQUESTS = 10 // 10 uploads por minuto
-const AUTH_RATE_LIMIT_MAX_REQUESTS = 5 // 5 tentativas de login por minuto
+const AUTH_RATE_LIMIT_MAX_REQUESTS = 20 // 20 tentativas de login por minuto (aumentado)
+const ADMIN_RATE_LIMIT_MAX_REQUESTS = 50 // 50 requests por minuto para admin
 
 function getClientIP(request: NextRequest): string {
   const forwarded = request.headers.get('x-forwarded-for')
@@ -68,8 +69,14 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // NÃO aplicar rate limiting para /api/admin/check-auth
-  if (pathname === '/api/admin/check-auth') {
+  // Rate limiting específico para APIs do admin (mais permissivo)
+  if (pathname.startsWith('/api/admin/')) {
+    if (isRateLimited(clientIP, ADMIN_RATE_LIMIT_MAX_REQUESTS)) {
+      return new NextResponse(
+        JSON.stringify({ error: 'Rate limit exceeded for admin operations.' }),
+        { status: 429, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
     return NextResponse.next()
   }
   
@@ -87,8 +94,8 @@ export function middleware(request: NextRequest) {
     }
   }
   
-  // Rate limiting geral para APIs
-  if (pathname.startsWith('/api/')) {
+  // Rate limiting geral para APIs (exceto admin)
+  if (pathname.startsWith('/api/') && !pathname.startsWith('/api/admin/')) {
     if (isRateLimited(clientIP, RATE_LIMIT_MAX_REQUESTS)) {
       return new NextResponse(
         JSON.stringify({ error: 'Rate limit exceeded. Too many requests.' }),

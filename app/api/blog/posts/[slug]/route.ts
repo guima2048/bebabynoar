@@ -3,6 +3,16 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
+function slugify(str: string) {
+  return str
+    .normalize('NFD').replace(/\u0300-\u036f/g, '') // remove acentos
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 // GET - Buscar post por slug ou ID
 export async function GET(
   request: NextRequest,
@@ -12,8 +22,8 @@ export async function GET(
     const { slug } = params
     const session = await getServerSession(authOptions)
     
-    // Determinar se é slug ou ID
-    const isId = slug.length === 24 // MongoDB ObjectId length
+    // Determinar se é slug ou ID - IDs do Prisma têm 25 caracteres alfanuméricos
+    const isId = /^[a-zA-Z0-9]{25}$/.test(slug)
     
     const where = isId ? { id: slug } : { slug }
     
@@ -191,8 +201,8 @@ export async function PATCH(
     const { slug } = params
     const body = await request.json()
     
-    // Determinar se é slug ou ID
-    const isId = slug.length === 24
+    // Determinar se é slug ou ID - IDs do Prisma têm 25 caracteres alfanuméricos
+    const isId = /^[a-zA-Z0-9]{25}$/.test(slug)
     const where = isId ? { id: slug } : { slug }
 
     // Verificar se o post existe e se o usuário é o autor
@@ -240,6 +250,23 @@ export async function PATCH(
       updateData.scheduledFor = null
     }
 
+    if (body.title && body.title !== existingPost.title) {
+      let baseSlug = slugify(body.title);
+      let newSlug = baseSlug;
+      let counter = 1;
+      while (await prisma.blogPost.findUnique({ where: { slug: newSlug } })) {
+        newSlug = `${baseSlug}-${counter}`;
+        counter++;
+      }
+      // Não permitir posts com o mesmo título
+      const existingTitle = await prisma.blogPost.findFirst({ where: { title: body.title } });
+      if (existingTitle) {
+        return NextResponse.json({ error: 'Já existe um post com este título.' }, { status: 400 });
+      }
+      updateData.slug = newSlug;
+      updateData.title = body.title;
+    }
+
     // Atualizar post
     const updatedPost = await prisma.blogPost.update({
       where: { id: existingPost.id },
@@ -284,5 +311,60 @@ export async function PATCH(
       { error: 'Erro interno do servidor' },
       { status: 500 }
     )
+  }
+} 
+
+// DELETE - Deletar post por ID ou slug (admin)
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { slug: string } }
+) {
+  try {
+    // Autenticação admin (NextAuth OU cookie admin_session)
+    let isAdmin = false;
+    // Tenta NextAuth
+    const session = await getServerSession(authOptions)
+    if (session?.user?.isAdmin) isAdmin = true;
+    // Tenta cookie admin_session
+    const adminSession = request.cookies.get('admin_session');
+    if (adminSession && adminSession.value === 'authenticated') isAdmin = true;
+    if (!isAdmin) {
+      return NextResponse.json({ error: 'Acesso negado' }, { status: 401 })
+    }
+
+    const { slug } = params
+    // Permitir tanto por ID quanto por slug
+    const isId = /^[a-zA-Z0-9]{25}$/.test(slug)
+    const where = isId ? { id: slug } : { slug }
+
+    // Buscar post
+    const post = await prisma.blogPost.findFirst({ where })
+    if (!post) {
+      return NextResponse.json({ error: 'Post não encontrado' }, { status: 404 })
+    }
+
+    // Deletar comentários
+    await prisma.blogComment.deleteMany({ where: { postId: post.id } })
+    // Deletar likes
+    await prisma.blogLike.deleteMany({ where: { postId: post.id } })
+    // Deletar views
+    await prisma.blogView.deleteMany({ where: { postId: post.id } })
+    // Deletar categorias
+    await prisma.blogPostCategory.deleteMany({ where: { postId: post.id } })
+    // Deletar imagens relacionadas (referências)
+    await prisma.blogImage.deleteMany({ where: { postId: post.id } })
+    // Deletar referências de uploads (se houver)
+    // await prisma.blogImageUpload.deleteMany({ where: { postId: post.id } })
+
+    // Se houver imagem no disco, remover arquivo (opcional, depende do seu storage)
+    // Aqui só removemos do banco, não do disco
+
+    // Deletar o post
+    await prisma.blogPost.delete({ where: { id: post.id } })
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('❌ Erro ao deletar post:', error)
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
   }
 } 

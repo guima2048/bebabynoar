@@ -33,6 +33,16 @@ async function getAdminUserId(): Promise<string> {
   return adminUser.id
 }
 
+function slugify(str: string) {
+  return str
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove acentos
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 // GET - Listar posts (público e admin)
 export async function GET(req: NextRequest) {
   try {
@@ -148,20 +158,19 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Criar slug único
-    const baseSlug = title.toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .trim()
-
-    let slug = baseSlug
-    let counter = 1
-
+    // Gerar slug único a partir do título
+    let baseSlug = slugify(title);
+    let slug = baseSlug;
+    let counter = 1;
     // Verificar se slug já existe
     while (await prisma.blogPost.findUnique({ where: { slug } })) {
-      slug = `${baseSlug}-${counter}`
-      counter++
+      slug = `${baseSlug}-${counter}`;
+      counter++;
+    }
+    // Não permitir posts com o mesmo título
+    const existingTitle = await prisma.blogPost.findFirst({ where: { title } });
+    if (existingTitle) {
+      return NextResponse.json({ error: 'Já existe um post com este título.' }, { status: 400 });
     }
 
     // Criar post
