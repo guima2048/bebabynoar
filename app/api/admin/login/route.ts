@@ -75,24 +75,18 @@ export async function POST(req: NextRequest) {
     const passwordMatch = password === adminPassword
     
     if (usernameMatch && passwordMatch) {
-      console.log('✅ Admin Login: Credenciais válidas, criando sessão...')
-      
-      // Cria cookie de sessão administrativa com configurações seguras
-      const response = NextResponse.json({ 
-        success: true, 
+      const isProd = process.env.NODE_ENV === 'production'
+      const response = NextResponse.json({
+        success: true,
         message: 'Login realizado com sucesso'
       })
-      
-      const isProd = process.env.NODE_ENV === 'production'
       response.cookies.set('admin_session', 'authenticated', {
         httpOnly: true,
-        secure: isProd, // true só em produção HTTPS
+        secure: isProd,
         sameSite: isProd ? 'strict' : 'lax',
-        maxAge: 60 * 60 * 24, // 24 horas
+        maxAge: 60 * 60 * 24,
         path: '/'
       })
-
-      console.log('✅ Admin Login: Cookie definido com sucesso')
       return response
     } else {
       // Delay para prevenir timing attacks

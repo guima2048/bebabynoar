@@ -67,6 +67,11 @@ export function middleware(request: NextRequest) {
       )
     }
   }
+
+  // NÃO aplicar rate limiting para /api/admin/check-auth
+  if (pathname === '/api/admin/check-auth') {
+    return NextResponse.next()
+  }
   
   // Rate limiting para autenticação (exceto rotas de sessão do NextAuth)
   if (
