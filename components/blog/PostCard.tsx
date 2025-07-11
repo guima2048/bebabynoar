@@ -66,7 +66,7 @@ export default function PostCard({
           {post.featuredImage && !imageError && (
             <div className="relative w-20 h-20 flex-shrink-0">
               <Image
-                src={post.featuredImage}
+                src={post.featuredImage.startsWith('/') ? post.featuredImage : `/${post.featuredImage}`}
                 alt={post.title}
                 fill
                 className="object-cover rounded-md"
@@ -112,7 +112,7 @@ export default function PostCard({
           {post.featuredImage && !imageError && (
             <div className="relative h-64 w-full">
               <Image
-                src={post.featuredImage}
+                src={post.featuredImage.startsWith('/') ? post.featuredImage : `/${post.featuredImage}`}
                 alt={post.title}
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-300"
@@ -199,7 +199,7 @@ export default function PostCard({
         {post.featuredImage && !imageError && (
           <div className="relative h-48 w-full">
             <Image
-              src={post.featuredImage}
+              src={post.featuredImage.startsWith('/') ? post.featuredImage : `/${post.featuredImage}`}
               alt={post.title}
               fill
               className="object-cover group-hover:scale-105 transition-transform duration-300"

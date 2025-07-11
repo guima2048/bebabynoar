@@ -109,7 +109,7 @@ export default function BlogPostList() {
           <div className="h-48 overflow-hidden">
             {post.featuredImage ? (
               <img
-                src={post.featuredImage}
+                src={post.featuredImage.startsWith('/') ? post.featuredImage : `/${post.featuredImage}`}
                 alt={post.title}
                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
               />

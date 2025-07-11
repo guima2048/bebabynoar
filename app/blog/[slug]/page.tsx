@@ -65,6 +65,13 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
 // Função utilitária para garantir que o src seja relativo
 function getRelativeImageUrl(url: string) {
   if (!url) return '';
+  
+  // Se já é uma URL relativa (começa com /), retorna como está
+  if (url.startsWith('/')) {
+    return url;
+  }
+  
+  // Se é uma URL completa, extrai o pathname
   if (url.startsWith('http')) {
     try {
       const u = new URL(url);
@@ -73,6 +80,12 @@ function getRelativeImageUrl(url: string) {
       return url;
     }
   }
+  
+  // Se não tem / no início, adiciona
+  if (!url.startsWith('/')) {
+    return `/${url}`;
+  }
+  
   return url;
 }
 
