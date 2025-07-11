@@ -118,7 +118,9 @@ export default async function PostPage({ params }: PostPageProps) {
       {/* Botão de voltar (mobile only) */}
       <div className="sticky top-0 z-20 bg-white/90 backdrop-blur-md flex items-center px-4 py-3 md:hidden border-b border-gray-100 shadow-sm">
         <Link href="/blog" className="text-pink-600 font-semibold text-base flex items-center gap-2 hover:text-pink-700 transition-colors">
-          <ArrowLeft className="w-5 h-5" />
+          <div suppressHydrationWarning>
+            <ArrowLeft className="w-5 h-5" />
+          </div>
           Voltar ao Blog
         </Link>
       </div>
@@ -190,7 +192,9 @@ export default async function PostPage({ params }: PostPageProps) {
                           className="rounded-full"
                         />
                       ) : (
-                        <User className="w-4 h-4" />
+                        <div suppressHydrationWarning>
+                          <User className="w-4 h-4" />
+                        </div>
                       )}
                       <span className="font-medium text-gray-700">
                         {post.author.name || post.author.username}
@@ -198,18 +202,24 @@ export default async function PostPage({ params }: PostPageProps) {
                     </div>
                     {post.publishedAt && (
                       <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4" />
+                        <div suppressHydrationWarning>
+                          <Calendar className="w-4 h-4" />
+                        </div>
                         <span>{formatDate(post.publishedAt)}</span>
                       </div>
                     )}
                     {post.readTime && (
                       <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4" />
+                        <div suppressHydrationWarning>
+                          <Clock className="w-4 h-4" />
+                        </div>
                         <span>{post.readTime} min</span>
                       </div>
                     )}
                     <div className="flex items-center gap-2">
-                      <Eye className="w-4 h-4" />
+                      <div suppressHydrationWarning>
+                        <Eye className="w-4 h-4" />
+                      </div>
                       <span>{post.viewsCount}</span>
                     </div>
                   </div>
@@ -225,7 +235,9 @@ export default async function PostPage({ params }: PostPageProps) {
                   {/* Tags */}
                   {post.tags.length > 0 && (
                     <div className="flex flex-wrap items-center gap-2 mb-6">
-                      <Tag className="w-4 h-4 text-gray-400" />
+                      <div suppressHydrationWarning>
+                        <Tag className="w-4 h-4 text-gray-400" />
+                      </div>
                       {post.tags.map((tag: string, index: number) => (
                         <span
                           key={index}
@@ -241,7 +253,9 @@ export default async function PostPage({ params }: PostPageProps) {
                   <div className="flex items-center justify-between mb-6">
                     <LikeButton postId={post.id} initialLikesCount={post.likesCount} />
                     <button className="flex items-center gap-2 text-gray-500 hover:text-pink-600 transition-colors">
-                      <Share2 className="w-4 h-4" />
+                      <div suppressHydrationWarning>
+                        <Share2 className="w-4 h-4" />
+                      </div>
                       <span className="text-sm">Compartilhar</span>
                     </button>
                   </div>
@@ -256,7 +270,9 @@ export default async function PostPage({ params }: PostPageProps) {
                     {/* Tags */}
                     {post.tags.length > 0 && (
                       <div className="flex flex-wrap items-center gap-2 mb-4">
-                        <Tag className="w-4 h-4 text-gray-400" />
+                        <div suppressHydrationWarning>
+                          <Tag className="w-4 h-4 text-gray-400" />
+                        </div>
                         {post.tags.map((tag: string, index: number) => (
                           <span
                             key={index}
@@ -272,7 +288,9 @@ export default async function PostPage({ params }: PostPageProps) {
                     <div className="flex items-center justify-between">
                       <LikeButton postId={post.id} initialLikesCount={post.likesCount} />
                       <button className="flex items-center gap-2 text-gray-500 hover:text-pink-600 transition-colors">
-                        <Share2 className="w-4 h-4" />
+                        <div suppressHydrationWarning>
+                          <Share2 className="w-4 h-4" />
+                        </div>
                         <span className="text-sm">Compartilhar</span>
                       </button>
                     </div>
@@ -297,11 +315,15 @@ export default async function PostPage({ params }: PostPageProps) {
                     </div>
                     <div className="flex items-center gap-4">
                       <button className="flex items-center gap-2 hover:text-pink-600 transition-colors">
-                        <Heart className="w-4 h-4" />
+                        <div suppressHydrationWarning>
+                          <Heart className="w-4 h-4" />
+                        </div>
                         <span>Curtir</span>
                       </button>
                       <button className="flex items-center gap-2 hover:text-pink-600 transition-colors">
-                        <MessageCircle className="w-4 h-4" />
+                        <div suppressHydrationWarning>
+                          <MessageCircle className="w-4 h-4" />
+                        </div>
                         <span>Comentar</span>
                       </button>
                     </div>
@@ -322,7 +344,9 @@ export default async function PostPage({ params }: PostPageProps) {
               {/* Related Posts */}
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                 <div className="flex items-center gap-2 mb-4">
-                  <BookOpen className="w-5 h-5 text-pink-600" />
+                  <div suppressHydrationWarning>
+                    <BookOpen className="w-5 h-5 text-pink-600" />
+                  </div>
                   <h3 className="text-lg font-bold text-gray-900">Posts Relacionados</h3>
                 </div>
                 <PostList limit={3} layout="sidebar" showFilters={false} showSearch={false} showPagination={false} />

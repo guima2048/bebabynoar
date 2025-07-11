@@ -112,14 +112,16 @@ export default function LikeButton({
           disabled:opacity-50 disabled:cursor-not-allowed
         `}
       >
-        <Heart
-          className={`
-            ${iconSizes[size]}
-            transition-all duration-200
-            ${liked ? 'fill-current' : ''}
-            ${animating ? 'scale-125' : ''}
-          `}
-        />
+        <div suppressHydrationWarning>
+          <Heart
+            className={`
+              ${iconSizes[size]}
+              transition-all duration-200
+              ${liked ? 'fill-current' : ''}
+              ${animating ? 'scale-125' : ''}
+            `}
+          />
+        </div>
       </button>
       
       {showCount && (

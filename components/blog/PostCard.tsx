@@ -86,16 +86,22 @@ export default function PostCard({
             <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
               {post.readTime && (
                 <span className="flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
+                  <div suppressHydrationWarning>
+                    <Clock className="w-3 h-3" />
+                  </div>
                   {post.readTime} min
                 </span>
               )}
               <span className="flex items-center gap-1">
-                <Eye className="w-3 h-3" />
+                <div suppressHydrationWarning>
+                  <Eye className="w-3 h-3" />
+                </div>
                 {post.viewsCount}
               </span>
               <span className="flex items-center gap-1">
-                <Heart className="w-3 h-3" />
+                <div suppressHydrationWarning>
+                  <Heart className="w-3 h-3" />
+                </div>
                 {post.likesCount}
               </span>
             </div>
@@ -156,7 +162,9 @@ export default function PostCard({
                         className="rounded-full"
                       />
                     ) : (
-                      <User className="w-6 h-6 text-gray-300" />
+                      <div suppressHydrationWarning>
+                        <User className="w-6 h-6 text-gray-300" />
+                      </div>
                     )}
                     <span className="text-sm font-medium">
                       {post.author.name || post.author.username}
