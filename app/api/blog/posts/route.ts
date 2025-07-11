@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { slugify } from '@/lib/slugify'
 
 // Função para buscar ou criar usuário admin
 async function getAdminUserId(): Promise<string> {
@@ -31,16 +32,6 @@ async function getAdminUserId(): Promise<string> {
   }
 
   return adminUser.id
-}
-
-export function slugify(str: string) {
-  return str
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove acentos
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-+|-+$/g, '');
 }
 
 // GET - Listar posts (público e admin)

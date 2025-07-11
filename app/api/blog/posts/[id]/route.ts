@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { slugify } from '../route'
+import { slugify } from '@/lib/slugify'
 
 function isId(param: string) {
   // Ajuste conforme o padrão do seu ID (exemplo: cuid do Prisma)
