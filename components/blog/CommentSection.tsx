@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
-import { Send, User, Clock, MessageCircle } from 'lucide-react'
+import { Send, User, Clock, MessageCircle, Heart, Trash2, Edit } from 'lucide-react'
 import Image from 'next/image'
 import { formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -137,58 +137,65 @@ export default function CommentSection({
   }
 
   return (
-    <div className="space-y-6">
-      {/* Título da seção */}
-      <div className="flex items-center gap-2">
-        <MessageCircle className="w-5 h-5 text-pink-600" />
-        <h3 className="text-lg font-semibold text-gray-900">
-          Comentários ({comments.length})
-        </h3>
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 md:p-8">
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-10 h-10 bg-gradient-to-br from-pink-500 to-purple-600 rounded-full flex items-center justify-center">
+          <MessageCircle className="w-5 h-5 text-white" />
+        </div>
+        <div>
+          <h3 className="text-xl font-bold text-gray-900">
+            Comentários
+          </h3>
+          <p className="text-sm text-gray-600">
+            {comments.length} comentário{comments.length !== 1 ? 's' : ''}
+          </p>
+        </div>
       </div>
 
       {/* Formulário de comentário */}
       {showForm && (
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="mb-8 p-6 bg-gradient-to-r from-pink-50 to-purple-50 rounded-xl border border-pink-100">
           {session?.user?.id ? (
             <form onSubmit={handleSubmitComment} className="space-y-4">
-              <div className="flex items-start gap-3">
+              <div className="flex items-start gap-4">
                 {session.user.image ? (
                   <Image
                     src={session.user.image}
                     alt={session.user.name || 'Usuário'}
-                    width={40}
-                    height={40}
-                    className="rounded-full"
+                    width={48}
+                    height={48}
+                    className="rounded-full border-2 border-white shadow-sm"
                   />
                 ) : (
-                  <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                    <User className="w-5 h-5 text-gray-500" />
+                  <div className="w-12 h-12 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center shadow-sm">
+                    <User className="w-6 h-6 text-white" />
                   </div>
                 )}
                 <div className="flex-1">
                   <textarea
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
-                    placeholder="Escreva seu comentário..."
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent resize-none"
+                    placeholder="Compartilhe sua opinião sobre este post..."
+                    rows={4}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent resize-none bg-white shadow-sm"
                     disabled={submitting}
                   />
-                  <div className="flex justify-between items-center mt-2">
+                  <div className="flex justify-between items-center mt-3">
                     <p className="text-xs text-gray-500">
-                      Seu comentário será revisado antes de ser publicado.
+                      ✨ Seu comentário será revisado antes de ser publicado
                     </p>
                     <button
                       type="submit"
                       disabled={submitting || !newComment.trim()}
-                      className="flex items-center gap-2 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-lg hover:from-pink-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105 font-semibold"
                     >
                       {submitting ? (
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                       ) : (
                         <Send className="w-4 h-4" />
                       )}
-                      Enviar
+                      Enviar Comentário
                     </button>
                   </div>
                 </div>
@@ -196,101 +203,122 @@ export default function CommentSection({
             </form>
           ) : (
             <div className="text-center py-8">
-              <MessageCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h4 className="text-lg font-medium text-gray-900 mb-2">
+              <div className="w-16 h-16 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <MessageCircle className="w-8 h-8 text-white" />
+              </div>
+              <h4 className="text-lg font-semibold text-gray-900 mb-2">
                 Faça login para comentar
               </h4>
               <p className="text-gray-600 mb-4">
-                Entre na sua conta para deixar um comentário neste post.
+                Entre na sua conta para compartilhar sua opinião sobre este post.
               </p>
-              <a
-                href="/login"
-                className="inline-flex items-center px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors"
-              >
+              <button className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-6 py-2 rounded-lg font-semibold hover:from-pink-600 hover:to-purple-700 transition-all duration-200 transform hover:scale-105">
                 Fazer Login
-              </a>
+              </button>
             </div>
           )}
         </div>
       )}
 
       {/* Lista de comentários */}
-      <div className="space-y-4">
+      <div className="space-y-6">
         {loading ? (
-          <div className="flex justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-600"></div>
+          <div className="space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="animate-pulse">
+                <div className="flex gap-4">
+                  <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+                  <div className="flex-1">
+                    <div className="h-4 bg-gray-200 rounded mb-2 w-1/4"></div>
+                    <div className="h-3 bg-gray-200 rounded mb-2 w-full"></div>
+                    <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         ) : comments.length > 0 ? (
           comments.map((comment) => (
-            <div
-              key={comment.id}
-              className={`bg-white rounded-lg border p-4 ${
-                comment.status === 'PENDING' 
-                  ? 'border-yellow-200 bg-yellow-50' 
-                  : comment.status === 'REJECTED'
-                  ? 'border-red-200 bg-red-50'
-                  : 'border-gray-200'
-              }`}
-            >
-              <div className="flex items-start gap-3">
+            <div key={comment.id} className="group">
+              <div className="flex gap-4 p-4 rounded-xl hover:bg-gray-50 transition-colors">
+                {/* Avatar */}
                 {comment.author.photoURL ? (
                   <Image
                     src={comment.author.photoURL}
                     alt={comment.author.name || comment.author.username}
-                    width={40}
-                    height={40}
-                    className="rounded-full"
+                    width={48}
+                    height={48}
+                    className="rounded-full border-2 border-white shadow-sm"
                   />
                 ) : (
-                  <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                    <User className="w-5 h-5 text-gray-500" />
+                  <div className="w-12 h-12 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center shadow-sm">
+                    <User className="w-6 h-6 text-white" />
                   </div>
                 )}
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-medium text-gray-900">
-                      {comment.author.name || comment.author.username}
-                    </span>
-                    <span className="text-xs text-gray-500 flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {formatDate(comment.createdAt)}
-                    </span>
-                    {comment.status === 'PENDING' && (
-                      <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full">
-                        Aguardando aprovação
-                      </span>
-                    )}
-                    {comment.status === 'REJECTED' && (
-                      <span className="px-2 py-1 text-xs bg-red-100 text-red-800 rounded-full">
-                        Rejeitado
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-gray-700">{comment.content}</p>
-                  
-                  {/* Botões de ação (apenas para autor ou admin) */}
-                  {(session?.user?.id === comment.author.id || session?.user?.isAdmin) && (
-                    <div className="flex gap-2 mt-3">
-                      <button
-                        onClick={() => handleDeleteComment(comment.id)}
-                        className="text-xs text-red-600 hover:text-red-800 transition-colors"
-                      >
-                        Deletar
-                      </button>
+                
+                {/* Conteúdo */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-semibold text-gray-900">
+                        {comment.author.name || comment.author.username}
+                      </h4>
+                      {comment.status === 'PENDING' && (
+                        <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full">
+                          Aguardando aprovação
+                        </span>
+                      )}
                     </div>
-                  )}
+                    
+                    {/* Actions */}
+                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button className="p-1 text-gray-400 hover:text-pink-600 transition-colors">
+                        <Heart className="w-4 h-4" />
+                      </button>
+                      {(session?.user?.id === comment.author.id || session?.user?.isAdmin) && (
+                        <>
+                          <button className="p-1 text-gray-400 hover:text-blue-600 transition-colors">
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteComment(comment.id)}
+                            className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <p className="text-gray-800 leading-relaxed mb-3">
+                    {comment.content}
+                  </p>
+                  
+                  <div className="flex items-center gap-4 text-sm text-gray-500">
+                    <div className="flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      <span>{formatDate(comment.createdAt)}</span>
+                    </div>
+                    <button className="flex items-center gap-1 hover:text-pink-600 transition-colors">
+                      <Heart className="w-3 h-3" />
+                      <span>Responder</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
           ))
         ) : (
-          <div className="text-center py-8">
-            <MessageCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h4 className="text-lg font-medium text-gray-900 mb-2">
-              Nenhum comentário ainda
+          <div className="text-center py-12">
+            <div className="w-16 h-16 bg-gradient-to-br from-pink-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <MessageCircle className="w-8 h-8 text-pink-500" />
+            </div>
+            <h4 className="text-lg font-semibold text-gray-900 mb-2">
+              Seja o primeiro a comentar!
             </h4>
             <p className="text-gray-600">
-              Seja o primeiro a comentar neste post!
+              Compartilhe sua opinião e inicie uma conversa sobre este post.
             </p>
           </div>
         )}

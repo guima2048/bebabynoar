@@ -15,6 +15,7 @@ export default function BlogEditorPage() {
   const [content, setContent] = useState('')
   const [excerpt, setExcerpt] = useState('')
   const [featuredImage, setFeaturedImage] = useState('')
+  const [featuredImageAlt, setFeaturedImageAlt] = useState('')
   const [status, setStatus] = useState('DRAFT')
   const [isLoading, setIsLoading] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -37,6 +38,7 @@ export default function BlogEditorPage() {
             setContent(data.post.content || '');
             setExcerpt(data.post.excerpt || '');
             setFeaturedImage(data.post.featuredImage || '');
+            setFeaturedImageAlt(data.post.featuredImageAlt || '');
             setStatus(data.post.status || 'DRAFT');
           } else {
             toast.error('Post não encontrado para edição');
@@ -96,6 +98,7 @@ export default function BlogEditorPage() {
           content: content.trim(),
           excerpt: excerpt.trim() || content.substring(0, 200) + '...',
           featuredImage,
+          featuredImageAlt,
           status,
           categoryIds: [] // Por enquanto sem categorias
         }),
@@ -110,6 +113,7 @@ export default function BlogEditorPage() {
         setContent('')
         setExcerpt('')
         setFeaturedImage('')
+        setFeaturedImageAlt('')
         setStatus('DRAFT')
       } else {
         if (data.error && data.error.includes('título')) {
@@ -147,6 +151,7 @@ export default function BlogEditorPage() {
           content: content.trim(),
           excerpt: excerpt.trim() || content.substring(0, 200) + '...',
           featuredImage,
+          featuredImageAlt,
           status: 'PUBLISHED',
           categoryIds: [] // Por enquanto sem categorias
         }),
@@ -161,6 +166,7 @@ export default function BlogEditorPage() {
         setContent('')
         setExcerpt('')
         setFeaturedImage('')
+        setFeaturedImageAlt('')
         setStatus('DRAFT')
       } else {
         if (data.error && data.error.includes('título')) {
@@ -272,6 +278,13 @@ export default function BlogEditorPage() {
               <BlogImageUpload
                 onImageUpload={setFeaturedImage}
                 currentImage={featuredImage}
+              />
+              <input
+                type="text"
+                value={featuredImageAlt}
+                onChange={e => setFeaturedImageAlt(e.target.value)}
+                placeholder="Texto alternativo da imagem (acessibilidade e SEO)"
+                className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
               />
             </div>
 

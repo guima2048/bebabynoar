@@ -33,7 +33,7 @@ async function getAdminUserId(): Promise<string> {
   return adminUser.id
 }
 
-function slugify(str: string) {
+export function slugify(str: string) {
   return str
     .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove acentos
     .toLowerCase()
@@ -209,6 +209,96 @@ export async function POST(req: NextRequest) {
 
   } catch (error) {
     console.error('❌ Erro ao criar post:', error)
+    return NextResponse.json(
+      { error: 'Erro interno do servidor' },
+      { status: 500 }
+    )
+  }
+} 
+
+// PATCH - Atualizar post existente (apenas admin)
+export async function PATCH(req: NextRequest) {
+  try {
+    // Verificar autenticação admin
+    const adminSession = req.cookies.get('admin_session')
+    if (!adminSession || adminSession.value !== 'authenticated') {
+      return NextResponse.json(
+        { error: 'Acesso negado' },
+        { status: 401 }
+      )
+    }
+
+    const { id, title, content, excerpt, status, categoryIds, featuredImage, featuredImageAlt, metaTitle, metaDescription } = await req.json()
+
+    if (!id || !title || !content) {
+      return NextResponse.json(
+        { error: 'ID, título e conteúdo são obrigatórios' },
+        { status: 400 }
+      )
+    }
+
+    // Buscar o post existente
+    const existingPost = await prisma.blogPost.findUnique({ where: { id } })
+    if (!existingPost) {
+      return NextResponse.json({ error: 'Post não encontrado.' }, { status: 404 })
+    }
+
+    // Se o título mudou, verificar se já existe outro post com esse título
+    if (title !== existingPost.title) {
+      const titleConflict = await prisma.blogPost.findFirst({ where: { title, id: { not: id } } })
+      if (titleConflict) {
+        return NextResponse.json({ error: 'Já existe um post com este título.' }, { status: 400 })
+      }
+    }
+
+    // Atualizar slug se o título mudou
+    let newSlug = existingPost.slug
+    if (title !== existingPost.title) {
+      let baseSlug = slugify(title)
+      let slug = baseSlug
+      let counter = 1
+      while (await prisma.blogPost.findUnique({ where: { slug } })) {
+        slug = `${baseSlug}-${counter}`
+        counter++
+      }
+      newSlug = slug
+    }
+
+    // Atualizar post
+    const updated = await prisma.blogPost.update({
+      where: { id },
+      data: {
+        title,
+        content,
+        excerpt: excerpt || content.substring(0, 200) + '...',
+        slug: newSlug,
+        status: status || existingPost.status,
+        featuredImage,
+        featuredImageAlt,
+        metaTitle: metaTitle || title,
+        metaDescription: metaDescription || excerpt || content.substring(0, 160),
+        publishedAt: status === 'PUBLISHED' && !existingPost.publishedAt ? new Date() : existingPost.publishedAt,
+      }
+    })
+
+    // Atualizar categorias (opcional)
+    if (categoryIds) {
+      // Remove todas as categorias antigas
+      await prisma.blogPostCategory.deleteMany({ where: { postId: id } })
+      // Adiciona as novas
+      if (categoryIds.length > 0) {
+        await prisma.blogPostCategory.createMany({
+          data: categoryIds.map((categoryId: string) => ({
+            postId: id,
+            categoryId
+          }))
+        })
+      }
+    }
+
+    return NextResponse.json({ success: true, post: updated })
+  } catch (error) {
+    console.error('❌ Erro ao atualizar post:', error)
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }

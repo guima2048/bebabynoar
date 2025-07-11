@@ -19,9 +19,8 @@ export default function BlogImageUpload({ onImageUpload, currentImage, className
     if (!file) return
 
     // Validar tipo
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
-    if (!allowedTypes.includes(file.type)) {
-      toast.error('Tipo de arquivo não suportado. Use JPEG, PNG ou WebP')
+    if (!file.type.startsWith('image/')) {
+      toast.error('Tipo de arquivo não suportado. Envie uma imagem.')
       return
     }
 
@@ -155,7 +154,7 @@ export default function BlogImageUpload({ onImageUpload, currentImage, className
           </div>
 
           <p className="text-xs text-gray-500">
-            PNG, JPG, WebP até 5MB
+            Imagens até 5MB (JPG, PNG, GIF, SVG, WebP, BMP, ICO, etc)
           </p>
         </div>
       </div>

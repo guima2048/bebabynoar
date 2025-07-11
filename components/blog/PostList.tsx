@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import PostCard from './PostCard'
 import { Search, Filter, Grid, List, ChevronLeft, ChevronRight } from 'lucide-react'
+import Link from 'next/link'
 
 interface Post {
   id: string
@@ -34,7 +35,7 @@ interface PostListProps {
   showFilters?: boolean
   showSearch?: boolean
   showPagination?: boolean
-  layout?: 'grid' | 'list' | 'featured'
+  layout?: 'grid' | 'list' | 'featured' | 'sidebar'
   categoryId?: string
   authorId?: string
   limit?: number
@@ -57,7 +58,7 @@ export default function PostList({
   const [selectedStatus, setSelectedStatus] = useState('PUBLISHED')
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>(layout === 'featured' ? 'grid' : layout)
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>(layout === 'featured' ? 'grid' : (layout === 'sidebar' ? 'grid' : layout))
   const [categories, setCategories] = useState<Array<{ id: string; name: string; color: string }>>([])
 
   // Buscar categorias
@@ -74,10 +75,10 @@ export default function PostList({
       }
     }
 
-    if (showFilters) {
+    if (showFilters && layout !== 'sidebar') {
       fetchCategories()
     }
-  }, [showFilters])
+  }, [showFilters, layout])
 
   // Buscar posts
   const fetchPosts = async (page = 1, filters = {}) => {
@@ -136,7 +137,7 @@ export default function PostList({
 
   // Aplicar filtros quando mudarem
   useEffect(() => {
-    if (initialPosts.length === 0) {
+    if (initialPosts.length === 0 && layout !== 'sidebar') {
       applyFilters()
     }
   }, [searchTerm, selectedCategory, selectedStatus])
@@ -149,6 +150,45 @@ export default function PostList({
     if (authorId) filters.authorId = authorId
 
     fetchPosts(page, filters)
+  }
+
+  // Layout para sidebar - versão compacta
+  if (layout === 'sidebar') {
+    return (
+      <div className="space-y-4">
+        {loading ? (
+          <div className="space-y-3">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="animate-pulse">
+                <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          posts.slice(0, limit).map((post) => (
+            <div key={post.id} className="group">
+              <Link href={`/blog/${post.slug}`} className="block">
+                <div className="p-3 rounded-lg hover:bg-gray-50 transition-colors">
+                  <h4 className="font-semibold text-gray-900 group-hover:text-pink-600 transition-colors text-sm line-clamp-2 mb-2">
+                    {post.title}
+                  </h4>
+                  {post.excerpt && (
+                    <p className="text-gray-600 text-xs line-clamp-2 mb-2">
+                      {post.excerpt}
+                    </p>
+                  )}
+                  <div className="flex items-center justify-between text-xs text-gray-500">
+                    <span>{new Date(post.publishedAt || '').toLocaleDateString('pt-BR')}</span>
+                    <span>{post.viewsCount} visualizações</span>
+                  </div>
+                </div>
+              </Link>
+            </div>
+          ))
+        )}
+      </div>
+    )
   }
 
   if (layout === 'featured') {
@@ -218,113 +258,133 @@ export default function PostList({
 
                 <button
                   onClick={resetFilters}
-                  className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
                 >
                   Limpar
                 </button>
               </div>
             )}
 
-            {/* Modo de visualização */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-2 rounded-lg transition-colors ${
-                  viewMode === 'grid' 
-                    ? 'bg-pink-100 text-pink-600' 
-                    : 'text-gray-400 hover:text-gray-600'
-                }`}
-              >
-                <Grid className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2 rounded-lg transition-colors ${
-                  viewMode === 'list' 
-                    ? 'bg-pink-100 text-pink-600' 
-                    : 'text-gray-400 hover:text-gray-600'
-                }`}
-              >
-                <List className="w-4 h-4" />
-              </button>
-            </div>
+            {/* View Mode Toggle */}
+            {layout === 'grid' && (
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-2 rounded-lg transition-colors ${
+                    viewMode === 'grid'
+                      ? 'bg-pink-100 text-pink-600'
+                      : 'text-gray-400 hover:text-gray-600'
+                  }`}
+                >
+                  <Grid className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 rounded-lg transition-colors ${
+                    viewMode === 'list'
+                      ? 'bg-pink-100 text-pink-600'
+                      : 'text-gray-400 hover:text-gray-600'
+                  }`}
+                >
+                  <List className="w-4 h-4" />
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {/* Loading */}
+      {/* Loading State */}
       {loading && (
-        <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-600"></div>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="bg-white rounded-lg border border-gray-200 p-6 animate-pulse">
+              <div className="h-48 bg-gray-200 rounded-lg mb-4"></div>
+              <div className="h-4 bg-gray-200 rounded mb-2"></div>
+              <div className="h-3 bg-gray-200 rounded w-3/4 mb-4"></div>
+              <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+            </div>
+          ))}
         </div>
       )}
 
-      {/* Lista de Posts */}
+      {/* Posts Grid/List */}
       {!loading && posts.length > 0 && (
-        <>
-          <div className={
-            viewMode === 'grid' 
-              ? 'grid md:grid-cols-2 lg:grid-cols-3 gap-6' 
-              : 'space-y-4'
-          }>
-            {posts.map((post) => (
-              <PostCard
-                key={post.id}
-                post={post}
-                variant={viewMode === 'list' ? 'compact' : 'default'}
-              />
-            ))}
+        <div
+          className={
+            viewMode === 'grid'
+              ? 'grid gap-6 md:grid-cols-2 lg:grid-cols-3'
+              : 'space-y-6'
+          }
+        >
+          {posts.map((post) => (
+            <PostCard
+              key={post.id}
+              post={post}
+              variant={viewMode === 'list' ? 'compact' : 'default'}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!loading && posts.length === 0 && (
+        <div className="text-center py-12">
+          <div className="text-gray-400 mb-4">
+            <Search className="w-12 h-12 mx-auto" />
           </div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            Nenhum post encontrado
+          </h3>
+          <p className="text-gray-600">
+            Tente ajustar os filtros ou buscar por outros termos.
+          </p>
+        </div>
+      )}
 
-          {/* Paginação */}
-          {showPagination && totalPages > 1 && (
-            <div className="flex justify-center items-center gap-2">
-              <button
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="p-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
+      {/* Pagination */}
+      {showPagination && totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          <button
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
 
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+          {[...Array(totalPages)].map((_, i) => {
+            const page = i + 1
+            const isCurrent = page === currentPage
+            const isNearCurrent = Math.abs(page - currentPage) <= 2
+
+            if (isCurrent || isNearCurrent || page === 1 || page === totalPages) {
+              return (
                 <button
                   key={page}
                   onClick={() => handlePageChange(page)}
                   className={`px-3 py-2 rounded-lg border transition-colors ${
-                    currentPage === page
-                      ? 'bg-pink-600 text-white border-pink-600'
+                    isCurrent
+                      ? 'bg-pink-500 text-white border-pink-500'
                       : 'border-gray-300 hover:bg-gray-50'
                   }`}
                 >
                   {page}
                 </button>
-              ))}
+              )
+            } else if (page === currentPage - 3 || page === currentPage + 3) {
+              return <span key={page} className="px-2">...</span>
+            }
+            return null
+          })}
 
-              <button
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className="p-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          )}
-        </>
-      )}
-
-      {/* Estado vazio */}
-      {!loading && posts.length === 0 && (
-        <div className="text-center py-12">
-          <div className="text-gray-400 mb-4">
-            <Search className="w-16 h-16 mx-auto" />
-          </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Nenhum post encontrado
-          </h3>
-          <p className="text-gray-600">
-            Tente ajustar os filtros ou fazer uma nova busca.
-          </p>
+          <button
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="p-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
       )}
     </div>

@@ -278,3 +278,30 @@
   font-style: normal;
   font-display: swap;
 } 
+
+/* Estilos premium para conteúdo do blog */
+.prose {
+  @apply prose-pink prose-lg max-w-none;
+}
+
+.prose h1, .prose h2, .prose h3, .prose h4 {
+  @apply font-display font-bold text-gray-900;
+}
+.prose p {
+  @apply mb-5 text-gray-800 leading-relaxed;
+}
+.prose ul, .prose ol {
+  @apply mb-5 pl-6;
+}
+.prose li {
+  @apply mb-2;
+}
+.prose strong {
+  @apply text-pink-700;
+}
+.prose a {
+  @apply text-pink-600 underline hover:text-pink-800 transition;
+}
+.prose img {
+  @apply rounded-xl shadow-md my-6;
+} 

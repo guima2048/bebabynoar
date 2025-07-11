@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { useCSRF } from '@/hooks/useCSRF'
+import Image from 'next/image'
 
 // Validação de entrada
 const validateUsername = (username: string): string | null => {
@@ -96,6 +97,7 @@ export default function AdminPage() {
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="text-center">
+          {/* Logo removido */}
           <h2 className="text-3xl font-bold text-gray-900">Dashboard Administrativo</h2>
           <p className="mt-2 text-sm text-gray-600">
             Acesse o painel de administração do Bebaby App
@@ -105,6 +107,9 @@ export default function AdminPage() {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          {csrfLoading && (
+            <div className="mb-4 text-center text-pink-600 font-medium">Carregando token de segurança...</div>
+          )}
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-gray-700">
@@ -177,7 +182,7 @@ export default function AdminPage() {
             <div>
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || csrfLoading || !csrfToken}
                 className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-pink-600 hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? 'Entrando...' : 'Entrar'}

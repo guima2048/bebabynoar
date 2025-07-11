@@ -234,6 +234,7 @@ model BlogPost {
   readTime        Int?
   authorId        String
   featuredImage   String?
+  featuredImageAlt String? // Texto alternativo da imagem de destaque
   likesCount      Int                @default(0)
   viewsCount      Int                @default(0)
   status          BlogPostStatus     @default(DRAFT)

@@ -111,4 +111,4 @@ ssh root@177.153.20.125 $sshCommands
 
 Write-Host "🎉 Deploy finalizado!" -ForegroundColor Green
 Write-Host "🔗 Acesse: http://177.153.20.125:3000" -ForegroundColor Cyan
-Write-Host "📊 Para ver logs: ssh root@177.153.20.125 'pm2 logs bebaby-app'" -ForegroundColor Cyan 
+Write-Host "📊 Para ver logs: ssh root@177.153.20.125 pm2 logs bebaby-app" -ForegroundColor Cyan 

@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { Providers } from './providers'
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://bebaby.app'),

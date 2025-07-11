@@ -2,58 +2,28 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
-import { validateCSRFMiddleware } from '@/lib/csrf-middleware'
 
 export async function POST(request: NextRequest) {
   try {
-    // Validar CSRF para login (mesmo sendo POST, login é uma operação sensível)
-    const csrfValidation = await validateCSRFMiddleware(request)
-    if (csrfValidation) {
-      return csrfValidation
-    }
-
     const { username, password } = await request.json()
-    
     if (!username || !password) {
-      return NextResponse.json(
-        { error: 'Usuário e senha são obrigatórios' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Usuário e senha são obrigatórios' }, { status: 400 })
     }
 
-    // Buscar usuário admin no banco de dados (case-insensitive)
     const adminUser = await prisma.user.findFirst({
       where: {
-        username: {
-          equals: username,
-          mode: 'insensitive' // Case-insensitive search
-        },
+        username: { equals: username, mode: 'insensitive' },
         isAdmin: true
       }
     })
 
-    if (!adminUser) {
-      return NextResponse.json(
-        { error: 'Credenciais inválidas' },
-        { status: 401 }
-      )
+    if (!adminUser || !adminUser.password) {
+      return NextResponse.json({ error: 'Credenciais inválidas' }, { status: 401 })
     }
 
-    // Verificar senha
-    if (!adminUser.password) {
-      return NextResponse.json(
-        { error: 'Credenciais inválidas' },
-        { status: 401 }
-      )
-    }
-    
     const isPasswordValid = await bcrypt.compare(password, adminUser.password)
-    
     if (!isPasswordValid) {
-      return NextResponse.json(
-        { error: 'Credenciais inválidas' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: 'Credenciais inválidas' }, { status: 401 })
     }
 
     // Login bem-sucedido - definir cookie
@@ -76,10 +46,6 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('❌ Login: Erro durante login:', error)
-    return NextResponse.json(
-      { error: 'Erro interno do servidor' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
   }
 } 
