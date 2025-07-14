@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Calendar, Clock, User, Eye } from 'lucide-react'
 
 interface BlogPost {
@@ -43,6 +44,7 @@ export default function BlogPostList() {
       const data = await response.json()
 
       if (response.ok) {
+        console.log('Posts carregados:', data.posts)
         setPosts(data.posts)
       } else {
         setError('Erro ao carregar posts')
@@ -108,10 +110,15 @@ export default function BlogPostList() {
           {/* Image */}
           <div className="h-48 overflow-hidden">
             {post.featuredImage ? (
-              <img
+              <Image
                 src={post.featuredImage.startsWith('/') ? post.featuredImage : `/${post.featuredImage}`}
                 alt={post.title}
+                width={400}
+                height={200}
                 className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                onError={() => {
+                  console.error('Erro ao carregar imagem:', post.featuredImage)
+                }}
               />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center">

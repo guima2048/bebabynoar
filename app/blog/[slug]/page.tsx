@@ -129,12 +129,11 @@ export default async function PostPage({ params }: PostPageProps) {
       {post.featuredImage && (
         <div className="flex flex-col items-center mt-8 mb-4">
           <div className="relative w-full max-w-4xl aspect-[16/9] rounded-2xl overflow-hidden shadow-lg border-4 border-pink-100 bg-white flex items-center justify-center">
-            <Image
+            <img
               src={getRelativeImageUrl(post.featuredImage)}
               alt={post.featuredImageAlt || post.title}
-              fill
-              className="object-cover"
-              priority
+              className="object-cover w-full h-full"
+              style={{ aspectRatio: '16/9' }}
             />
           </div>
           {/* Título do post */}

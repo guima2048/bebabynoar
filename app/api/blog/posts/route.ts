@@ -56,6 +56,8 @@ export async function GET(req: NextRequest) {
       where.status = status
     }
 
+    console.log('Filtros aplicados:', where)
+
     if (category) {
       where.categories = {
         some: {
@@ -77,7 +79,13 @@ export async function GET(req: NextRequest) {
     // Buscar posts com relacionamentos
     const posts = await prisma.blogPost.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        excerpt: true,
+        featuredImage: true,
+        publishedAt: true,
         author: {
           select: {
             id: true,
@@ -87,8 +95,14 @@ export async function GET(req: NextRequest) {
           }
         },
         categories: {
-          include: {
-            category: true
+          select: {
+            category: {
+              select: {
+                id: true,
+                name: true,
+                slug: true
+              }
+            }
           }
         },
         _count: {
@@ -108,6 +122,11 @@ export async function GET(req: NextRequest) {
 
     // Contar total para paginação
     const total = await prisma.blogPost.count({ where })
+
+    console.log(`Posts encontrados: ${posts.length} de ${total} total`)
+    posts.forEach((post, index) => {
+      console.log(`Post ${index + 1}: ${post.title} - Imagem: ${post.featuredImage || 'NENHUMA'}`)
+    })
 
     return NextResponse.json({
       posts,
