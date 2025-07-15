@@ -161,4 +161,54 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     console.error('❌ Erro ao atualizar post:', error)
     return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
   }
+}
+
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    // Verificar autenticação admin
+    const adminSession = req.cookies.get('admin_session')
+    if (!adminSession || adminSession.value !== 'authenticated') {
+      return NextResponse.json({ error: 'Acesso negado' }, { status: 401 })
+    }
+
+    const param = params.id
+    const where = isId(param) ? { id: param } : { slug: param }
+    
+    // Buscar o post para verificar se existe
+    const existingPost = await prisma.blogPost.findFirst({ where })
+    if (!existingPost) {
+      return NextResponse.json({ error: 'Post não encontrado.' }, { status: 404 })
+    }
+
+    // Deletar relacionamentos primeiro
+    await prisma.blogPostCategory.deleteMany({
+      where: { postId: existingPost.id }
+    })
+
+    await prisma.blogAnalytics.deleteMany({
+      where: { postId: existingPost.id }
+    })
+
+    await prisma.blogComment.deleteMany({
+      where: { postId: existingPost.id }
+    })
+
+    await prisma.blogLike.deleteMany({
+      where: { postId: existingPost.id }
+    })
+
+    // Deletar o post
+    await prisma.blogPost.delete({
+      where: { id: existingPost.id }
+    })
+
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Post deletado com sucesso' 
+    })
+
+  } catch (error) {
+    console.error('❌ Erro ao deletar post:', error)
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 })
+  }
 } 
