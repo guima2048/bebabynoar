@@ -20,6 +20,7 @@ interface Profile {
   premium: boolean
   verified: boolean
   bio?: string
+  gender?: string
 }
 
 export default function BuscarPage() {
@@ -82,7 +83,8 @@ export default function BuscarPage() {
         photoURL: userData.mainPhoto,
         premium: userData.premium || false,
         verified: userData.verified || false,
-        bio: userData.about
+        bio: userData.about,
+        gender: userData.gender
       }))
       
       setProfiles(profilesData)
@@ -303,13 +305,17 @@ export default function BuscarPage() {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <div className="w-20 h-20 bg-gradient-to-br from-pink-200 to-purple-200 rounded-full flex items-center justify-center">
-                      <span className="text-2xl font-bold text-pink-600">
-                        {profile.name.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                  </div>
+                  <img
+                    src={
+                      profile.gender === 'FEMALE'
+                        ? '/landing/padraomulher.webp'
+                        : profile.gender === 'MALE'
+                        ? '/landing/padraohomem.webp'
+                        : '/avatar.png'
+                    }
+                    alt={profile.name}
+                    className="w-full h-full object-cover"
+                  />
                 )}
                 
                 {/* Premium Badge */}

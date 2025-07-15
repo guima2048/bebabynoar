@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { canUsersSeeEachOther } from '@/lib/user-matching'
 
 // GET - Listar favoritos do usuário
 export async function GET(request: NextRequest) {
@@ -38,7 +39,9 @@ export async function GET(request: NextRequest) {
             verified: true,
             premium: true,
             userType: true,
-            lastActive: true
+            gender: true, // Adicionado
+            lookingFor: true, // Adicionado
+            lastActive: true // Adicionado
           }
         }
       },
@@ -49,15 +52,56 @@ export async function GET(request: NextRequest) {
       take: limit
     });
 
-    // Contar total de favoritos
-    const total = await prisma.favorite.count({
-      where: {
-        userId: session.user.id
+    // Buscar dados do usuário logado
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: {
+        id: true,
+        userType: true,
+        gender: true,
+        lookingFor: true,
+        state: true,
+        city: true,
+        verified: true,
+        premium: true,
+        username: true // Adicionado
       }
-    });
+    })
+
+    // Filtrar favoritos conforme permissão
+    const filteredFavorites = favorites.filter(fav => {
+      if (!currentUser || !fav.targetUser) return false
+      return canUsersSeeEachOther(
+        {
+          id: currentUser.id,
+          userType: (currentUser.userType as string).toLowerCase() as any,
+          gender: (currentUser.gender as string).toLowerCase() as any,
+          lookingFor: (currentUser.lookingFor as string)?.toLowerCase() as any,
+          username: currentUser.username,
+          state: currentUser.state,
+          city: currentUser.city,
+          verified: currentUser.verified,
+          premium: currentUser.premium,
+        },
+        {
+          id: fav.targetUser.id,
+          userType: (fav.targetUser.userType as string).toLowerCase() as any,
+          gender: (fav.targetUser.gender as string).toLowerCase() as any,
+          lookingFor: (fav.targetUser.lookingFor as string)?.toLowerCase() as any,
+          username: fav.targetUser.username || '',
+          state: fav.targetUser.state,
+          city: fav.targetUser.city,
+          verified: fav.targetUser.verified,
+          premium: fav.targetUser.premium,
+        }
+      )
+    })
+
+    // Contar total de favoritos permitidos
+    const total = filteredFavorites.length;
 
     return NextResponse.json({
-      favorites: favorites.map(fav => ({
+      favorites: filteredFavorites.map(fav => ({
         id: fav.id,
         targetUser: {
           ...fav.targetUser,
@@ -157,7 +201,10 @@ export async function POST(request: NextRequest) {
             state: true,
             verified: true,
             premium: true,
-            userType: true
+            userType: true,
+            gender: true, // Adicionado
+            lookingFor: true, // Adicionado
+            lastActive: true // Adicionado
           }
         }
       }

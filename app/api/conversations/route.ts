@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { canUsersSeeEachOther } from '@/lib/user-matching'
 
 // GET - Buscar conversas do usuário
 export async function GET(_request: NextRequest) {
@@ -18,6 +19,22 @@ export async function GET(_request: NextRequest) {
     const { searchParams } = new URL(_request.url)
     const limit = parseInt(searchParams.get('limit') || '20')
     const offset = parseInt(searchParams.get('offset') || '0')
+
+    // Buscar dados do usuário logado
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: {
+        id: true,
+        userType: true,
+        gender: true,
+        lookingFor: true,
+        state: true,
+        city: true,
+        verified: true,
+        premium: true,
+        username: true // Adicionado para garantir compatibilidade com o tipo User
+      }
+    })
 
     // Buscar conversas do usuário
     const conversations = await prisma.conversation.findMany({
@@ -38,7 +55,12 @@ export async function GET(_request: NextRequest) {
                 username: true,
                 photoURL: true,
                 verified: true,
-                premium: true
+                premium: true,
+                userType: true,
+                gender: true,
+                lookingFor: true,
+                state: true,
+                city: true
               }
             }
           }
@@ -67,8 +89,41 @@ export async function GET(_request: NextRequest) {
       skip: offset
     })
 
+    // Filtrar conversas conforme permissão
+    const filteredConversations = conversations.filter(conversation => {
+      if (!currentUser) return false
+      const otherParticipant = conversation.participants.find(
+        p => p.userId !== session.user.id
+      )?.user
+      if (!otherParticipant) return false
+      return canUsersSeeEachOther(
+        {
+          id: currentUser.id,
+          userType: (currentUser.userType as string).toLowerCase() as any,
+          gender: (currentUser.gender as string).toLowerCase() as any,
+          lookingFor: (currentUser.lookingFor as string)?.toLowerCase() as any,
+          username: currentUser.username,
+          state: currentUser.state,
+          city: currentUser.city,
+          verified: currentUser.verified,
+          premium: currentUser.premium,
+        },
+        {
+          id: otherParticipant.id,
+          userType: (otherParticipant.userType as string).toLowerCase() as any,
+          gender: (otherParticipant.gender as string).toLowerCase() as any,
+          lookingFor: (otherParticipant.lookingFor as string)?.toLowerCase() as any,
+          username: otherParticipant.username || '',
+          state: otherParticipant.state,
+          city: otherParticipant.city,
+          verified: otherParticipant.verified,
+          premium: otherParticipant.premium,
+        }
+      )
+    })
+
     // Formatar dados para o frontend
-    const formattedConversations = conversations.map(conversation => {
+    const formattedConversations = filteredConversations.map(conversation => {
       const otherParticipant = conversation.participants.find(
         p => p.userId !== session.user.id
       )?.user

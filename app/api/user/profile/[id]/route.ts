@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { canUsersSeeEachOther } from '@/lib/user-matching'
 
 export async function GET(
   _request: NextRequest,
@@ -19,6 +20,23 @@ export async function GET(
 
     const userId = params.id
 
+    // Buscar dados do usuário logado
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: {
+        id: true,
+        userType: true,
+        gender: true,
+        lookingFor: true,
+        state: true,
+        city: true,
+        verified: true,
+        premium: true,
+        username: true // Adicionado
+      }
+    })
+
+    // Buscar dados do perfil solicitado
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -70,6 +88,41 @@ export async function GET(
       return NextResponse.json(
         { message: 'Usuário não encontrado' },
         { status: 404 }
+      )
+    }
+
+    // Verificar permissão de visualização
+    if (
+      !currentUser ||
+      !user ||
+      !canUsersSeeEachOther(
+        {
+          id: currentUser.id,
+          userType: (currentUser.userType as string).toLowerCase() as any,
+          gender: (currentUser.gender as string).toLowerCase() as any,
+          lookingFor: (currentUser.lookingFor as string)?.toLowerCase() as any,
+          username: currentUser.username,
+          state: currentUser.state,
+          city: currentUser.city,
+          verified: currentUser.verified,
+          premium: currentUser.premium,
+        },
+        {
+          id: user.id,
+          userType: (user.userType as string).toLowerCase() as any,
+          gender: (user.gender as string).toLowerCase() as any,
+          lookingFor: (user.lookingFor as string)?.toLowerCase() as any,
+          username: user.username || '',
+          state: user.state,
+          city: user.city,
+          verified: user.verified,
+          premium: user.premium,
+        }
+      )
+    ) {
+      return NextResponse.json(
+        { message: 'Você não tem permissão para visualizar este perfil.' },
+        { status: 403 }
       )
     }
 

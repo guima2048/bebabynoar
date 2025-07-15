@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { SECURITY_CONFIG, logSecurityEvent } from '@/lib/security'
 
 // Cache simples para rate limiting
 const rateLimitCache = new Map<string, { count: number; resetTime: number }>()
@@ -9,7 +8,7 @@ const rateLimitCache = new Map<string, { count: number; resetTime: number }>()
 const RATE_LIMIT_WINDOW = 60 * 1000 // 1 minuto
 const RATE_LIMIT_MAX_REQUESTS = 100 // 100 requests por minuto
 const UPLOAD_RATE_LIMIT_MAX_REQUESTS = 10 // 10 uploads por minuto
-const AUTH_RATE_LIMIT_MAX_REQUESTS = 20 // 20 tentativas de login por minuto (aumentado)
+const AUTH_RATE_LIMIT_MAX_REQUESTS = 20 // 20 tentativas de login por minuto
 const ADMIN_RATE_LIMIT_MAX_REQUESTS = 50 // 50 requests por minuto para admin
 
 function getClientIP(request: NextRequest): string {
@@ -41,23 +40,14 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const clientIP = getClientIP(request)
   
-  // Headers de segurança
+  // Headers de segurança básicos
   const response = NextResponse.next()
   
-  // Aplicar headers de segurança centralizados
-  Object.entries(SECURITY_CONFIG.SECURITY_HEADERS).forEach(([key, value]) => {
-    response.headers.set(key, value)
-  })
-  
-  // Log de tentativas de acesso
-  if (SECURITY_CONFIG.LOGGING.ENABLE_SECURITY_LOGS) {
-    logSecurityEvent('Middleware Access', {
-      path: pathname,
-      method: request.method,
-      ip: clientIP,
-      userAgent: request.headers.get('user-agent')
-    })
-  }
+  // Headers de segurança
+  response.headers.set('X-Frame-Options', 'DENY')
+  response.headers.set('X-Content-Type-Options', 'nosniff')
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
+  response.headers.set('X-XSS-Protection', '1; mode=block')
   
   // Rate limiting para APIs específicas
   if (pathname.startsWith('/api/upload-photo') || pathname.startsWith('/api/upload-blog-image')) {
@@ -69,7 +59,7 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // Rate limiting específico para APIs do admin (mais permissivo)
+  // Rate limiting específico para APIs do admin
   if (pathname.startsWith('/api/admin/')) {
     if (isRateLimited(clientIP, ADMIN_RATE_LIMIT_MAX_REQUESTS)) {
       return new NextResponse(
@@ -77,7 +67,7 @@ export function middleware(request: NextRequest) {
         { status: 429, headers: { 'Content-Type': 'application/json' } }
       )
     }
-    return NextResponse.next()
+    return response
   }
   
   // Rate limiting para autenticação (exceto rotas de sessão do NextAuth)

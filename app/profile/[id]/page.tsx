@@ -406,7 +406,15 @@ export default function ProfileViewPage() {
             </>
           ) : (
             <img
-              src={profile.photoURL || (profile.gender === 'mulher' ? '/landing/padraomulher.webp' : '/landing/padraohomem.webp')}
+              src={
+                profile.photoURL
+                  ? profile.photoURL
+                  : profile.gender === 'FEMALE'
+                  ? '/landing/padraomulher.webp'
+                  : profile.gender === 'MALE'
+                  ? '/landing/padraohomem.webp'
+                  : '/avatar.png'
+              }
               alt="Foto padrão"
               className="w-full h-full object-cover rounded-b-2xl"
               style={{ aspectRatio: '1/2' }}
@@ -424,7 +432,7 @@ export default function ProfileViewPage() {
                 {age ? `${age} anos` : ''}
                 {profile.city ? `, ${profile.city}` : ''}
                 {profile.state ? `, ${profile.state}` : ''}
-                {profile.gender ? `, ${profile.gender === 'female' ? 'Mulher' : 'Homem'}` : ''}
+                {profile.gender ? `, ${profile.gender === 'FEMALE' ? 'Mulher' : 'Homem'}` : ''}
               </span>
             )}
 

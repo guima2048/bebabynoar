@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { filterVisibleUsers, User } from '@/lib/user-matching'
 
 export async function GET(_request: NextRequest) {
   try {
@@ -41,6 +42,7 @@ export async function GET(_request: NextRequest) {
     const where: any = {
       id: { not: session.user.id }, // Excluir usuário atual
       status: 'ACTIVE',
+      isAdmin: false, // Excluir administradores
       birthdate: {
         gte: minDate,
         lte: maxDate
@@ -94,6 +96,7 @@ export async function GET(_request: NextRequest) {
         birthdate: true,
         gender: true,
         userType: true,
+        lookingFor: true, // Adicionado
         state: true,
         city: true,
         about: true,
@@ -134,24 +137,59 @@ export async function GET(_request: NextRequest) {
         ? age - 1 
         : age
 
+      // Converter enums do Prisma para valores esperados pelo sistema
+      const userType = String(user.userType).toLowerCase()
+      const gender = String(user.gender).toLowerCase()
+      const lookingFor = user.lookingFor ? String(user.lookingFor).toLowerCase() : undefined
+
+      // Retornar apenas os campos necessários para o filtro
       return {
-        ...user,
-        age: actualAge,
-        photoCount: user._count.photos,
+        id: user.id,
+        username: user.username,
+        userType,
+        gender,
+        lookingFor,
+        state: user.state,
+        city: user.city,
+        verified: user.verified,
+        premium: user.premium,
+        premiumExpiry: user.premiumExpiry ? user.premiumExpiry.toISOString() : undefined,
+        photoURL: user.photoURL,
         mainPhoto: user.photoURL || user.photos[0]?.url,
-        photos: undefined, // Remover array de fotos
-        _count: undefined // Remover contador
+        age: actualAge
       }
     })
 
+    // Buscar dados do usuário logado para aplicar filtro de permissão
+    const currentUserRaw = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: {
+        id: true,
+        userType: true,
+        gender: true,
+        lookingFor: true,
+        username: true // Adicionado
+      }
+    })
+    // Converter enums do Prisma para valores esperados pelo sistema
+    const currentUser = currentUserRaw && {
+      ...currentUserRaw,
+      userType: String(currentUserRaw.userType).toLowerCase(),
+      gender: String(currentUserRaw.gender).toLowerCase(),
+      lookingFor: currentUserRaw.lookingFor ? String(currentUserRaw.lookingFor).toLowerCase() : undefined
+    }
+
+    // Filtrar usuários visíveis conforme regra de matching
+    const visibleUsers = filterVisibleUsers(currentUser as User, formattedUsers as User[])
+
     return NextResponse.json({
-      users: formattedUsers,
+      users: visibleUsers,
       pagination: {
         page,
         limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-        hasNext: page * limit < total,
+        total: visibleUsers.length,
+        totalPages: Math.ceil(visibleUsers.length / limit),
+        hasNext: page * limit < visibleUsers.length,
         hasPrev: page > 1
       }
     })

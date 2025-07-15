@@ -61,7 +61,7 @@ export default function ProfilePage() {
   const [loadingProfile, setLoadingProfile] = useState(true)
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const router = useRouter()
-  const [showModal, setShowModal] = useState<null | 'about' | 'lookingFor'>(null);
+  const [showModal, setShowModal] = useState<null | { type: 'about' | 'lookingFor', text: string }>(null);
 
   useEffect(() => {
     console.log('[ProfilePage] useEffect:', { loading, user })
@@ -87,25 +87,118 @@ export default function ProfilePage() {
   }, []);
 
   const fetchProfile = async () => {
-    if (!user) { return }
+    if (!user) { 
+      console.log('[ProfilePage] fetchProfile: Sem usuário')
+      return 
+    }
+    
+    console.log('[ProfilePage] fetchProfile: Iniciando busca do perfil para usuário:', user.id, user.email)
+    
     try {
       setLoadingProfile(true)
-      const response = await fetch(`/api/user/profile/${user.id}`)
+      const response = await fetch(`/api/user/profile`)
+      
+      console.log('[ProfilePage] fetchProfile: Response status:', response.status)
+      console.log('[ProfilePage] fetchProfile: Response ok:', response.ok)
       
       if (response.ok) {
         const data = await response.json()
-        setProfile(data.user as ProfileData)
-        console.log('[ProfilePage] Perfil carregado:', data.user)
+        console.log('[ProfilePage] fetchProfile: Dados recebidos:', data)
+        
+        if (data.user) {
+          setProfile(data.user as ProfileData)
+          console.log('[ProfilePage] fetchProfile: Perfil definido com sucesso')
+        } else {
+          console.log('[ProfilePage] fetchProfile: Dados do usuário não encontrados na resposta')
+          // Se não há dados do usuário, criar um perfil básico com os dados da sessão
+          const basicProfile: ProfileData = {
+            username: user.name || user.email?.split('@')[0] || 'Usuário',
+            birthdate: new Date().toISOString(),
+            city: '',
+            state: '',
+            userType: user.userType || 'USER',
+            about: '',
+            lookingFor: '',
+            photoURL: user.photoURL || '',
+            premium: user.premium || false,
+            verified: user.verified || false,
+            createdAt: new Date().toISOString(),
+            photos: [],
+            gender: '',
+            relationshipType: '',
+            height: '',
+            weight: '',
+            hasChildren: null as any,
+            smokes: null as any,
+            drinks: null as any,
+            education: '',
+            profession: '',
+            availableForTravel: ''
+          }
+          setProfile(basicProfile)
+          console.log('[ProfilePage] fetchProfile: Perfil básico criado')
+        }
       } else {
-        console.warn('[ProfilePage] Perfil não encontrado, redirecionando para edição')
-        router.push('/profile/edit')
+        console.log('[ProfilePage] fetchProfile: Erro na resposta:', response.status)
+        // Se há erro na API, criar um perfil básico com os dados da sessão
+        const basicProfile: ProfileData = {
+          username: user.name || user.email?.split('@')[0] || 'Usuário',
+          birthdate: new Date().toISOString(),
+          city: '',
+          state: '',
+          userType: user.userType || 'USER',
+          about: '',
+          lookingFor: '',
+          photoURL: user.photoURL || '',
+          premium: user.premium || false,
+          verified: user.verified || false,
+          createdAt: new Date().toISOString(),
+          photos: [],
+          gender: '',
+          relationshipType: '',
+          height: '',
+          weight: '',
+          hasChildren: null as any,
+          smokes: null as any,
+          drinks: null as any,
+          education: '',
+          profession: '',
+          availableForTravel: ''
+        }
+        setProfile(basicProfile)
+        console.log('[ProfilePage] fetchProfile: Perfil básico criado devido ao erro da API')
       }
     } catch (error) {
-      toast.error('Erro ao carregar perfil')
-      console.error('[ProfilePage] Erro ao carregar perfil:', error)
+      console.error('[ProfilePage] fetchProfile: Erro ao carregar perfil:', error)
+      // Se há erro na requisição, criar um perfil básico com os dados da sessão
+      const basicProfile: ProfileData = {
+        username: user.name || user.email?.split('@')[0] || 'Usuário',
+        birthdate: new Date().toISOString(),
+        city: '',
+        state: '',
+        userType: user.userType || 'USER',
+        about: '',
+        lookingFor: '',
+        photoURL: user.photoURL || '',
+        premium: user.premium || false,
+        verified: user.verified || false,
+        createdAt: new Date().toISOString(),
+        photos: [],
+        gender: '',
+        relationshipType: '',
+        height: '',
+        weight: '',
+        hasChildren: null as any,
+        smokes: null as any,
+        drinks: null as any,
+        education: '',
+        profession: '',
+        availableForTravel: ''
+      }
+      setProfile(basicProfile)
+      console.log('[ProfilePage] fetchProfile: Perfil básico criado devido ao erro de rede')
     } finally {
       setLoadingProfile(false)
-      console.log('[ProfilePage] loadingProfile:', false)
     }
   }
 
@@ -155,36 +248,27 @@ export default function ProfilePage() {
       return;
     }
     try {
-      setUploadingPhoto(true);
-      
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('type', 'gallery')
-      formData.append('isPrivate', 'false')
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('type', 'public');
       
       const response = await fetch('/api/upload-photo', {
         method: 'POST',
         body: formData
-      })
+      });
       
       if (response.ok) {
-        const data = await response.json()
-        const newPhoto = {
-          id: `photo_${Date.now()}`,
-          url: data.photo.url,
-          isPrivate: false,
-          uploadedAt: new Date().toISOString(),
-        };
-        const updatedPhotos = [...(profile?.photos || []), newPhoto];
-        setProfile(prev => prev ? { ...prev, photos: updatedPhotos } : null);
-        toast.success('Foto adicionada!');
+        const data = await response.json();
+        setProfile(prev => prev ? {
+          ...prev,
+          photos: [...(prev.photos || []), data.photo]
+        } : null);
+        toast.success('Foto pública adicionada!');
       } else {
-        toast.error('Erro ao fazer upload da foto');
+        toast.error('Erro ao adicionar foto');
       }
     } catch (error) {
-      toast.error('Erro ao fazer upload da foto');
-    } finally {
-      setUploadingPhoto(false);
+      toast.error('Erro ao adicionar foto');
     }
   };
 
@@ -196,36 +280,27 @@ export default function ProfilePage() {
       return;
     }
     try {
-      setUploadingPhoto(true);
-      
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('type', 'gallery')
-      formData.append('isPrivate', 'true')
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('type', 'private');
       
       const response = await fetch('/api/upload-photo', {
         method: 'POST',
         body: formData
-      })
+      });
       
       if (response.ok) {
-        const data = await response.json()
-        const newPhoto = {
-          id: `photo_${Date.now()}`,
-          url: data.photo.url,
-          isPrivate: true,
-          uploadedAt: new Date().toISOString(),
-        };
-        const updatedPhotos = [...(profile?.photos || []), newPhoto];
-        setProfile(prev => prev ? { ...prev, photos: updatedPhotos } : null);
+        const data = await response.json();
+        setProfile(prev => prev ? {
+          ...prev,
+          photos: [...(prev.photos || []), data.photo]
+        } : null);
         toast.success('Foto privada adicionada!');
       } else {
-        toast.error('Erro ao fazer upload da foto');
+        toast.error('Erro ao adicionar foto');
       }
     } catch (error) {
-      toast.error('Erro ao fazer upload da foto');
-    } finally {
-      setUploadingPhoto(false);
+      toast.error('Erro ao adicionar foto');
     }
   };
 
@@ -234,11 +309,12 @@ export default function ProfilePage() {
     if (text.length <= 120) return <span>{text}</span>;
     return <>
       <span>{text.slice(0, 120)}...</span>
-      <button className="ml-2 text-pink-400 underline text-xs font-semibold" onClick={() => setShowModal(type)}>ver mais</button>
+      <button className="ml-2 text-pink-400 underline text-xs font-semibold" onClick={() => setShowModal({ type, text })}>
+        ver mais
+      </button>
     </>;
   }
 
-  // Função para redirecionar ao editar perfil
   const handleEditProfile = () => {
     router.push('/profile/edit');
   };
@@ -264,149 +340,212 @@ export default function ProfilePage() {
     )
   }
 
+  // Se não há perfil após o carregamento, mostrar perfil básico
   if (!profile) {
     return (
       <div className="max-w-4xl mx-auto py-12 px-4 text-center bg-[#18181b] min-h-screen text-white">
-        <h2 className="text-2xl font-bold mb-4">Perfil não encontrado</h2>
-        <p className="mb-6">Parece que você ainda não criou seu perfil.</p>
-        <Link href="/profile/edit" className="btn-primary">
-          Criar Perfil
-        </Link>
+        <h2 className="text-2xl font-bold mb-4">Carregando perfil...</h2>
+        <p className="mb-6">Aguarde um momento enquanto carregamos suas informações.</p>
       </div>
     )
   }
 
-  const age = profile.birthdate ? differenceInYears(new Date(), new Date(profile.birthdate)) : null
+  const age = profile?.birthdate ? differenceInYears(new Date(), new Date(profile.birthdate)) : null
 
-  console.log('[ProfilePage] publicPhotos:', profile.photos)
+  console.log('[ProfilePage] publicPhotos:', profile?.photos)
 
   return (
-    <div className="w-full min-h-screen flex flex-col items-center bg-[#18181b]">
-      <div className="w-full lg:max-w-[35vw] lg:mx-auto flex flex-col">
-        {/* Hero com proporção 1x2 e informações sobrepostos no canto inferior direito */}
-        <div className="relative w-full max-w-[400px] mx-auto" style={{ aspectRatio: '1/2' }}>
-          <img
-            src={
-              profile.photos && profile.photos.length >= 2
-                ? profile.photos[0].url
-                : profile.photoURL
+    <div className="max-w-4xl mx-auto py-12 px-4 bg-[#18181b] min-h-screen">
+      <div className="flex flex-col md:flex-row gap-8">
+        {/* Coluna da esquerda - Foto e informações básicas */}
+        <div className="md:w-1/3">
+          <div className="relative">
+            <img
+              src={
+                profile?.photos && profile.photos.length >= 2
+                  ? profile.photos[0].url
+                  : profile?.photoURL
                   ? profile.photoURL
-                  : profile.gender === 'mulher'
-                    ? '/landing/padraomulher.webp'
-                    : '/landing/padraohomem.webp'
-            }
-            alt="Foto principal"
-            className="w-full h-full object-cover rounded-b-2xl"
-            style={{ aspectRatio: '1/2' }}
-          />
-          {/* Botão edit sobreposto à foto, alinhado à direita na altura do username */}
-                <button
-            className="absolute top-8 right-8 p-0 bg-transparent border-none outline-none text-pink-500 text-2xl font-bold opacity-40 hover:opacity-100 transition-opacity cursor-pointer z-20"
-            aria-label="Editar perfil"
-            onClick={handleEditProfile}
-          >
-            <span className="material-icons">edit</span>
-                </button>
-          {/* Overlay degradê escuro com cor igual ao fundo */}
-          <div className="absolute inset-0 pointer-events-none"
-              style={{
-              background: 'linear-gradient(to bottom, rgba(0,0,0,0) 35%, #18181b 100%)',
-              borderBottomLeftRadius: '1rem',
-              borderBottomRightRadius: '1rem',
-            }}
-          />
-          {/* Informações soltas sobre o degradê, sem cards, visual premium */}
-          <div className="absolute left-8 bottom-8 flex flex-col gap-3 z-10 max-w-[80%]">
-            {/* Nome sobre a foto */}
-            <div className="flex items-center mb-1 w-full">
-              <span className="text-3xl font-extrabold text-white drop-shadow-lg leading-tight">{profile.username}</span>
-                </div>
-            {/* Idade, cidade, estado, gênero */}
-            {(age || profile.city || profile.state || profile.gender) && (
-              <span className="text-pink-600 text-lg font-bold leading-tight mb-2">
-                {age ? `${age} anos` : ''}
-                {profile.city ? `, ${profile.city}` : ''}
-                {profile.state ? `, ${profile.state}` : ''}
-                {profile.gender ? `, ${profile.gender === 'mulher' ? 'Mulher' : 'Homem'}` : ''}
-                </span>
+                  : profile?.gender === 'FEMALE'
+                  ? '/landing/padraomulher.webp'
+                  : profile?.gender === 'MALE'
+                  ? '/landing/padraohomem.webp'
+                  : '/avatar.png'
+              }
+              alt="Foto do perfil"
+              className="w-48 h-48 rounded-full mx-auto mb-4 object-cover"
+            />
+            <label className="absolute bottom-4 right-4 bg-pink-600 text-white p-2 rounded-full cursor-pointer hover:bg-pink-700 transition-colors">
+              <Camera size={20} />
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handlePhotoUpload}
+                disabled={uploadingPhoto}
+              />
+            </label>
+          </div>
+          
+          <div className="text-center mb-6">
+            <h1 className="text-2xl font-bold text-white mb-2">{profile.username}</h1>
+            <div className="flex items-center justify-center gap-2 text-gray-400">
+              {age && <span>{age} anos</span>}
+              {profile.city && <span>• {profile.city}</span>}
+              {profile.state && <span>• {profile.state}</span>}
+            </div>
+            {profile.premium && (
+              <div className="flex items-center justify-center gap-1 mt-2">
+                <Crown className="text-yellow-500" size={16} />
+                <span className="text-yellow-500 text-sm">Premium</span>
+              </div>
             )}
-        {/* Sobre mim */}
-            {profile.about && profile.about.trim() && (
-              <div className="max-w-[90vw]">
-                <span className="block text-xs font-bold text-neutral-400 mb-1 uppercase tracking-widest">Sobre mim</span>
-                <span className="text-neutral-200 text-base font-medium leading-snug max-w-full break-words">
-                  {renderTruncated(profile.about, 'about')}
-                </span>
-            </div>
-          )}
-        {/* O que busco */}
-            {profile.lookingFor && profile.lookingFor.trim() && (
-              <div className="max-w-[90vw]">
-                <span className="block text-xs font-bold text-neutral-400 mb-1 uppercase tracking-widest">O que busco</span>
-                <span className="text-neutral-200 text-base font-medium leading-snug max-w-full break-words">
-                  {renderTruncated(profile.lookingFor, 'lookingFor')}
-                </span>
-            </div>
-          )}
-            </div>
-          {/* Blocos de Relacionamento sugar e Estilo de vida, AGORA DENTRO DO CARD */}
-          {(profile.relationshipType || profile.height || profile.weight || profile.hasChildren !== undefined || profile.smokes !== undefined || profile.drinks !== undefined || profile.education || profile.profession || profile.availableForTravel) && (
-            <div className="flex flex-col gap-4 mt-6 items-start ml-8">
-              {/* Relacionamento sugar */}
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <Link
+              href="/profile/edit"
+              className="flex items-center gap-2 bg-pink-600 text-white px-4 py-2 rounded-lg hover:bg-pink-700 transition-colors"
+            >
+              <Edit size={16} />
+              Editar Perfil
+            </Link>
+            
+            <Link
+              href="/messages"
+              className="flex items-center gap-2 bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
+            >
+              <MessageCircle size={16} />
+              Mensagens
+            </Link>
+            
+            <Link
+              href="/notifications"
+              className="flex items-center gap-2 bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
+            >
+              <Eye size={16} />
+              Notificações
+            </Link>
+          </div>
+        </div>
+
+        {/* Coluna da direita - Informações detalhadas */}
+        <div className="md:w-2/3">
+          <div className="bg-[#232326] rounded-lg p-6 mb-6">
+            <h2 className="text-xl font-bold text-white mb-4">Sobre mim</h2>
+            <p className="text-gray-300 mb-4">
+              {profile.about || 'Nenhuma informação fornecida.'}
+            </p>
+            
+            <h3 className="text-lg font-semibold text-white mb-2">O que busco</h3>
+            <p className="text-gray-300">
+              {profile.lookingFor || 'Nenhuma informação fornecida.'}
+            </p>
+          </div>
+
+          <div className="bg-[#232326] rounded-lg p-6 mb-6">
+            <h2 className="text-xl font-bold text-white mb-4">Informações pessoais</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {profile.relationshipType && (
-                <div className="flex flex-wrap gap-2">
-                  <span className="text-pink-400 text-base font-semibold leading-tight">{profile.relationshipType}</span>
+                <div>
+                  <span className="text-gray-400">Tipo de relacionamento:</span>
+                  <p className="text-white">{profile.relationshipType}</p>
+                </div>
+              )}
+              {profile.height && (
+                <div>
+                  <span className="text-gray-400">Altura:</span>
+                  <p className="text-white">{profile.height}</p>
+                </div>
+              )}
+              {profile.weight && (
+                <div>
+                  <span className="text-gray-400">Peso:</span>
+                  <p className="text-white">{profile.weight}</p>
+                </div>
+              )}
+              {profile.hasChildren !== undefined && (
+                <div>
+                  <span className="text-gray-400">Tem filhos:</span>
+                  <p className="text-white">{profile.hasChildren ? 'Sim' : 'Não'}</p>
+                </div>
+              )}
+              {profile.smokes !== undefined && (
+                <div>
+                  <span className="text-gray-400">Fuma:</span>
+                  <p className="text-white">{profile.smokes ? 'Sim' : 'Não'}</p>
+                </div>
+              )}
+              {profile.drinks !== undefined && (
+                <div>
+                  <span className="text-gray-400">Bebe:</span>
+                  <p className="text-white">{profile.drinks ? 'Sim' : 'Não'}</p>
+                </div>
+              )}
+              {profile.education && (
+                <div>
+                  <span className="text-gray-400">Educação:</span>
+                  <p className="text-white">{profile.education}</p>
+                </div>
+              )}
+              {profile.profession && (
+                <div>
+                  <span className="text-gray-400">Profissão:</span>
+                  <p className="text-white">{profile.profession}</p>
+                </div>
+              )}
+              {profile.availableForTravel && (
+                <div>
+                  <span className="text-gray-400">Disponível para viagem:</span>
+                  <p className="text-white">{profile.availableForTravel}</p>
+                </div>
+              )}
             </div>
-          )}
-              {/* Estilo de vida */}
-              <div className="flex flex-wrap gap-3 text-pink-400 text-base font-semibold leading-tight justify-start">
-                {profile.height && <span>Altura: {profile.height}</span>}
-                {profile.weight && <span>Peso: {profile.weight}</span>}
-                {profile.hasChildren !== undefined && <span>Filhos: {profile.hasChildren ? 'Sim' : 'Não'}</span>}
-                {profile.smokes !== undefined && <span>Fuma: {profile.smokes ? 'Sim' : 'Não'}</span>}
-                {profile.drinks !== undefined && <span>Bebe: {profile.drinks ? 'Sim' : 'Não'}</span>}
-                {profile.education && <span>Educação: {profile.education}</span>}
-                {profile.profession && <span>Profissão: {profile.profession}</span>}
-                {profile.availableForTravel && <span>Disponível para viagem: {profile.availableForTravel}</span>}
+          </div>
+
+          {/* Galeria de fotos */}
+          <div className="bg-[#232326] rounded-lg p-6">
+            <h2 className="text-xl font-bold text-white mb-4">Galeria de fotos</h2>
+            
+            {/* Fotos públicas */}
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold text-white mb-3">Fotos públicas</h3>
+              <div className="grid grid-cols-3 gap-4">
+                {publicPhotos.slice(0, 6).map((photo, i) => (
+                  <div key={photo.id || i} className="aspect-[3/4] bg-gray-700 rounded-lg overflow-hidden">
+                    <img src={photo.url} alt="Foto pública" className="w-full h-full object-cover" />
+                  </div>
+                ))}
+                {Array.from({ length: 6 - publicPhotos.length }).map((_, i) => (
+                  <label key={i} className="aspect-[3/4] bg-gray-700 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-600 hover:border-pink-500 transition-colors cursor-pointer">
+                    <span className="text-3xl text-gray-500">+</span>
+                    <input type="file" accept="image/*" className="hidden" onChange={handleAddPublicPhoto} />
+                  </label>
+                ))}
               </div>
             </div>
-          )}
-          {/* Grid de fotos públicas */}
-          <div className="mt-8 ml-8 max-w-[400px]">
-            <h3 className="text-base font-bold text-white mb-2">Adicionar fotos públicas</h3>
-            <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
-              {publicPhotos.slice(0, 6).map((photo, i) => (
-                <div key={photo.id || i} className="aspect-[3/4] w-full bg-[#232326] rounded-lg overflow-hidden flex items-center justify-center border-2 border-neutral-700">
-                  <img src={photo.url} alt="Foto pública" className="w-full h-full object-cover" />
-                </div>
-              ))}
-              {Array.from({ length: 6 - publicPhotos.length }).map((_, i) => (
-                <label key={i} className="aspect-[3/4] w-full bg-[#232326] rounded-lg flex items-center justify-center border-2 border-dashed border-neutral-700 hover:border-pink-500 transition-colors cursor-pointer">
-                  <span className="text-3xl text-neutral-500">+</span>
-                  <input type="file" accept="image/*" className="hidden" onChange={handleAddPublicPhoto} />
-                </label>
-              ))}
+
+            {/* Fotos privadas */}
+            <div>
+              <h3 className="text-lg font-semibold text-white mb-3">Fotos privadas</h3>
+              <div className="grid grid-cols-3 gap-4">
+                {privatePhotos.slice(0, 6).map((photo, i) => (
+                  <div key={photo.id || i} className="aspect-[3/4] bg-gray-700 rounded-lg overflow-hidden">
+                    <img src={photo.url} alt="Foto privada" className="w-full h-full object-cover" />
+                  </div>
+                ))}
+                {Array.from({ length: 6 - privatePhotos.length }).map((_, i) => (
+                  <label key={i} className="aspect-[3/4] bg-gray-700 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-600 hover:border-pink-500 transition-colors cursor-pointer">
+                    <span className="text-3xl text-gray-500">+</span>
+                    <input type="file" accept="image/*" className="hidden" onChange={handleAddPrivatePhoto} />
+                  </label>
+                ))}
               </div>
             </div>
-          {/* Grid de fotos privadas */}
-          <div className="mt-8 ml-8 max-w-[400px]">
-            <h3 className="text-base font-bold text-white mb-2">Adicionar fotos privadas</h3>
-            <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
-              {privatePhotos.slice(0, 6).map((photo, i) => (
-                <div key={photo.id || i} className="aspect-[3/4] w-full bg-[#232326] rounded-lg overflow-hidden flex items-center justify-center border-2 border-neutral-700">
-                  <img src={photo.url} alt="Foto privada" className="w-full h-full object-cover" />
-                </div>
-              ))}
-              {Array.from({ length: 6 - privatePhotos.length }).map((_, i) => (
-                <label key={i} className="aspect-[3/4] w-full bg-[#232326] rounded-lg flex items-center justify-center border-2 border-dashed border-neutral-700 hover:border-pink-500 transition-colors cursor-pointer">
-                  <span className="text-3xl text-neutral-500">+</span>
-                  <input type="file" accept="image/*" className="hidden" onChange={handleAddPrivatePhoto} />
-                </label>
-              ))}
-            </div>
+          </div>
         </div>
       </div>
-            </div>
+
       {/* Modal para texto completo */}
       <Modal
         isOpen={!!showModal}
@@ -417,15 +556,15 @@ export default function ProfilePage() {
       >
         <div className="bg-[#232326] rounded-2xl p-6 max-w-[90vw] max-h-[80vh] overflow-y-auto shadow-xl text-white">
           <h2 className="text-lg font-bold mb-4">
-            {showModal === 'about' ? 'Sobre mim' : 'O que busco'}
+            {showModal?.type === 'about' ? 'Sobre mim' : 'O que busco'}
           </h2>
           <p className="whitespace-pre-line text-base mb-6">
-            {showModal === 'about' ? profile.about : profile.lookingFor}
+            {showModal?.text}
           </p>
           <button className="mt-2 px-4 py-2 rounded bg-pink-500 text-white font-semibold hover:bg-pink-600 transition" onClick={() => setShowModal(null)}>
             Fechar
-                  </button>
-                </div>
+          </button>
+        </div>
       </Modal>
     </div>
   )

@@ -105,13 +105,20 @@ export async function GET(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     
+    console.log('🔍 [PROFILE API] Session completa:', JSON.stringify(session, null, 2))
+    console.log('🔍 [PROFILE API] Session user:', session?.user)
+    console.log('🔍 [PROFILE API] Session user id:', session?.user?.id)
+    console.log('🔍 [PROFILE API] Session user email:', session?.user?.email)
+    
     if (!session?.user?.id) {
+      console.log('❌ [PROFILE API] Sem ID na sessão - retornando 401')
       return NextResponse.json(
         { message: 'Não autorizado' },
         { status: 401 }
       )
     }
 
+    console.log('🔍 [PROFILE API] Buscando usuário com ID:', session.user.id)
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: {
@@ -159,14 +166,31 @@ export async function GET(_request: NextRequest) {
       }
     })
 
+    console.log('🔍 [PROFILE API] Resultado da busca no banco:', user ? 'Usuário encontrado' : 'Usuário NÃO encontrado')
+    if (user) {
+      console.log('🔍 [PROFILE API] Dados do usuário encontrado:', {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        name: user.name,
+        userType: user.userType,
+        gender: user.gender,
+        photos: user.photos?.length || 0
+      })
+    }
+
     if (!user) {
+      console.log('❌ [PROFILE API] Usuário não encontrado no banco com ID:', session.user.id)
       return NextResponse.json(
         { message: 'Usuário não encontrado' },
         { status: 404 }
       )
     }
 
-    return NextResponse.json({ user })
+    console.log('✅ [PROFILE API] Usuário encontrado:', user.id, user.email, user.name)
+    const responseData = { user }
+    console.log('✅ [PROFILE API] Dados que serão retornados:', JSON.stringify(responseData, null, 2))
+    return NextResponse.json(responseData)
   } catch (error) {
     console.error('Erro ao buscar perfil:', error)
     return NextResponse.json(

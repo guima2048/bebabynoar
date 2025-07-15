@@ -101,7 +101,9 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (process.env.NODE_ENV === 'development') {
-        console.log('🔄 Session callback:', { session: session.user?.email, token: token.sub })
+        console.log('🔄 Session callback - Token completo:', JSON.stringify(token, null, 2))
+        console.log('🔄 Session callback - Token sub:', token.sub)
+        console.log('🔄 Session callback - Session antes:', JSON.stringify(session, null, 2))
       }
       if (token) {
         session.user.id = token.sub!
@@ -111,6 +113,8 @@ export const authOptions: NextAuthOptions = {
         session.user.isAdmin = token.isAdmin
         if (process.env.NODE_ENV === 'development') {
           console.log('✅ Session updated with token data')
+          console.log('✅ Session final - user.id:', session.user.id)
+          console.log('✅ Session final completa:', JSON.stringify(session, null, 2))
         }
       }
       return session
@@ -119,6 +123,6 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: '/login'
   },
-  secret: process.env.NEXTAUTH_SECRET || '',
+  secret: process.env.NEXTAUTH_SECRET || 'fallback-secret-for-development',
   debug: process.env.NODE_ENV === 'development'
 } 

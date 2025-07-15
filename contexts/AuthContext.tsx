@@ -46,12 +46,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
 
   useEffect(() => {
+    console.log('[AuthContext] useEffect - Status:', status)
+    console.log('[AuthContext] useEffect - Session:', JSON.stringify(session, null, 2))
+    
     if (status === 'loading') {
+      console.log('[AuthContext] Status loading - mantendo loading true')
       setLoading(true)
       return
     }
 
     if (session?.user) {
+      console.log('[AuthContext] Session user encontrado:', {
+        id: session.user.id,
+        email: session.user.email,
+        name: session.user.name,
+        userType: session.user.userType,
+        premium: session.user.premium,
+        verified: session.user.verified,
+        isAdmin: session.user.isAdmin
+      })
       setUser({
         id: session.user.id,
         email: session.user.email,
@@ -62,10 +75,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         userType: session.user.userType,
         isAdmin: session.user.isAdmin,
       })
+      console.log('[AuthContext] User state definido com sucesso')
     } else {
+      console.log('[AuthContext] Sem session user - definindo user como null')
       setUser(null)
     }
     
+    console.log('[AuthContext] Definindo loading como false')
     setLoading(false)
   }, [session, status])
 
