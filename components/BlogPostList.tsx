@@ -12,21 +12,20 @@ interface BlogPost {
   excerpt: string
   featuredImage?: string
   publishedAt: string
+  readTime?: number
+  viewsCount: number
+  likesCount: number
   author: {
     name: string
     username: string
   }
   categories: Array<{
-    category: {
-      name: string
-      slug: string
-    }
+    id: string
+    name: string
+    slug: string
+    color: string
   }>
-  _count: {
-    views: number
-    likes: number
-    comments: number
-  }
+  tags: string[]
 }
 
 export default function BlogPostList() {
@@ -190,7 +189,7 @@ export default function BlogPostList() {
               {/* Category */}
               {post.categories.length > 0 && (
                 <span className="inline-block px-3 py-1 text-xs font-semibold text-pink-600 bg-pink-100 rounded-full mb-3">
-                  {post.categories[0].category.name}
+                  {post.categories[0].name}
                 </span>
               )}
               
@@ -212,7 +211,7 @@ export default function BlogPostList() {
                 </div>
                 <div className="flex items-center space-x-2">
                   <Eye className="w-4 h-4" />
-                  <span>{post._count.views}</span>
+                  <span>{post.viewsCount}</span>
                 </div>
               </div>
               
