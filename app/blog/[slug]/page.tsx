@@ -62,33 +62,6 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
   }
 }
 
-// Função utilitária para garantir que o src seja relativo
-function getRelativeImageUrl(url: string) {
-  if (!url) return '';
-  
-  // Se já é uma URL relativa (começa com /), retorna como está
-  if (url.startsWith('/')) {
-    return url;
-  }
-  
-  // Se é uma URL completa, extrai o pathname
-  if (url.startsWith('http')) {
-    try {
-      const u = new URL(url);
-      return u.pathname;
-    } catch {
-      return url;
-    }
-  }
-  
-  // Se não tem / no início, adiciona
-  if (!url.startsWith('/')) {
-    return `/${url}`;
-  }
-  
-  return url;
-}
-
 // Função para converter texto puro em HTML com parágrafos e quebras de linha
 function formatContent(content: string) {
   if (!content) return '';
@@ -130,7 +103,7 @@ export default async function PostPage({ params }: PostPageProps) {
         <div className="flex flex-col items-center mt-8 mb-4">
           <div className="relative w-full max-w-4xl aspect-[16/9] rounded-2xl overflow-hidden shadow-lg border-4 border-pink-100 bg-white flex items-center justify-center">
             <img
-              src={getRelativeImageUrl(post.featuredImage)}
+              src={post.featuredImage}
               alt={post.featuredImageAlt || post.title}
               className="object-cover w-full h-full"
               style={{ aspectRatio: '16/9' }}
@@ -184,7 +157,7 @@ export default async function PostPage({ params }: PostPageProps) {
                     <div className="flex items-center gap-2">
                       {post.author.photoURL ? (
                         <Image
-                          src={getRelativeImageUrl(post.author.photoURL)}
+                          src={post.author.photoURL}
                           alt={post.author.name || post.author.username}
                           width={24}
                           height={24}

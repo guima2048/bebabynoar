@@ -94,6 +94,10 @@ npm run build
 echo "🔐 Criando usuários admin..."
 node scripts/create-admin-users.js
 
+# Corrigir permissões da pasta de uploads
+echo "🔒 Corrigindo permissões da pasta de uploads..."
+bash scripts/fix-upload-permissions.sh
+
 # Configurar PM2
 echo "⚙️ Configurando PM2..."
 pm2 delete bebaby-app 2>/dev/null || true

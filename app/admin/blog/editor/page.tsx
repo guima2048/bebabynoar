@@ -81,6 +81,10 @@ export default function BlogEditorPage() {
       toast.error('Título e conteúdo são obrigatórios')
       return
     }
+    if (!featuredImage) {
+      toast.error('Imagem de destaque é obrigatória')
+      return
+    }
 
     setIsLoading(true)
 
@@ -133,6 +137,10 @@ export default function BlogEditorPage() {
   const handlePublish = async () => {
     if (!title.trim() || !content.trim()) {
       toast.error('Título e conteúdo são obrigatórios')
+      return
+    }
+    if (!featuredImage) {
+      toast.error('Imagem de destaque é obrigatória')
       return
     }
 

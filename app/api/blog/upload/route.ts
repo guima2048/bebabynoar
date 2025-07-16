@@ -31,9 +31,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    console.log('🔄 Iniciando upload de imagem...')
+    console.log('Arquivo recebido:', file?.name, file?.type, file?.size)
+
     // Validar tipo de arquivo
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
     if (!allowedTypes.includes(file.type)) {
+      console.log('❌ Tipo de arquivo não suportado:', file.type)
       return NextResponse.json(
         { error: 'Tipo de arquivo não suportado. Use JPEG, PNG, WebP ou GIF.' },
         { status: 400 }
@@ -43,6 +47,7 @@ export async function POST(request: NextRequest) {
     // Validar tamanho (máximo 5MB)
     const maxSize = 5 * 1024 * 1024 // 5MB
     if (file.size > maxSize) {
+      console.log('❌ Arquivo muito grande:', file.size)
       return NextResponse.json(
         { error: 'Arquivo muito grande. Máximo 5MB.' },
         { status: 400 }
@@ -66,9 +71,13 @@ export async function POST(request: NextRequest) {
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
     await writeFile(filePath, buffer)
+    console.log('📝 Salvando arquivo em:', filePath)
+    console.log('✅ Arquivo salvo com sucesso!')
 
     // URL pública do arquivo
     const fileUrl = `/uploads/blog/${filename}`
+    console.log('✅ Arquivo salvo com sucesso!')
+    console.log('URL pública:', fileUrl)
 
     // Buscar usuário admin para associar ao upload
     const adminUser = await prisma.user.findFirst({
@@ -76,6 +85,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (!adminUser) {
+      console.log('❌ Usuário administrador não encontrado')
       return NextResponse.json(
         { error: 'Usuário administrador não encontrado' },
         { status: 500 }
@@ -96,7 +106,7 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    console.log('✅ Imagem enviada:', imageRecord.id)
+    console.log('✅ Imagem enviada e registrada no banco:', imageRecord.id)
 
     return NextResponse.json({
       success: true,

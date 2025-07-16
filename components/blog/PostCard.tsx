@@ -59,43 +59,8 @@ export default function PostCard({
     return text.substring(0, maxLength) + '...'
   }
 
-  // Função para processar URL da imagem
-  const getImageUrl = (imageUrl?: string) => {
-    if (!imageUrl) return null
-    
-    // Log para debug
-    console.log('🔍 [PostCard] Processando imagem:', imageUrl)
-    
-    // Se já é uma URL relativa (começa com /), retorna como está
-    if (imageUrl.startsWith('/')) {
-      console.log('✅ [PostCard] URL já é relativa:', imageUrl)
-      return imageUrl
-    }
-    
-    // Se é uma URL completa, extrai o pathname
-    if (imageUrl.startsWith('http')) {
-      try {
-        const u = new URL(imageUrl)
-        const pathname = u.pathname
-        console.log('✅ [PostCard] URL completa convertida para:', pathname)
-        return pathname
-      } catch {
-        console.log('❌ [PostCard] Erro ao processar URL completa:', imageUrl)
-        return imageUrl
-      }
-    }
-    
-    // Se não tem / no início, adiciona
-    if (!imageUrl.startsWith('/')) {
-      const processedUrl = `/${imageUrl}`
-      console.log('✅ [PostCard] Adicionado / no início:', processedUrl)
-      return processedUrl
-    }
-    
-    return imageUrl
-  }
-
-  const processedImageUrl = getImageUrl(post.featuredImage)
+  // Remover função getImageUrl e usar diretamente o campo
+  const processedImageUrl = post.featuredImage || null;
 
   // Componente de fallback para imagem
   const ImageFallback = ({ className = "" }: { className?: string }) => (

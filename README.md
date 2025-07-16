@@ -305,3 +305,23 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 
 # Forcing new deployment
 
+## 🚀 Como garantir uploads automáticos de imagens do blog em produção
+
+1. Abra o arquivo de configuração do seu site no Nginx (ex: `/etc/nginx/sites-available/bebaby-app`).
+2. Cole o bloco abaixo dentro do bloco `server { ... }`:
+
+```nginx
+location /uploads/ {
+    alias /var/www/bebaby-app/public/uploads/;
+    expires 1y;
+    add_header Cache-Control "public, immutable";
+    access_log off;
+    try_files $uri $uri/ =404;
+}
+```
+3. Salve e recarregue o Nginx:
+```sh
+sudo systemctl reload nginx
+```
+4. Pronto! Agora qualquer imagem enviada via upload estará disponível imediatamente em `/uploads/blog/` sem precisar rebuildar o Next.js.
+

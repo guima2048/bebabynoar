@@ -125,7 +125,7 @@ export default function BlogImageUpload({ onImageUpload, currentImage, className
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
+          accept="image/jpeg,image/png,image/webp,image/gif"
           onChange={handleFileChange}
           className="hidden"
         />
@@ -154,7 +154,7 @@ export default function BlogImageUpload({ onImageUpload, currentImage, className
           </div>
 
           <p className="text-xs text-gray-500">
-            Imagens até 5MB (JPG, PNG, GIF, SVG, WebP, BMP, ICO, etc)
+            Imagens até 5MB (JPG, PNG, GIF, WebP)
           </p>
         </div>
       </div>
