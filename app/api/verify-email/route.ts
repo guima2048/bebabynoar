@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import crypto from 'crypto'
+import { EmailService } from '@/lib/email'
 
 export async function POST(req: NextRequest) {
   try {
@@ -47,10 +48,30 @@ export async function POST(req: NextRequest) {
       }
     })
 
-    // Enviar e-mail de verificação
-    const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL}/verify-email?token=${verificationToken}&email=${encodeURIComponent(email)}`
-    
-    await sendVerificationEmail(email, verificationUrl, user.name || 'Usuário')
+    // Verificar se o template de confirmação de e-mail está ativo
+    const emailTemplate = await prisma.emailTemplate.findUnique({
+      where: { slug: 'email-confirmation' }
+    })
+
+    if (emailTemplate && emailTemplate.enabled) {
+      try {
+        // Enviar e-mail de verificação usando o EmailService
+        const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL}/verify-email?token=${verificationToken}&email=${encodeURIComponent(email)}`
+        
+        await EmailService.sendEmailConfirmation(
+          email,
+          user.name || user.username,
+          verificationUrl
+        )
+      } catch (error) {
+        console.error('Erro ao enviar e-mail de verificação:', error)
+        throw error
+      }
+    } else {
+      // Fallback para o método antigo se o template estiver desabilitado
+      const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL}/verify-email?token=${verificationToken}&email=${encodeURIComponent(email)}`
+      await sendVerificationEmail(email, verificationUrl, user.name || 'Usuário')
+    }
 
     return NextResponse.json({
       success: true,
@@ -117,8 +138,27 @@ export async function PUT(req: NextRequest) {
       }
     })
 
-    // Enviar e-mail de confirmação
-    await sendEmailVerifiedConfirmation(email, user.name || 'Usuário')
+    // Verificar se o template de boas-vindas está ativo
+    const welcomeTemplate = await prisma.emailTemplate.findUnique({
+      where: { slug: 'welcome' }
+    })
+
+    if (welcomeTemplate && welcomeTemplate.enabled) {
+      try {
+        // Enviar e-mail de boas-vindas usando o EmailService
+        await EmailService.sendWelcomeEmail(
+          email,
+          user.name || user.username,
+          `${process.env.NEXT_PUBLIC_APP_URL}`
+        )
+      } catch (error) {
+        console.error('Erro ao enviar e-mail de boas-vindas:', error)
+        // Não falhar a verificação se o e-mail não for enviado
+      }
+    } else {
+      // Fallback para o método antigo se o template estiver desabilitado
+      await sendEmailVerifiedConfirmation(email, user.name || 'Usuário')
+    }
 
     return NextResponse.json({
       success: true,

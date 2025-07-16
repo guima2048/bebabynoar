@@ -3,6 +3,8 @@ import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { authLimiter } from '@/lib/rate-limit'
+import { EmailService } from '@/lib/email'
+import crypto from 'crypto'
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -121,15 +123,47 @@ export async function POST(request: NextRequest) {
     if (validatedData.receiveTravelers !== undefined) userData.receiveTravelers = validatedData.receiveTravelers
     if (validatedData.social) userData.social = validatedData.social
 
+    // Gerar token de verificação de e-mail
+    const verificationToken = crypto.randomBytes(32).toString('hex')
+    const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 horas
+
     const user = await prisma.user.create({
-      data: userData
+      data: {
+        ...userData,
+        emailVerificationToken: verificationToken,
+        emailVerificationExpiry: tokenExpiry,
+        lastVerificationEmailSent: new Date()
+      }
     })
+
+    // Verificar se o template de confirmação de e-mail está ativo
+    const emailTemplate = await prisma.emailTemplate.findUnique({
+      where: { slug: 'email-confirmation' }
+    })
+
+    if (emailTemplate && emailTemplate.enabled) {
+      try {
+        // Enviar e-mail de confirmação usando o EmailService
+        const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL}/verify-email?token=${verificationToken}&email=${encodeURIComponent(user.email)}`
+        
+        await EmailService.sendEmailConfirmation(
+          user.email,
+          user.name || user.username,
+          verificationUrl
+        )
+      } catch (error) {
+        console.error('Erro ao enviar e-mail de confirmação:', error)
+        // Não falhar o registro se o e-mail não for enviado
+      }
+    }
+
     // Remover senha do response
     const { password, ...userWithoutPassword } = user
     return NextResponse.json(
       { 
-        message: 'Usuário criado com sucesso',
-        user: userWithoutPassword 
+        message: 'Usuário criado com sucesso. Verifique seu e-mail para confirmar a conta.',
+        user: userWithoutPassword,
+        emailVerificationRequired: emailTemplate?.enabled || false
       },
       { status: 201 }
     )

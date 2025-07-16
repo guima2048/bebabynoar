@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { checkEmailVerification, shouldRedirectToVerification } from '@/lib/auth-guard'
 
 // Cache simples para rate limiting
 const rateLimitCache = new Map<string, { count: number; resetTime: number }>()
@@ -36,9 +37,26 @@ function isRateLimited(ip: string, maxRequests: number): boolean {
   return false
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const clientIP = getClientIP(request)
+  
+  // Verificar verificação de e-mail para usuários logados
+  if (shouldRedirectToVerification(pathname)) {
+    const emailVerification = await checkEmailVerification(request)
+    
+    if (emailVerification?.requiresVerification) {
+      // Redirecionar para página de verificação de e-mail
+      const verifyUrl = new URL('/verify-email', request.url)
+      if (emailVerification.email) {
+        verifyUrl.searchParams.set('email', emailVerification.email)
+      }
+      if (emailVerification.tokenExpired) {
+        verifyUrl.searchParams.set('expired', 'true')
+      }
+      return NextResponse.redirect(verifyUrl)
+    }
+  }
   
   // Headers de segurança básicos
   const response = NextResponse.next()

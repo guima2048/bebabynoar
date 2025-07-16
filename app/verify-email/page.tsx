@@ -15,10 +15,23 @@ export default function VerifyEmail() {
   useEffect(() => {
     const token = searchParams.get('token')
     const emailParam = searchParams.get('email')
+    const expired = searchParams.get('expired')
+
+    if (expired === 'true') {
+      setStatus('expired')
+      setMessage('Seu link de verificação expirou. Solicite um novo.')
+      if (emailParam) {
+        setEmail(emailParam)
+      }
+      return
+    }
 
     if (!token || !emailParam) {
       setStatus('error')
-      setMessage('Link de verificação inválido')
+      setMessage('Link de verificação inválido ou você precisa verificar seu e-mail para continuar.')
+      if (emailParam) {
+        setEmail(emailParam)
+      }
       return
     }
 
