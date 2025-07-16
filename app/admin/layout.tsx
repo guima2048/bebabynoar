@@ -122,6 +122,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { href: '/admin/blog', label: 'Blog', icon: '📝' },
     { href: '/admin/blog-settings', label: 'Configurações do Blog', icon: '⚙️' },
     { href: '/admin/emails', label: 'E-mails', icon: '📧' },
+    { href: '/admin/emails/logs', label: 'Logs de E-mails', icon: '📋' },
   ]
 
   return (

@@ -537,6 +537,16 @@ enum CommentStatus {
   SPAM
 }
 
+enum EmailStatus {
+  PENDING
+  SENT
+  DELIVERED
+  OPENED
+  CLICKED
+  FAILED
+  BOUNCED
+}
+
 model SMTPConfig {
   id   String @id @default("main")
   host String
@@ -559,6 +569,24 @@ model EmailTemplate {
   enabled   Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  logs      EmailLog[]
 
   @@map("email_templates")
+}
+
+model EmailLog {
+  id          String   @id @default(cuid())
+  templateId  String?
+  template    EmailTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  to          String
+  subject     String
+  status      EmailStatus @default(PENDING)
+  error       String?
+  sentAt      DateTime @default(now())
+  deliveredAt DateTime?
+  openedAt    DateTime?
+  clickedAt   DateTime?
+  metadata    Json?
+
+  @@map("email_logs")
 }

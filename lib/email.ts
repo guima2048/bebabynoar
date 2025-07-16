@@ -35,8 +35,25 @@ export class EmailService {
     return result
   }
 
-  static async sendEmail(emailData: EmailData): Promise<boolean> {
+  static async sendEmail(emailData: EmailData, templateId?: string): Promise<boolean> {
+    let logId: string | undefined
+
     try {
+      // Criar log inicial
+      const log = await prisma.emailLog.create({
+        data: {
+          templateId,
+          to: emailData.to,
+          subject: emailData.subject,
+          status: 'PENDING',
+          metadata: {
+            from: emailData.from,
+            timestamp: new Date().toISOString()
+          }
+        }
+      })
+      logId = log.id
+
       const smtpConfig = await this.getSMTPConfig()
 
       const response = await fetch('https://api.smtplw.com.br/v1/messages', {
@@ -56,12 +73,51 @@ export class EmailService {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
         console.error('Erro na API Locaweb:', errorData)
+        
+        // Atualizar log com erro
+        if (logId) {
+          await prisma.emailLog.update({
+            where: { id: logId },
+            data: {
+              status: 'FAILED',
+              error: `Erro ${response.status}: ${JSON.stringify(errorData)}`,
+              metadata: {
+                ...errorData,
+                responseStatus: response.status
+              }
+            }
+          })
+        }
+        
         throw new Error(`Erro ao enviar e-mail: ${response.status}`)
+      }
+
+      // Atualizar log com sucesso
+      if (logId) {
+        await prisma.emailLog.update({
+          where: { id: logId },
+          data: {
+            status: 'SENT',
+            sentAt: new Date()
+          }
+        })
       }
 
       return true
     } catch (error) {
       console.error('Erro ao enviar e-mail:', error)
+      
+      // Atualizar log com erro se ainda não foi atualizado
+      if (logId) {
+        await prisma.emailLog.update({
+          where: { id: logId },
+          data: {
+            status: 'FAILED',
+            error: error instanceof Error ? error.message : 'Erro desconhecido'
+          }
+        }).catch(() => {}) // Ignorar erro se não conseguir atualizar
+      }
+      
       throw error
     }
   }
@@ -92,7 +148,7 @@ export class EmailService {
         to,
         subject,
         html
-      })
+      }, template.id)
     } catch (error) {
       console.error('Erro ao enviar e-mail com template:', error)
       throw error
