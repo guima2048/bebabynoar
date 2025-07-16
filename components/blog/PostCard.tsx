@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { formatDistanceToNow } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { Heart, Eye, MessageCircle, Clock, User } from 'lucide-react'
+import { Heart, Eye, MessageCircle, Clock, User, Image as ImageIcon } from 'lucide-react'
 
 interface PostCardProps {
   post: {
@@ -59,19 +59,77 @@ export default function PostCard({
     return text.substring(0, maxLength) + '...'
   }
 
+  // Função para processar URL da imagem
+  const getImageUrl = (imageUrl?: string) => {
+    if (!imageUrl) return null
+    
+    // Log para debug
+    console.log('🔍 [PostCard] Processando imagem:', imageUrl)
+    
+    // Se já é uma URL relativa (começa com /), retorna como está
+    if (imageUrl.startsWith('/')) {
+      console.log('✅ [PostCard] URL já é relativa:', imageUrl)
+      return imageUrl
+    }
+    
+    // Se é uma URL completa, extrai o pathname
+    if (imageUrl.startsWith('http')) {
+      try {
+        const u = new URL(imageUrl)
+        const pathname = u.pathname
+        console.log('✅ [PostCard] URL completa convertida para:', pathname)
+        return pathname
+      } catch {
+        console.log('❌ [PostCard] Erro ao processar URL completa:', imageUrl)
+        return imageUrl
+      }
+    }
+    
+    // Se não tem / no início, adiciona
+    if (!imageUrl.startsWith('/')) {
+      const processedUrl = `/${imageUrl}`
+      console.log('✅ [PostCard] Adicionado / no início:', processedUrl)
+      return processedUrl
+    }
+    
+    return imageUrl
+  }
+
+  const processedImageUrl = getImageUrl(post.featuredImage)
+
+  // Componente de fallback para imagem
+  const ImageFallback = ({ className = "" }: { className?: string }) => (
+    <div className={`bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center ${className}`}>
+      <div className="text-center">
+        <ImageIcon className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+        <p className="text-xs text-gray-500">Imagem não disponível</p>
+      </div>
+    </div>
+  )
+
   if (variant === 'compact') {
     return (
       <Link href={`/blog/${post.slug}`} className="group">
         <article className="flex gap-4 p-4 rounded-lg border border-gray-200 hover:border-pink-300 transition-all duration-200 hover:shadow-md">
-          {post.featuredImage && !imageError && (
+          {processedImageUrl && !imageError ? (
             <div className="relative w-20 h-20 flex-shrink-0">
               <Image
-                src={post.featuredImage.startsWith('/') ? post.featuredImage : `/${post.featuredImage}`}
+                src={processedImageUrl}
                 alt={post.title}
                 fill
                 className="object-cover rounded-md"
-                onError={() => setImageError(true)}
+                onError={(e) => {
+                  console.error('❌ [PostCard] Erro ao carregar imagem compacta:', processedImageUrl, e)
+                  setImageError(true)
+                }}
+                onLoad={() => {
+                  console.log('✅ [PostCard] Imagem compacta carregada com sucesso:', processedImageUrl)
+                }}
               />
+            </div>
+          ) : (
+            <div className="w-20 h-20 flex-shrink-0">
+              <ImageFallback className="w-full h-full rounded-md" />
             </div>
           )}
           <div className="flex-1 min-w-0">
@@ -115,15 +173,26 @@ export default function PostCard({
     return (
       <Link href={`/blog/${post.slug}`} className="group">
         <article className="relative overflow-hidden rounded-xl border border-gray-200 hover:border-pink-300 transition-all duration-200 hover:shadow-lg">
-          {post.featuredImage && !imageError && (
+          {processedImageUrl && !imageError ? (
             <div className="relative h-64 w-full">
               <Image
-                src={post.featuredImage.startsWith('/') ? post.featuredImage : `/${post.featuredImage}`}
+                src={processedImageUrl}
                 alt={post.title}
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-300"
-                onError={() => setImageError(true)}
+                onError={(e) => {
+                  console.error('❌ [PostCard] Erro ao carregar imagem featured:', processedImageUrl, e)
+                  setImageError(true)
+                }}
+                onLoad={() => {
+                  console.log('✅ [PostCard] Imagem featured carregada com sucesso:', processedImageUrl)
+                }}
               />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+            </div>
+          ) : (
+            <div className="relative h-64 w-full">
+              <ImageFallback className="w-full h-full" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
             </div>
           )}
@@ -204,15 +273,25 @@ export default function PostCard({
   return (
     <Link href={`/blog/${post.slug}`} className="group">
       <article className="bg-white rounded-xl border border-gray-200 hover:border-pink-300 transition-all duration-200 hover:shadow-lg overflow-hidden">
-        {post.featuredImage && !imageError && (
+        {processedImageUrl && !imageError ? (
           <div className="relative h-48 w-full">
             <Image
-              src={post.featuredImage.startsWith('/') ? post.featuredImage : `/${post.featuredImage}`}
+              src={processedImageUrl}
               alt={post.title}
               fill
               className="object-cover group-hover:scale-105 transition-transform duration-300"
-              onError={() => setImageError(true)}
+              onError={(e) => {
+                console.error('❌ [PostCard] Erro ao carregar imagem default:', processedImageUrl, e)
+                setImageError(true)
+              }}
+              onLoad={() => {
+                console.log('✅ [PostCard] Imagem default carregada com sucesso:', processedImageUrl)
+              }}
             />
+          </div>
+        ) : (
+          <div className="relative h-48 w-full">
+            <ImageFallback className="w-full h-full" />
           </div>
         )}
         <div className="p-6">
