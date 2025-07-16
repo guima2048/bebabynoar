@@ -86,7 +86,6 @@ export async function GET(req: NextRequest) {
         excerpt: true,
         featuredImage: true,
         publishedAt: true,
-        readTime: true,
         author: {
           select: {
             id: true,
@@ -101,8 +100,7 @@ export async function GET(req: NextRequest) {
               select: {
                 id: true,
                 name: true,
-                slug: true,
-                color: true
+                slug: true
               }
             }
           }
@@ -122,38 +120,21 @@ export async function GET(req: NextRequest) {
       take: limit
     })
 
-    // Processar dados para o formato esperado pelo frontend
-    const processedPosts = posts.map(post => ({
-      id: post.id,
-      title: post.title,
-      slug: post.slug,
-      excerpt: post.excerpt,
-      featuredImage: post.featuredImage,
-      publishedAt: post.publishedAt,
-      readTime: post.readTime,
-      viewsCount: post._count.views,
-      likesCount: post._count.likes,
-      author: post.author,
-      categories: post.categories.map(cat => cat.category),
-      tags: [] // Placeholder para tags
-    }))
-
     // Contar total para paginação
     const total = await prisma.blogPost.count({ where })
 
-    console.log(`Posts encontrados: ${processedPosts.length} de ${total} total`)
-    processedPosts.forEach((post, index) => {
+    console.log(`Posts encontrados: ${posts.length} de ${total} total`)
+    posts.forEach((post, index) => {
       console.log(`Post ${index + 1}: ${post.title} - Imagem: ${post.featuredImage || 'NENHUMA'}`)
     })
 
     return NextResponse.json({
-      success: true,
-      posts: processedPosts,
+      posts,
       pagination: {
         page,
         limit,
         total,
-        totalPages: Math.ceil(total / limit)
+        pages: Math.ceil(total / limit)
       }
     })
 

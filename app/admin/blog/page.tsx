@@ -24,21 +24,23 @@ interface BlogPost {
   publishedAt?: string
   createdAt: string
   updatedAt: string
-  readTime?: number
-  viewsCount: number
-  likesCount: number
   author: {
     id: string
     name: string
     username: string
   }
   categories: Array<{
-    id: string
-    name: string
-    slug: string
-    color: string
+    category: {
+      id: string
+      name: string
+      slug: string
+    }
   }>
-  tags: string[]
+  _count: {
+    views: number
+    likes: number
+    comments: number
+  }
 }
 
 export default function AdminBlogPage() {
@@ -73,15 +75,15 @@ export default function AdminBlogPage() {
       const response = await fetch('/api/blog/posts?admin=true&limit=1000')
       const data = await response.json()
 
-      if (response.ok && data.success) {
+      if (response.ok) {
         const posts = data.posts || []
         
         const totalPosts = posts.length
         const publishedPosts = posts.filter((post: any) => post.status === 'PUBLISHED').length
         const draftPosts = posts.filter((post: any) => post.status === 'DRAFT').length
-        const totalViews = posts.reduce((sum: number, post: any) => sum + (post.viewsCount || 0), 0)
-        const totalLikes = posts.reduce((sum: number, post: any) => sum + (post.likesCount || 0), 0)
-        const totalComments = posts.reduce((sum: number, post: any) => sum + (post.commentsCount || 0), 0)
+        const totalViews = posts.reduce((sum: number, post: any) => sum + (post._count?.views || 0), 0)
+        const totalLikes = posts.reduce((sum: number, post: any) => sum + (post._count?.likes || 0), 0)
+        const totalComments = posts.reduce((sum: number, post: any) => sum + (post._count?.comments || 0), 0)
 
         setStats({
           totalPosts,
@@ -105,7 +107,7 @@ export default function AdminBlogPage() {
       const statusParam = statusFilter === 'ALL' ? '' : `&status=${statusFilter}`
       const response = await fetch(`/api/blog/posts?admin=true&limit=1000${statusParam}`)
       const data = await response.json()
-      if (response.ok && data.success) {
+      if (response.ok) {
         setPosts(data.posts || [])
       } else {
         toast.error('Erro ao carregar posts')
@@ -375,11 +377,11 @@ export default function AdminBlogPage() {
                       </div>
                       <div className="flex items-center gap-1">
                         <Eye className="w-4 h-4" />
-                        <span>{post.viewsCount} visualizações</span>
+                        <span>{post._count.views} visualizações</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Tag className="w-4 h-4" />
-                        <span>{post.likesCount} likes</span>
+                        <span>{post._count.likes} likes</span>
                       </div>
                     </div>
                     {post.categories.length > 0 && (
@@ -387,10 +389,10 @@ export default function AdminBlogPage() {
                         <span className="text-sm text-gray-500">Categorias:</span>
                         {post.categories.map((cat) => (
                           <span
-                            key={cat.id}
+                            key={cat.category.id}
                             className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded-full"
                           >
-                            {cat.name}
+                            {cat.category.name}
                           </span>
                         ))}
                       </div>

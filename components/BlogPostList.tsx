@@ -12,20 +12,21 @@ interface BlogPost {
   excerpt: string
   featuredImage?: string
   publishedAt: string
-  readTime?: number
-  viewsCount: number
-  likesCount: number
   author: {
     name: string
     username: string
   }
   categories: Array<{
-    id: string
-    name: string
-    slug: string
-    color: string
+    category: {
+      name: string
+      slug: string
+    }
   }>
-  tags: string[]
+  _count: {
+    views: number
+    likes: number
+    comments: number
+  }
 }
 
 export default function BlogPostList() {
@@ -43,7 +44,7 @@ export default function BlogPostList() {
       const response = await fetch('/api/blog/posts?limit=9')
       const data = await response.json()
 
-      if (response.ok && data.success) {
+      if (response.ok) {
         console.log('📝 [BlogPostList] Posts carregados:', data.posts)
         setPosts(data.posts)
       } else {
@@ -189,7 +190,7 @@ export default function BlogPostList() {
               {/* Category */}
               {post.categories.length > 0 && (
                 <span className="inline-block px-3 py-1 text-xs font-semibold text-pink-600 bg-pink-100 rounded-full mb-3">
-                  {post.categories[0].name}
+                  {post.categories[0].category.name}
                 </span>
               )}
               
@@ -211,7 +212,7 @@ export default function BlogPostList() {
                 </div>
                 <div className="flex items-center space-x-2">
                   <Eye className="w-4 h-4" />
-                  <span>{post.viewsCount}</span>
+                  <span>{post._count.views}</span>
                 </div>
               </div>
               
