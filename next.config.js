@@ -97,27 +97,7 @@ const nextConfig = {
           },
         ],
       },
-      {
-        source: '/uploads/(.*)',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=86400, stale-while-revalidate=604800',
-          },
-          {
-            key: 'Access-Control-Allow-Origin',
-            value: '*',
-          },
-          {
-            key: 'Access-Control-Allow-Methods',
-            value: 'GET, POST, OPTIONS',
-          },
-          {
-            key: 'Access-Control-Allow-Headers',
-            value: 'Content-Type',
-          },
-        ],
-      },
+      // Removido configuração de uploads para deixar Nginx servir diretamente
       {
         source: '/landing/(.*)',
         headers: [
