@@ -12,9 +12,6 @@ interface Post {
   excerpt?: string
   featuredImage?: string
   publishedAt?: Date
-  readTime?: number
-  viewsCount: number
-  likesCount: number
   author: {
     id: string
     name?: string
@@ -22,12 +19,17 @@ interface Post {
     photoURL?: string
   }
   categories: Array<{
-    id: string
-    name: string
-    slug: string
-    color: string
+    category: {
+      id: string
+      name: string
+      slug: string
+    }
   }>
-  tags: string[]
+  _count: {
+    views: number
+    likes: number
+    comments: number
+  }
 }
 
 interface PostListProps {
@@ -93,9 +95,9 @@ export default function PostList({
       const response = await fetch(`/api/blog/posts?${params}`)
       const data = await response.json()
 
-      if (data.success) {
+      if (response.ok) {
         setPosts(data.posts)
-        setTotalPages(data.pagination.totalPages)
+        setTotalPages(data.pagination.pages)
         setCurrentPage(page)
       }
     } catch (error) {
@@ -180,7 +182,7 @@ export default function PostList({
                   )}
                   <div className="flex items-center justify-between text-xs text-gray-500">
                     <span>{new Date(post.publishedAt || '').toLocaleDateString('pt-BR')}</span>
-                    <span>{post.viewsCount} visualizações</span>
+                    <span>{post._count.views} visualizações</span>
                   </div>
                 </div>
               </Link>
