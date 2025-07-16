@@ -40,17 +40,22 @@ export class EmailService {
 
     try {
       // Criar log inicial
-      const log = await prisma.emailLog.create({
-        data: {
-          templateId,
-          to: emailData.to,
-          subject: emailData.subject,
-          status: 'PENDING',
-          metadata: {
-            from: emailData.from,
-            timestamp: new Date().toISOString()
-          }
+      const logData: any = {
+        to: emailData.to,
+        subject: emailData.subject,
+        status: 'PENDING',
+        metadata: {
+          from: emailData.from,
+          timestamp: new Date().toISOString()
         }
+      }
+      
+      if (templateId) {
+        logData.templateId = templateId
+      }
+      
+      const log = await prisma.emailLog.create({
+        data: logData
       })
       logId = log.id
 
