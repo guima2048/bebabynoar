@@ -50,7 +50,7 @@ export function middleware(request: NextRequest) {
   response.headers.set('X-XSS-Protection', '1; mode=block')
   
   // Rate limiting para APIs específicas
-  if (pathname.startsWith('/api/upload-photo') || pathname.startsWith('/api/upload-blog-image')) {
+      if (pathname.startsWith('/api/upload-photo')) {
     if (isRateLimited(clientIP, UPLOAD_RATE_LIMIT_MAX_REQUESTS)) {
       return new NextResponse(
         JSON.stringify({ error: 'Rate limit exceeded. Too many upload requests.' }),

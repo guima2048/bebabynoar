@@ -167,7 +167,7 @@ export default function BlogSettingsPage() {
       const formData = new FormData()
       formData.append('file', file)
 
-      const response = await fetch('/api/upload-blog-image', {
+      const response = await fetch('/api/blog/upload', {
         method: 'POST',
         body: formData
       })

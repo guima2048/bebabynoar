@@ -22,8 +22,16 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'localhost',
       },
+      {
+        protocol: 'http',
+        hostname: '177.153.20.125',
+      },
+      {
+        protocol: 'https',
+        hostname: '177.153.20.125',
+      },
     ],
-    // Adicionar configuração para imagens locais
+    // Configuração para imagens locais
     unoptimized: false,
     formats: ['image/webp', 'image/avif'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
@@ -31,6 +39,8 @@ const nextConfig = {
     minimumCacheTTL: 60,
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    // Adicionar configuração para permitir imagens locais
+    domains: ['bebaby.app', 'localhost', '177.153.20.125'],
   },
   compress: true,
   poweredByHeader: false,
@@ -40,14 +50,12 @@ const nextConfig = {
     removeConsole: process.env.NODE_ENV === 'production',
   },
   experimental: {
-    optimizeCss: true, // Habilitado para otimização de CSS
+    optimizeCss: true,
     optimizePackageImports: ['lucide-react', '@heroicons/react'],
     optimizeServerReact: true,
     serverComponentsExternalPackages: [],
   },
-  // Otimizações de performance
   swcMinify: true,
-  // Configuração para CSS crítico
   async headers() {
     return [
       {
@@ -100,6 +108,14 @@ const nextConfig = {
             key: 'Access-Control-Allow-Origin',
             value: '*',
           },
+          {
+            key: 'Access-Control-Allow-Methods',
+            value: 'GET, POST, OPTIONS',
+          },
+          {
+            key: 'Access-Control-Allow-Headers',
+            value: 'Content-Type',
+          },
         ],
       },
       {
@@ -127,7 +143,6 @@ const nextConfig = {
     ]
   },
   webpack: (config, { dev, isServer }) => {
-    // Configuração básica do webpack
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
@@ -137,7 +152,6 @@ const nextConfig = {
       }
     }
     
-    // Otimização para CSS crítico
     if (!dev && !isServer) {
       config.optimization.splitChunks.cacheGroups.styles = {
         name: 'styles',
@@ -147,7 +161,6 @@ const nextConfig = {
         priority: 20,
       }
       
-      // Otimização agressiva de CSS
       config.optimization.splitChunks.cacheGroups.vendor = {
         test: /[\\/]node_modules[\\/]/,
         name: 'vendors',
@@ -155,7 +168,6 @@ const nextConfig = {
         priority: 10,
       }
       
-      // Minimizar CSS
       config.optimization.minimize = true
     }
     
