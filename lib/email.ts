@@ -13,7 +13,7 @@ interface TemplateData {
 
 export class EmailService {
   private static async getSMTPConfig() {
-    const config = await prisma.smtpConfig.findUnique({
+    const config = await prisma.sMTPConfig.findUnique({
       where: { id: 'main' }
     })
 

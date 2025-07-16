@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Buscar configuração SMTP
-    const smtpConfig = await prisma.smtpConfig.findUnique({
+    const smtpConfig = await prisma.sMTPConfig.findUnique({
       where: { id: 'main' }
     })
 

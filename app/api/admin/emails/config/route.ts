@@ -11,7 +11,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Acesso negado' }, { status: 403 })
     }
 
-    const config = await prisma.smtpConfig.findUnique({
+    const config = await prisma.sMTPConfig.findUnique({
       where: { id: 'main' }
     })
 
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Salvar ou atualizar configuração
-    const config = await prisma.smtpConfig.upsert({
+    const config = await prisma.sMTPConfig.upsert({
       where: { id: 'main' },
       update: {
         host,
