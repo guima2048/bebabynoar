@@ -43,7 +43,7 @@ export default function BlogPostList() {
       const response = await fetch('/api/blog/posts?limit=9')
       const data = await response.json()
 
-      if (response.ok) {
+      if (response.ok && data.success) {
         console.log('📝 [BlogPostList] Posts carregados:', data.posts)
         setPosts(data.posts)
       } else {

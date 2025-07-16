@@ -73,7 +73,7 @@ export default function AdminBlogPage() {
       const response = await fetch('/api/blog/posts?admin=true&limit=1000')
       const data = await response.json()
 
-      if (response.ok) {
+      if (response.ok && data.success) {
         const posts = data.posts || []
         
         const totalPosts = posts.length
@@ -105,7 +105,7 @@ export default function AdminBlogPage() {
       const statusParam = statusFilter === 'ALL' ? '' : `&status=${statusFilter}`
       const response = await fetch(`/api/blog/posts?admin=true&limit=1000${statusParam}`)
       const data = await response.json()
-      if (response.ok) {
+      if (response.ok && data.success) {
         setPosts(data.posts || [])
       } else {
         toast.error('Erro ao carregar posts')
