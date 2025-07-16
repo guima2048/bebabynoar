@@ -49,6 +49,7 @@ Plataforma de relacionamento Sugar Baby e Sugar Daddy desenvolvida com Next.js 1
 - ✅ Gestão de usuários
 - ✅ Relatórios e estatísticas
 - ✅ Configurações do sistema
+- ✅ Sistema de e-mails automáticos
 
 ## 🛠️ Instalação
 
@@ -203,6 +204,7 @@ npm run db:push          # Sincronizar schema
 npm run db:migrate       # Executar migrações
 npm run db:studio        # Abrir Prisma Studio
 npm run db:seed          # Popular dados iniciais
+node scripts/seed-email-templates.js  # Popular templates de e-mail
 
 # Testes
 npm test                 # Executar testes
@@ -239,6 +241,13 @@ npm run test:coverage    # Cobertura de testes
 - `POST /api/upload-photo` - Upload de foto
 - `DELETE /api/upload-photo` - Deletar foto
 
+### E-mails
+- `GET /api/admin/emails/config` - Buscar configuração SMTP
+- `POST /api/admin/emails/config` - Salvar configuração SMTP
+- `GET /api/admin/emails/templates` - Buscar templates
+- `POST /api/admin/emails/templates` - Salvar template
+- `POST /api/admin/emails/send-test` - Enviar e-mail de teste
+
 ## 🗄️ Schema do Banco
 
 O projeto usa PostgreSQL com as seguintes tabelas principais:
@@ -252,6 +261,8 @@ O projeto usa PostgreSQL com as seguintes tabelas principais:
 - **payments** - Pagamentos
 - **reports** - Denúncias
 - **blog_posts** - Posts do blog
+- **smtp_config** - Configuração SMTP
+- **email_templates** - Templates de e-mail
 
 ## 🔒 Segurança
 

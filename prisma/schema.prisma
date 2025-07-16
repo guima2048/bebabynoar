@@ -536,3 +536,29 @@ enum CommentStatus {
   REJECTED
   SPAM
 }
+
+model SMTPConfig {
+  id   String @id @default("main")
+  host String
+  port Int
+  user String
+  pass String
+  token String
+  from String
+  updatedAt DateTime @updatedAt
+
+  @@map("smtp_config")
+}
+
+model EmailTemplate {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  subject   String
+  body      String
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("email_templates")
+}
