@@ -41,22 +41,8 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const clientIP = getClientIP(request)
   
-  // Verificar verificação de e-mail para usuários logados
-  if (shouldRedirectToVerification(pathname)) {
-    const emailVerification = await checkEmailVerification(request)
-    
-    if (emailVerification?.requiresVerification) {
-      // Redirecionar para página de verificação de e-mail
-      const verifyUrl = new URL('/verify-email', request.url)
-      if (emailVerification.email) {
-        verifyUrl.searchParams.set('email', emailVerification.email)
-      }
-      if (emailVerification.tokenExpired) {
-        verifyUrl.searchParams.set('expired', 'true')
-      }
-      return NextResponse.redirect(verifyUrl)
-    }
-  }
+  // Verificação de e-mail será implementada no lado do cliente
+  // para evitar problemas com o Edge Runtime
   
   // Headers de segurança básicos
   const response = NextResponse.next()
