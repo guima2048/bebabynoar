@@ -33,6 +33,7 @@ export default function BlogPostList() {
   const [posts, setPosts] = useState<BlogPost[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [imageErrors, setImageErrors] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     fetchPosts()
@@ -91,6 +92,11 @@ export default function BlogPostList() {
     }
     
     return imageUrl
+  }
+
+  // Função para marcar imagem como erro
+  const handleImageError = (imageUrl: string) => {
+    setImageErrors(prev => new Set(prev).add(imageUrl))
   }
 
   // Componente de fallback para imagem
@@ -153,13 +159,13 @@ export default function BlogPostList() {
     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
       {posts.map((post) => {
         const processedImageUrl = getImageUrl(post.featuredImage)
-        const [imageError, setImageError] = useState(false)
+        const hasImageError = processedImageUrl ? imageErrors.has(processedImageUrl) : true
         
         return (
           <article key={post.id} className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
             {/* Image */}
             <div className="h-48 overflow-hidden">
-              {processedImageUrl && !imageError ? (
+              {processedImageUrl && !hasImageError ? (
                 <Image
                   src={processedImageUrl}
                   alt={post.title}
@@ -168,7 +174,7 @@ export default function BlogPostList() {
                   className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                   onError={(e) => {
                     console.error('❌ [BlogPostList] Erro ao carregar imagem:', processedImageUrl, e)
-                    setImageError(true)
+                    handleImageError(processedImageUrl)
                   }}
                   onLoad={() => {
                     console.log('✅ [BlogPostList] Imagem carregada com sucesso:', processedImageUrl)
