@@ -15,9 +15,6 @@ interface PostCardProps {
     excerpt?: string
     featuredImage?: string
     publishedAt?: Date
-    readTime?: number
-    viewsCount: number
-    likesCount: number
     author: {
       id: string
       name?: string
@@ -25,12 +22,17 @@ interface PostCardProps {
       photoURL?: string
     }
     categories: Array<{
-      id: string
-      name: string
-      slug: string
-      color: string
+      category: {
+        id: string
+        name: string
+        slug: string
+      }
     }>
-    tags: string[]
+    _count: {
+      views: number
+      likes: number
+      comments: number
+    }
   }
   showAuthor?: boolean
   showCategories?: boolean
@@ -107,25 +109,18 @@ export default function PostCard({
               </p>
             )}
             <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-              {post.readTime && (
-                <span className="flex items-center gap-1">
-                  <div suppressHydrationWarning>
-                    <Clock className="w-3 h-3" />
-                  </div>
-                  {post.readTime} min
-                </span>
-              )}
+              {/* post.readTime is removed from interface, so this block will be removed */}
               <span className="flex items-center gap-1">
                 <div suppressHydrationWarning>
                   <Eye className="w-3 h-3" />
                 </div>
-                {post.viewsCount}
+                {post._count.views}
               </span>
               <span className="flex items-center gap-1">
                 <div suppressHydrationWarning>
                   <Heart className="w-3 h-3" />
                 </div>
-                {post.likesCount}
+                {post._count.likes}
               </span>
             </div>
           </div>
@@ -164,15 +159,14 @@ export default function PostCard({
           <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
             {showCategories && post.categories.length > 0 && (
               <div className="flex gap-2 mb-3">
-                {post.categories.slice(0, 2).map((category) => (
-                  <span
-                    key={category.id}
-                    className="px-2 py-1 text-xs font-medium rounded-full"
-                    style={{ backgroundColor: category.color + '20', color: category.color }}
-                  >
-                    {category.name}
-                  </span>
-                ))}
+                                  {post.categories.slice(0, 2).map((category) => (
+                    <span
+                      key={category.category.id}
+                      className="px-2 py-1 text-xs font-medium rounded-full bg-pink-100 text-pink-800"
+                    >
+                      {category.category.name}
+                    </span>
+                  ))}
               </div>
             )}
             <h2 className="text-xl font-bold mb-2 group-hover:text-pink-300 transition-colors">
@@ -212,19 +206,14 @@ export default function PostCard({
                 )}
               </div>
               <div className="flex items-center gap-3 text-sm">
-                {post.readTime && (
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-4 h-4" />
-                    {post.readTime} min
-                  </span>
-                )}
+                {/* post.readTime is removed from interface, so this block will be removed */}
                 <span className="flex items-center gap-1">
                   <Eye className="w-4 h-4" />
-                  {post.viewsCount}
+                  {post._count.views}
                 </span>
                 <span className="flex items-center gap-1">
                   <Heart className="w-4 h-4" />
-                  {post.likesCount}
+                  {post._count.likes}
                 </span>
               </div>
             </div>
@@ -262,15 +251,14 @@ export default function PostCard({
         <div className="p-6">
           {showCategories && post.categories.length > 0 && (
             <div className="flex gap-2 mb-3">
-              {post.categories.slice(0, 3).map((category) => (
-                <span
-                  key={category.id}
-                  className="px-3 py-1 text-xs font-medium rounded-full"
-                  style={{ backgroundColor: category.color + '20', color: category.color }}
-                >
-                  {category.name}
-                </span>
-              ))}
+                              {post.categories.slice(0, 3).map((category) => (
+                  <span
+                    key={category.category.id}
+                    className="px-3 py-1 text-xs font-medium rounded-full bg-pink-100 text-pink-800"
+                  >
+                    {category.category.name}
+                  </span>
+                ))}
             </div>
           )}
           <h3 className="text-lg font-bold text-gray-900 group-hover:text-pink-600 transition-colors mb-2 line-clamp-2">
@@ -281,18 +269,7 @@ export default function PostCard({
               {truncateText(post.excerpt, 120)}
             </p>
           )}
-          {showTags && post.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1 mb-4">
-              {post.tags.slice(0, 3).map((tag, index) => (
-                <span
-                  key={index}
-                  className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded"
-                >
-                  #{tag}
-                </span>
-              ))}
-            </div>
-          )}
+          {/* Tags removed from interface */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {showAuthor && (
@@ -320,23 +297,18 @@ export default function PostCard({
               )}
             </div>
             <div className="flex items-center gap-3 text-sm text-gray-500">
-              {post.readTime && (
-                <span className="flex items-center gap-1">
-                  <Clock className="w-4 h-4" />
-                  {post.readTime} min
-                </span>
-              )}
+              {/* post.readTime is removed from interface, so this block will be removed */}
               <span className="flex items-center gap-1">
                 <Eye className="w-4 h-4" />
-                {post.viewsCount}
+                {post._count.views}
               </span>
               <span className="flex items-center gap-1">
                 <Heart className="w-4 h-4" />
-                {post.likesCount}
+                {post._count.likes}
               </span>
               <span className="flex items-center gap-1">
                 <MessageCircle className="w-4 h-4" />
-                {post.likesCount} {/* Placeholder para comentários */}
+                {post._count.comments} {/* Placeholder para comentários */}
               </span>
             </div>
           </div>
