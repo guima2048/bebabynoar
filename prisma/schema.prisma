@@ -8,129 +8,89 @@ datasource db {
 }
 
 model User {
-  id                        String                    @id @default(cuid())
-  email                     String                    @unique
-  username                  String                    @unique
-  password                  String?
-  name                      String?
-  birthdate                 DateTime
-  gender                    Gender
-  userType                  UserType
-  lookingFor                UserType?
-  state                     String
-  city                      String
-  location                  String?
-  about                     String?
-  photoURL                  String?
-  verified                  Boolean                   @default(false)
-  premium                   Boolean                   @default(false)
-  premiumExpiry             DateTime?
-  status                    UserStatus                @default(ACTIVE)
-  height                    String?
-  weight                    String?
-  education                 String?
-  profession                String?
-  hasChildren               Boolean?
-  smokes                    Boolean?
-  drinks                    Boolean?
-  relationshipType          String?
-  availableForTravel        Boolean?
-  receiveTravelers          Boolean?
-  social                    Json?
-  createdAt                 DateTime                  @default(now())
-  updatedAt                 DateTime                  @updatedAt
-  lastActive                DateTime                  @default(now())
-  isAdmin                   Boolean                   @default(false)
-  stripeCustomerId          String?                   @unique
-  lastPaymentDate           DateTime?
-  subscriptionStatus        String?
-  emailVerified             Boolean                   @default(false)
-  emailVerifiedAt           DateTime?
-  emailVerificationToken    String?
-  emailVerificationExpiry   DateTime?
-  lastVerificationEmailSent DateTime?
-  passwordResetToken        String?
-  passwordResetTokenExpiry  DateTime?
-  passwordUpdatedAt         DateTime?
-  blockedByUsers            Block[]                   @relation("TargetUserBlocks")
-  blockedUsers              Block[]                   @relation("UserBlocks")
-  blogAnalytics             BlogAnalytics[]           @relation("BlogAnalytics")
-  blogComments              BlogComment[]             @relation("BlogComments")
-  blogImageUploads          BlogImage[]               @relation("BlogImageUploads")
-  blogLikes                 BlogLike[]                @relation("BlogLikes")
-  blogPosts                 BlogPost[]                @relation("BlogPosts")
-  blogViews                 BlogView[]                @relation("BlogViews")
-  conversations             ConversationParticipant[]
-  favoritedByUsers          Favorite[]                @relation("TargetUserFavorites")
-  favorites                 Favorite[]                @relation("UserFavorites")
-  receivedInterests         Interest[]                @relation("ReceivedInterests")
-  sentInterests             Interest[]                @relation("SentInterests")
-  loginHistory              LoginHistory[]
-  receivedMessages          Message[]                 @relation("ReceiverMessages")
-  sentMessages              Message[]                 @relation("SenderMessages")
-  notifications             Notification[]
-  payments                  Payment[]
-  photos                    Photo[]
-  profileViews              ProfileView[]             @relation("ViewedProfile")
-  viewedProfiles            ProfileView[]             @relation("ViewerProfile")
-  receivedReports           Report[]                  @relation("ReceivedReports")
-  sentReports               Report[]                  @relation("SentReports")
-  reviews                   Review[]                  @relation("UserReviews")
-  receivedReviews           Review[]                  @relation("TargetUserReviews")
+  id                      String                    @id @default(cuid())
+  email                   String                    @unique
+  username                String                    @unique
+  password                String?
+  birthdate               DateTime
+  gender                  Gender
+  userType                UserType
+  lookingFor              UserType?
+  state                   String
+  city                    String
+  about                   String?
+  photoURL                String?
+  premium                 Boolean                   @default(false)
+  isAdmin                 Boolean                   @default(false)
+  emailVerified           Boolean                   @default(false)
+  createdAt               DateTime                  @default(now())
+  updatedAt               DateTime                  @updatedAt
+  education               String?
+  emailVerifiedAt         DateTime?
+  lastActive              DateTime                  @default(now())
+  premiumExpiry           DateTime?
+  profession              String?
+  status                  UserStatus                @default(ACTIVE)
+  name                    String?
+  verified                Boolean                   @default(false)
+  acceptsTravel           Boolean                   @default(false)
+  meetingFrequency        String?
+  relationshipType        String?
+  sponsorshipStyle        String?
+  acceptsExclusivity      Boolean                   @default(false)
+  availableTime           String?
+  relationshipFormat      String?
+  relationshipGoal        String?
+  blockedBy               Block[]                   @relation("TargetUserBlocks")
+  blocks                  Block[]                   @relation("UserBlocks")
+  conversations           ConversationParticipant[]
+  favoritedBy             Favorite[]                @relation("TargetUserFavorites")
+  favorites               Favorite[]                @relation("UserFavorites")
+  receivedInterests       Interest[]                @relation("ReceivedInterests")
+  sentInterests           Interest[]                @relation("SentInterests")
+  receivedMessages        Message[]                 @relation("ReceiverMessages")
+  sentMessages            Message[]                 @relation("SenderMessages")
+  notifications           Notification[]
+  pendingTexts            PendingText[]
+  photos                  Photo[]
+  sentProfileRequests     ProfileRequest[]          @relation("SentProfileRequests")
+  receivedProfileRequests ProfileRequest[]          @relation("ReceivedProfileRequests")
+  profileViews            ProfileView[]             @relation("ViewedProfile")
+  viewedProfiles          ProfileView[]             @relation("ViewerProfile")
+  reportedBy              Report[]                  @relation("ReceivedReports")
+  reports                 Report[]                  @relation("SentReports")
+  conversations2          Conversation[]            @relation("ConversationUsers")
 
   @@map("users")
 }
 
 model Photo {
-  id         String   @id @default(cuid())
-  url        String
-  fileName   String?
-  isPrivate  Boolean  @default(false)
-  uploadedAt DateTime @default(now())
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String         @id @default(cuid())
+  url           String
+  userId        String
+  isPrivate     Boolean        @default(false)
+  uploadedAt    DateTime       @default(now())
+  status        PhotoStatus    @default(PENDING)
+  photoReleases PhotoRelease[]
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("photos")
 }
 
-model Conversation {
-  id              String                    @id @default(cuid())
-  lastMessage     String?
-  lastMessageTime DateTime                  @default(now())
-  createdAt       DateTime                  @default(now())
-  updatedAt       DateTime                  @updatedAt
-  participants    ConversationParticipant[]
-  messages        Message[]
-
-  @@map("conversations")
-}
-
-model ConversationParticipant {
-  id             String       @id @default(cuid())
-  conversationId String
-  userId         String
-  unreadCount    Int          @default(0)
-  joinedAt       DateTime     @default(now())
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([conversationId, userId])
-  @@map("conversation_participants")
-}
-
 model Message {
-  id             String       @id @default(cuid())
-  content        String
-  type           MessageType  @default(TEXT)
-  imageURL       String?
-  read           Boolean      @default(false)
-  createdAt      DateTime     @default(now())
-  conversationId String
-  senderId       String
-  receiverId     String
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  receiver       User         @relation("ReceiverMessages", fields: [receiverId], references: [id], onDelete: Cascade)
-  sender         User         @relation("SenderMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  id               String        @id @default(cuid())
+  content          String
+  createdAt        DateTime      @default(now())
+  senderId         String
+  receiverId       String
+  read             Boolean       @default(false)
+  conversationId   String?
+  replyToMessageId String?
+  conversation     Conversation? @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  receiver         User          @relation("ReceiverMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  replyToMessage   Message?      @relation("MessageReplies", fields: [replyToMessageId], references: [id])
+  replies          Message[]     @relation("MessageReplies")
+  sender           User          @relation("SenderMessages", fields: [senderId], references: [id], onDelete: Cascade)
 
   @@map("messages")
 }
@@ -140,7 +100,6 @@ model Interest {
   message    String?
   status     InterestStatus @default(PENDING)
   createdAt  DateTime       @default(now())
-  updatedAt  DateTime       @updatedAt
   senderId   String
   receiverId String
   receiver   User           @relation("ReceivedInterests", fields: [receiverId], references: [id], onDelete: Cascade)
@@ -156,42 +115,11 @@ model Notification {
   message   String
   type      NotificationType
   read      Boolean          @default(false)
-  data      Json?
   createdAt DateTime         @default(now())
   userId    String
   user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notifications")
-}
-
-model Payment {
-  id                    String        @id @default(cuid())
-  amount                Decimal
-  currency              String        @default("BRL")
-  status                PaymentStatus @default(PENDING)
-  stripePaymentIntentId String?       @unique
-  stripeCustomerId      String?
-  plan                  String?
-  createdAt             DateTime      @default(now())
-  userId                String
-  user                  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("payments")
-}
-
-model Report {
-  id          String       @id @default(cuid())
-  reason      String
-  description String?
-  status      ReportStatus @default(PENDING)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  reporterId  String
-  reportedId  String
-  reported    User         @relation("ReceivedReports", fields: [reportedId], references: [id], onDelete: Cascade)
-  reporter    User         @relation("SentReports", fields: [reporterId], references: [id], onDelete: Cascade)
-
-  @@map("reports")
 }
 
 model ProfileView {
@@ -206,215 +134,14 @@ model ProfileView {
   @@map("profile_views")
 }
 
-model LoginHistory {
-  id        String   @id @default(cuid())
-  ipAddress String?
-  userAgent String?
-  location  String?
-  timestamp DateTime @default(now())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("login_history")
-}
-
-model BlogPost {
-  id              String             @id @default(cuid())
-  title           String
-  slug            String             @unique
-  content         String
-  excerpt         String?
-  publishedAt     DateTime?
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
-  metaTitle       String?
-  metaDescription String?
-  tags            String[]
-  scheduledFor    DateTime?
-  readTime        Int?
-  authorId        String
-  featuredImage   String?
-  featuredImageAlt String? // Texto alternativo da imagem de destaque
-  likesCount      Int                @default(0)
-  viewsCount      Int                @default(0)
-  status          BlogPostStatus     @default(DRAFT)
-  analytics       BlogAnalytics[]
-  comments        BlogComment[]
-  images          BlogImage[]        @relation("BlogImages")
-  likes           BlogLike[]
-  categories      BlogPostCategory[]
-  author          User               @relation("BlogPosts", fields: [authorId], references: [id])
-  views           BlogView[]
-
-  @@map("blog_posts")
-}
-
-model BlogCategory {
-  id          String             @id @default(cuid())
-  name        String
-  slug        String             @unique
-  description String?
-  color       String             @default("#EC4899")
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
-  posts       BlogPostCategory[]
-
-  @@map("blog_categories")
-}
-
-model BlogPostCategory {
-  postId     String
-  categoryId String
-  category   BlogCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  post       BlogPost     @relation(fields: [postId], references: [id], onDelete: Cascade)
-
-  @@id([postId, categoryId])
-  @@map("blog_post_categories")
-}
-
-model BlogComment {
-  id        String        @id @default(cuid())
-  content   String
-  status    CommentStatus @default(PENDING)
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
-  postId    String
-  userId    String
-  post      BlogPost      @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user      User          @relation("BlogComments", fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("blog_comments")
-}
-
-model BlogLike {
-  postId    String
-  userId    String
-  createdAt DateTime @default(now())
-  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user      User     @relation("BlogLikes", fields: [userId], references: [id], onDelete: Cascade)
-
-  @@id([postId, userId])
-  @@map("blog_likes")
-}
-
-model BlogView {
-  id          String   @id @default(cuid())
-  sessionId   String
-  pageView    Boolean  @default(true)
-  timeSpent   Int?
-  scrollDepth Int?
-  bounce      Boolean  @default(false)
-  ipAddress   String?
-  userAgent   String?
-  referrer    String?
-  createdAt   DateTime @default(now())
-  postId      String
-  userId      String?
-  post        BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user        User?    @relation("BlogViews", fields: [userId], references: [id])
-
-  @@map("blog_views")
-}
-
-model BlogAnalytics {
-  id        String   @id @default(cuid())
-  eventType String
-  eventData Json?
-  createdAt DateTime @default(now())
-  postId    String
-  userId    String?
-  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user      User?    @relation("BlogAnalytics", fields: [userId], references: [id])
-
-  @@map("blog_analytics")
-}
-
-model BlogImage {
-  id           String    @id @default(cuid())
-  filename     String
-  originalName String
-  mimeType     String
-  size         Int
-  url          String
-  alt          String?
-  createdAt    DateTime  @default(now())
-  postId       String?
-  uploadedBy   String
-  post         BlogPost? @relation("BlogImages", fields: [postId], references: [id])
-  user         User      @relation("BlogImageUploads", fields: [uploadedBy], references: [id])
-
-  @@map("blog_images")
-}
-
-model LandingSettings {
-  id                  String   @id @default(cuid())
-  bannerImageURL      String?
-  bannerTitle         String?
-  bannerSubtitle      String?
-  bannerDescription   String?
-  primaryButtonText   String?
-  primaryButtonLink   String?
-  secondaryButtonText String?
-  secondaryButtonLink String?
-  heroBaby1Image      String?
-  heroDaddy1Image     String?
-  heroBaby2Image      String?
-  heroDaddy2Image     String?
-  updatedAt           DateTime @updatedAt
-
-  @@map("landing_settings")
-}
-
-model Testimonial {
-  id       String  @id @default(cuid())
-  name     String
-  location String
-  story    String
-  rating   Int
-  photo    String?
-  isActive Boolean @default(true)
-
-  @@map("testimonials")
-}
-
-model ProfileCard {
-  id         String  @id @default(cuid())
-  name       String
-  location   String
-  profession String
-  photo      String?
-  isActive   Boolean @default(true)
-  type       String
-
-  @@map("profile_cards")
-}
-
-model Review {
-  id           String       @id @default(cuid())
-  rating       Int
-  comment      String?
-  status       ReviewStatus @default(PENDING)
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  reviewerId   String
-  targetUserId String
-  reviewer     User         @relation("UserReviews", fields: [reviewerId], references: [id], onDelete: Cascade)
-  targetUser   User         @relation("TargetUserReviews", fields: [targetUserId], references: [id], onDelete: Cascade)
-
-  @@unique([reviewerId, targetUserId])
-  @@map("reviews")
-}
-
 model Block {
-  id             String   @id @default(cuid())
-  reason         String?
-  createdAt      DateTime @default(now())
-  userId         String
-  targetUserId   String
-  targetUserType UserType
-  userType       UserType
-  targetUser     User     @relation("TargetUserBlocks", fields: [targetUserId], references: [id], onDelete: Cascade)
-  user           User     @relation("UserBlocks", fields: [userId], references: [id], onDelete: Cascade)
+  id           String   @id @default(cuid())
+  reason       String?
+  createdAt    DateTime @default(now())
+  userId       String
+  targetUserId String
+  targetUser   User     @relation("TargetUserBlocks", fields: [targetUserId], references: [id], onDelete: Cascade)
+  user         User     @relation("UserBlocks", fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, targetUserId])
   @@map("blocks")
@@ -432,34 +159,151 @@ model Favorite {
   @@map("favorites")
 }
 
-model BlogSettings {
-  id                   String   @id @default("main")
-  primaryColor         String
-  secondaryColor       String
-  accentColor          String
-  backgroundColor      String
-  textColor            String
-  titleFont            String
-  bodyFont             String
-  heroTitle            String
-  heroSubtitle         String
-  heroBackgroundImage  String
-  heroBackgroundAlt    String
-  siteTitle            String
-  siteDescription      String
-  defaultKeywords      String
-  searchPlaceholder    String
-  recentArticlesTitle  String
-  popularArticlesTitle String
-  readMoreText         String
-  noArticlesText       String
-  footerText           String
-  privacyPolicyText    String
-  termsText            String
-  contactText          String
-  updatedAt            DateTime @updatedAt
+model Report {
+  id          String       @id @default(cuid())
+  reason      String
+  description String?
+  status      ReportStatus @default(PENDING)
+  createdAt   DateTime     @default(now())
+  reporterId  String
+  reportedId  String
+  reported    User         @relation("ReceivedReports", fields: [reportedId], references: [id], onDelete: Cascade)
+  reporter    User         @relation("SentReports", fields: [reporterId], references: [id], onDelete: Cascade)
 
-  @@map("blog_settings")
+  @@map("reports")
+}
+
+model PendingText {
+  id        String     @id @default(cuid())
+  userId    String
+  field     String
+  content   String
+  status    TextStatus @default(PENDING)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("pending_texts")
+}
+
+model PhotoRelease {
+  id           String    @id @default(cuid())
+  photoId      String
+  targetUserId String
+  granted      Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  grantedAt    DateTime?
+  photo        Photo     @relation(fields: [photoId], references: [id], onDelete: Cascade)
+
+  @@unique([photoId, targetUserId])
+  @@map("photo_releases")
+}
+
+model ProfileRequest {
+  id           String        @id @default(cuid())
+  requesterId  String
+  status       RequestStatus @default(PENDING)
+  message      String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  targetUserId String
+  requester    User          @relation("SentProfileRequests", fields: [requesterId], references: [id], onDelete: Cascade)
+  targetUser   User          @relation("ReceivedProfileRequests", fields: [targetUserId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, targetUserId])
+  @@map("profile_requests")
+}
+
+model Conversation {
+  id              String                    @id @default(cuid())
+  lastMessage     String?
+  lastMessageTime DateTime                  @default(now())
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+  participants    ConversationParticipant[]
+  messages        Message[]
+  users           User[]                    @relation("ConversationUsers")
+
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  id             String       @id @default(cuid())
+  conversationId String
+  userId         String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@map("conversation_participants")
+}
+
+model BlogPost {
+  id               String         @id @default(cuid())
+  title            String
+  slug             String         @unique
+  content          String
+  excerpt          String?
+  featuredImage    String?
+  featuredImageAlt String?
+  status           BlogStatus     @default(DRAFT)
+  authorId         String
+  readTime         Int            @default(5)
+  publishedAt      DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  comments         BlogComment[]
+  likes            BlogLike[]
+  categories       BlogCategory[] @relation("BlogCategoryToBlogPost")
+
+  @@map("blog_posts")
+}
+
+model BlogCategory {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  slug        String     @unique
+  description String?
+  createdAt   DateTime   @default(now())
+  posts       BlogPost[] @relation("BlogCategoryToBlogPost")
+
+  @@map("blog_categories")
+}
+
+model BlogComment {
+  id        String        @id @default(cuid())
+  content   String
+  postId    String
+  authorId  String
+  parentId  String?
+  createdAt DateTime      @default(now())
+  parent    BlogComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   BlogComment[] @relation("CommentReplies")
+  post      BlogPost      @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@map("blog_comments")
+}
+
+model BlogLike {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@map("blog_likes")
+}
+
+model BlogImage {
+  id        String   @id @default(cuid())
+  url       String
+  alt       String?
+  postId    String?
+  createdAt DateTime @default(now())
+
+  @@map("blog_images")
 }
 
 enum Gender {
@@ -482,11 +326,6 @@ enum UserStatus {
   PENDING
 }
 
-enum MessageType {
-  TEXT
-  IMAGE
-}
-
 enum InterestStatus {
   PENDING
   ACCEPTED
@@ -496,97 +335,36 @@ enum InterestStatus {
 enum NotificationType {
   MESSAGE
   INTEREST
-  PAYMENT
   SYSTEM
-  TRIP
   PROFILE_VIEW
-}
-
-enum PaymentStatus {
-  PENDING
-  COMPLETED
-  FAILED
-  CANCELLED
-  REFUNDED
 }
 
 enum ReportStatus {
   PENDING
-  INVESTIGATING
   RESOLVED
   DISMISSED
 }
 
-enum ReviewStatus {
+enum PhotoStatus {
   PENDING
   APPROVED
   REJECTED
 }
 
-enum BlogPostStatus {
+enum TextStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum BlogStatus {
   DRAFT
   PUBLISHED
-  SCHEDULED
   ARCHIVED
 }
 
-enum CommentStatus {
+enum RequestStatus {
   PENDING
   APPROVED
   REJECTED
-  SPAM
-}
-
-enum EmailStatus {
-  PENDING
-  SENT
-  DELIVERED
-  OPENED
-  CLICKED
-  FAILED
-  BOUNCED
-}
-
-model SMTPConfig {
-  id   String @id @default("main")
-  host String
-  port Int
-  user String
-  pass String
-  token String
-  from String
-  updatedAt DateTime @updatedAt
-
-  @@map("smtp_config")
-}
-
-model EmailTemplate {
-  id        String   @id @default(cuid())
-  slug      String   @unique
-  name      String
-  subject   String
-  body      String
-  enabled   Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  logs      EmailLog[]
-
-  @@map("email_templates")
-}
-
-model EmailLog {
-  id          String   @id @default(cuid())
-  templateId  String?
-  template    EmailTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
-  to          String
-  subject     String
-  status      EmailStatus @default(PENDING)
-  error       String?
-  sentAt      DateTime @default(now())
-  deliveredAt DateTime?
-  openedAt    DateTime?
-  clickedAt   DateTime?
-  metadata    Json?
-
-  @@map("email_logs")
 }
