@@ -1,0 +1,364 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { cookies } from 'next/headers'
+
+export async function PUT(req: NextRequest) {
+  try {
+    // Autenticação admin
+    const cookieStore = await cookies();
+    const adminSession = cookieStore.get('admin_session');
+    if (!adminSession || adminSession.value !== 'authenticated') {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const { userId, action, fields, photoId, isPrivate, newPassword } = body;
+    
+    if (!userId || !action) {
+      return NextResponse.json({ error: 'Dados obrigatórios não fornecidos' }, { status: 400 })
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+    
+    if (!user) {
+      return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 })
+    }
+
+    if (action === 'block') {
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          status: 'BANNED',
+        }
+      })
+    } else if (action === 'unblock') {
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          status: 'ACTIVE',
+        }
+      })
+    } else if (action === 'activate_premium') {
+      // Recebe quantidade de dias do frontend
+      const body = await req.json();
+      const dias = body.days ? parseInt(body.days, 10) : 30;
+      const expiry = new Date(Date.now() + dias * 24 * 60 * 60 * 1000);
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          premium: true,
+          premiumExpiry: expiry,
+        }
+      })
+    } else if (action === 'deactivate_premium') {
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          premium: false,
+          premiumExpiry: null,
+        }
+      })
+    } else if (action === 'update_fields') {
+      // Atualizar campos editáveis do usuário
+      if (!fields || typeof fields !== 'object') {
+        return NextResponse.json({ error: 'Campos para atualização não fornecidos' }, { status: 400 })
+      }
+      // Para campos sensíveis, criar registro pendente
+      const sensitiveFields = ['about', 'lookingFor']
+      for (const field of sensitiveFields) {
+        if (
+          (field === 'about' && fields.about && String(fields.about) !== String(user.about ?? '')) ||
+          (field === 'lookingFor' && fields.lookingFor && String(fields.lookingFor) !== String(user.lookingFor ?? ''))
+        ) {
+          // Temporariamente comentado - modelo PendingText não existe no schema atual
+          // await prisma.pendingText.create({
+          //   data: {
+          //     userId,
+          //     field,
+          //     content: fields[field],
+          //     status: 'PENDING' as any
+          //   }
+          // })
+        }
+      }
+      // Não atualiza diretamente o campo sensível, apenas cria pendente
+      // Atualiza outros campos normalmente
+      const updateFields = { ...fields }
+      for (const field of sensitiveFields) {
+        delete updateFields[field]
+      }
+      if (Object.keys(updateFields).length > 0) {
+        await prisma.user.update({
+          where: { id: userId },
+          data: updateFields
+        })
+      }
+    } else if (action === 'remove_photo') {
+      // Remover foto do array de fotos
+      if (!photoId) {
+        return NextResponse.json({ error: 'ID da foto não fornecido' }, { status: 400 })
+      }
+      await prisma.photo.delete({
+        where: { id: photoId }
+      });
+    } else if (action === 'toggle_photo_status') {
+      // Alternar status pública/privada da foto
+      if (!photoId || typeof isPrivate === 'undefined') {
+        return NextResponse.json({ error: 'Dados da foto não fornecidos' }, { status: 400 })
+      }
+      await prisma.photo.update({
+        where: { id: photoId },
+        data: { isPrivate }
+      });
+    } else if (action === 'remove_profile_photo') {
+      // Remover foto de perfil
+      await prisma.user.update({
+        where: { id: userId },
+        data: { 
+          photoURL: null,
+        }
+      });
+    } else if (action === 'change_password') {
+      if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 6) {
+        return NextResponse.json({ error: 'Nova senha inválida (mínimo 6 caracteres)' }, { status: 400 });
+      }
+      const bcrypt = require('bcryptjs');
+      const hashedPassword = await bcrypt.hash(newPassword, 12);
+      await prisma.user.update({
+        where: { id: userId },
+        data: { password: hashedPassword }
+      });
+      return NextResponse.json({ success: true, message: 'Senha alterada com sucesso' });
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Ação realizada com sucesso'
+    })
+
+  } catch (error) {
+    console.error('Erro ao gerenciar usuário:', error)
+    return NextResponse.json(
+      { error: 'Erro interno do servidor', details: String(error) },
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  console.log('🗑️ DELETE endpoint chamado');
+  
+  try {
+    // Autenticação admin
+    const cookieStore = await cookies();
+    const adminSession = cookieStore.get('admin_session');
+    console.log('🍪 Admin session:', adminSession?.value);
+    
+    if (!adminSession || adminSession.value !== 'authenticated') {
+      console.log('❌ Não autorizado');
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    }
+
+    console.log('📝 Lendo body da requisição...');
+    const body = await req.json();
+    console.log('📦 Body recebido:', body);
+    
+    const { userId } = body;
+    console.log('🔍 UserId extraído:', userId);
+    
+    if (!userId) {
+      console.log('❌ ID do usuário não fornecido');
+      return NextResponse.json({ error: 'ID do usuário não fornecido' }, { status: 400 });
+    }
+
+    console.log('🔍 Buscando usuário:', userId);
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+    
+    if (!user) {
+      console.log('❌ Usuário não encontrado');
+      return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
+    }
+
+    console.log('✅ Usuário encontrado:', user.username);
+    console.log('🗑️ Excluindo usuário...');
+
+    // Excluir usuário e todos os dados relacionados
+    await prisma.user.delete({
+      where: { id: userId }
+    })
+
+    console.log('✅ Usuário excluído com sucesso');
+
+    return NextResponse.json({
+      success: true,
+      message: 'Usuário excluído permanentemente com sucesso'
+    });
+
+  } catch (error) {
+    console.error('❌ Erro ao deletar usuário:', error)
+    return NextResponse.json({
+      error: 'Erro interno do servidor',
+      details: String(error)
+    }, { status: 500 });
+  }
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    // Autenticação admin
+    const cookieStore = await cookies();
+    const adminSession = cookieStore.get('admin_session');
+    if (!adminSession || adminSession.value !== 'authenticated') {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const userId = searchParams.get('userId');
+    if (!userId) {
+      return NextResponse.json({ error: 'ID do usuário não fornecido' }, { status: 400 });
+    }
+
+    // Buscar dados do usuário
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        photos: true,
+        // loginHistory e conversations removidos pois não existem mais
+      },
+    });
+
+    if (!user) {
+      return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
+    }
+
+    // Calcular dias restantes do premium
+    const premiumDaysLeft = user.premiumExpiry 
+      ? Math.max(0, Math.ceil((user.premiumExpiry.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))
+      : 0;
+
+    return NextResponse.json({
+      user: {
+        id: user.id,
+        username: user.username || '',
+        email: user.email || '',
+        userType: user.userType || '',
+        city: user.city || '',
+        state: user.state || '',
+        ativo: user.status === 'ACTIVE',
+        premium: user.premium || false,
+        createdAt: user.createdAt,
+        photos: user.photos || [],
+        about: user.about || '',
+        lookingFor: user.lookingFor || '',
+        premiumExpiry: user.premiumExpiry,
+        premiumDaysLeft,
+        photoURL: user.photoURL,
+      },
+    });
+  } catch (error) {
+    console.error('Erro ao buscar dados do usuário:', error);
+    return NextResponse.json(
+      { error: 'Erro interno do servidor', details: String(error) },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    // Autenticação admin
+    const cookieStore = await cookies();
+    const adminSession = cookieStore.get('admin_session');
+    if (!adminSession || adminSession.value !== 'authenticated') {
+      return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
+    }
+
+    const formData = await req.formData();
+    const file = formData.get('file') as File;
+    const userId = formData.get('userId') as string;
+    const isPrivate = formData.get('isPrivate') === 'true';
+    const type = formData.get('type') as string; // 'profile' ou 'gallery'
+
+    if (!file || !userId) {
+      return NextResponse.json({ error: 'Arquivo ou ID do usuário não fornecido' }, { status: 400 });
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId }
+    });
+    
+    if (!user) {
+      return NextResponse.json({ error: 'Usuário não encontrado' }, { status: 404 });
+    }
+
+    // Salvar arquivo localmente
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const fileName = `${Date.now()}_${file.name}`;
+    const filePath = `public/uploads/${userId}/${type}/${fileName}`;
+    
+    // Criar diretório se não existir
+    const fs = require('fs');
+    const path = require('path');
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    
+    fs.writeFileSync(filePath, buffer);
+    const photoURL = `/uploads/${userId}/${type}/${fileName}`;
+
+    if (type === 'profile') {
+      // Atualizar foto de perfil
+      await prisma.user.update({
+        where: { id: userId },
+        data: { 
+          photoURL
+        }
+      });
+      // Criar registro pendente para moderação de foto de perfil
+      await prisma.photo.create({
+        data: {
+          userId,
+          url: photoURL,
+          isPrivate,
+          uploadedAt: new Date(),
+          status: 'PENDING'
+        }
+      });
+      return NextResponse.json({
+        success: true,
+        message: 'Foto de perfil enviada para moderação',
+        photoURL,
+      });
+    } else {
+      // Adicionar foto ao array de fotos do usuário
+      const newPhoto = await prisma.photo.create({
+        data: {
+          userId,
+          url: photoURL,
+          isPrivate,
+          uploadedAt: new Date(),
+          status: 'PENDING'
+        }
+      });
+      // Sempre atualizar photoURL para a última foto adicionada
+      await prisma.user.update({
+        where: { id: userId },
+        data: { photoURL }
+      });
+      return NextResponse.json({
+        success: true,
+        message: 'Foto enviada para moderação',
+        photo: newPhoto,
+      });
+    }
+
+  } catch (error) {
+    console.error('Erro ao fazer upload da foto:', error);
+    return NextResponse.json({ error: 'Erro interno do servidor' }, { status: 500 });
+  }
+} 

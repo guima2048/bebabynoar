@@ -8,8 +8,10 @@ import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { Bell, User, LogOut, Menu, X } from 'lucide-react'
 
+interface AuthUser { id: string; username?: string; email?: string; [key: string]: any }
+
 const Header: React.FC = () => {
-  const { user, loading, logout } = useAuth()
+  const { user, logout } = useAuth() as { user: AuthUser | null, logout: () => void }
   const { unreadCount } = useNotifications()
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false)
   const router = useRouter()
@@ -47,19 +49,6 @@ const Header: React.FC = () => {
       return
     }
     router.push('/notifications')
-  }
-
-  if (loading) {
-    return (
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="animate-pulse bg-gray-200 h-8 w-32 rounded"></div>
-            <div className="animate-pulse bg-gray-200 h-8 w-24 rounded"></div>
-          </div>
-        </div>
-      </header>
-    )
   }
 
   return (

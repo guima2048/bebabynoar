@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import SidebarMenu from '../../../components/SidebarMenu';
 
 export const metadata: Metadata = {
   title: 'Editar Perfil - Bebaby App',
@@ -10,5 +11,10 @@ export default function EditProfileLayout({
 }: {
   children: React.ReactNode
 }) {
-  return children
+  return (
+    <>
+      <SidebarMenu />
+      {children}
+    </>
+  );
 } 

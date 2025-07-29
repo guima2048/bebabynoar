@@ -1,0 +1,28 @@
+{
+  "config": {
+    "from": "bebaby@bebaby.app",
+    "apiKey": ""
+  },
+  "templates": {
+    "email-confirmation": {
+      "name": "Confirmação de E-mail",
+      "templateId": "d-02ad9af399aa4687a4827baa6cb694f3",
+      "enabled": true,
+      "testEmail": "bebaby@bebaby.app",
+      "testData": {
+        "nome": "Usuário Teste",
+        "link_confirmacao": "https://bebaby.app/confirm"
+      }
+    },
+    "welcome": {
+      "name": "Bem-vindo ao site",
+      "templateId": "",
+      "enabled": true,
+      "testEmail": "antoniog2048@gmail.com",
+      "testData": {
+        "nome": "Usuário Teste",
+        "link_site": "https://bebaby.app"
+      }
+    }
+  }
+}

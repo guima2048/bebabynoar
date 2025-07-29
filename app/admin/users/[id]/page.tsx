@@ -6,7 +6,6 @@ import toast from "react-hot-toast";
 
 interface UserData {
   id: string;
-  name: string;
   email: string;
   userType: string;
   city: string;
@@ -106,8 +105,8 @@ export default function AdminUserDetailPage() {
   const [editingTrip, setEditingTrip] = useState<any>(null);
   const [showTripModal, setShowTripModal] = useState(false);
 
-
-
+  const [newPassword, setNewPassword] = useState("");
+  const [changingPassword, setChangingPassword] = useState(false);
 
   useEffect(() => {
     if (userId) fetchUserData();
@@ -165,7 +164,6 @@ export default function AdminUserDetailPage() {
           userId: editUser.id,
           action: "update_fields",
           fields: {
-            name: editUser.name,
             email: editUser.email,
             userType: editUser.userType,
             gender: editUser.gender,
@@ -565,6 +563,32 @@ export default function AdminUserDetailPage() {
     }
   };
 
+  const handleChangePassword = async () => {
+    if (!newPassword || !user) {
+      toast.error("Digite a nova senha.");
+      return;
+    }
+    setChangingPassword(true);
+    try {
+      const res = await fetch(`/api/admin/manage-user`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.id,
+          action: "change_password",
+          newPassword,
+        }),
+      });
+      if (!res.ok) throw new Error("Erro ao alterar senha");
+      toast.success("Senha alterada com sucesso!");
+      setNewPassword("");
+    } catch (e) {
+      toast.error("Erro ao alterar senha");
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto py-8">
       {/* Header de navegação */}
@@ -643,7 +667,7 @@ export default function AdminUserDetailPage() {
       ) : (
         <form onSubmit={e => { e.preventDefault(); handleSave(); }}>
           {activeTab === "info" && (
-            <div className="space-y-8">
+            <div className="space-y-6">
               {/* Barra de ações fixa */}
               <div className="sticky top-0 bg-white z-10 py-4 border-b border-gray-200 shadow-sm">
                 <div className="flex items-center justify-between">
@@ -1027,6 +1051,31 @@ export default function AdminUserDetailPage() {
                     <p className="text-xs text-gray-500 mt-1">Mostrar meu perfil para pessoas de outros lugares que vêm visitar minha cidade</p>
                   </div>
                 </div>
+              </div>
+
+              <div className="bg-white rounded-lg shadow p-4 mt-6">
+                <h3 className="font-bold mb-2 text-pink-700">Senha do Usuário</h3>
+                <div className="mb-2">
+                  <label className="block text-sm font-medium text-gray-700">Senha atual</label>
+                  <input type="password" value="********" disabled className="w-full border rounded px-3 py-2 bg-gray-100" />
+                </div>
+                <div className="mb-2">
+                  <label className="block text-sm font-medium text-gray-700">Nova senha</label>
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    className="w-full border rounded px-3 py-2"
+                    placeholder="Digite a nova senha"
+                  />
+                </div>
+                <button
+                  onClick={handleChangePassword}
+                  disabled={changingPassword || !newPassword}
+                  className="bg-pink-600 text-white px-4 py-2 rounded hover:bg-pink-700 mt-2 disabled:opacity-60"
+                >
+                  {changingPassword ? "Salvando..." : "Alterar Senha"}
+                </button>
               </div>
             </div>
           )}

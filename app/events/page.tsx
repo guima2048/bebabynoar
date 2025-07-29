@@ -29,6 +29,8 @@ interface Event {
   status: string
 }
 
+interface User { id: string; [key: string]: any }
+
 export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>([])
   const [loading, setLoading] = useState(true)
@@ -49,7 +51,7 @@ export default function EventsPage() {
     isPremium: false,
     price: 0,
   })
-  const { user } = useAuth()
+  const { user } = useAuth() as { user: User | null }
   const router = useRouter()
 
   useEffect(() => {

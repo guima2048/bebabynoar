@@ -1,4 +1,6 @@
 import type { Metadata } from 'next'
+import SidebarMenuWrapper from '../../components/SidebarMenuWrapper';
+import { User, MessageCircle, Bell, LogOut, Eye, Users, Heart, Star, Compass, Search, Settings, Crown } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'Meu Perfil - Bebaby App',
@@ -10,5 +12,10 @@ export default function ProfileLayout({
 }: {
   children: React.ReactNode
 }) {
-  return children
+  return (
+    <>
+      <SidebarMenuWrapper />
+      {children}
+    </>
+  );
 } 

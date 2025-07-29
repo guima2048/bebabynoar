@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
@@ -11,11 +12,39 @@ export async function GET() {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
     }
 
-    // Por enquanto, retornar arrays vazios
-    // TODO: Implementar busca de fotos/textos pendentes quando o modelo existir no Prisma
+    // Buscar fotos pendentes
+    const photos = await prisma.photo.findMany({
+      where: { status: 'PENDING' },
+      include: { user: { select: { username: true } } },
+      orderBy: { uploadedAt: 'desc' }
+    });
+
+    // Buscar textos pendentes
+    const texts = await prisma.pendingText.findMany({
+      where: { status: 'PENDING' },
+      include: { user: { select: { username: true } } },
+      orderBy: { updatedAt: 'desc' }
+    });
+
     return NextResponse.json({
-      photos: [],
-      texts: []
+      photos: photos.map(photo => ({
+        id: photo.id,
+        userId: photo.userId,
+        userName: photo.user?.username || '',
+        photoURL: photo.url,
+        uploadedAt: photo.uploadedAt,
+        isPrivate: photo.isPrivate,
+        status: photo.status
+      })),
+      texts: texts.map(text => ({
+        id: text.id,
+        userId: text.userId,
+        userName: text.user?.username || '',
+        field: text.field,
+        content: text.content,
+        updatedAt: text.updatedAt,
+        status: text.status
+      }))
     });
 
   } catch (error) {

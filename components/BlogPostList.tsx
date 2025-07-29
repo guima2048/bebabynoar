@@ -65,6 +65,13 @@ export default function BlogPostList() {
     // Log para debug
     console.log('🔍 [BlogPostList] Processando imagem:', imageUrl)
     
+    // Em desenvolvimento, usar API route para uploads
+    if (process.env.NODE_ENV === 'development' && imageUrl.startsWith('/uploads/')) {
+      const processedUrl = `/api/uploads${imageUrl}`
+      console.log('✅ [BlogPostList] URL processada para desenvolvimento:', processedUrl)
+      return processedUrl
+    }
+    
     // Se já é uma URL relativa (começa com /), retorna como está
     if (imageUrl.startsWith('/')) {
       console.log('✅ [BlogPostList] URL já é relativa:', imageUrl)

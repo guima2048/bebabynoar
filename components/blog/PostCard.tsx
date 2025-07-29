@@ -49,6 +49,14 @@ export default function PostCard({
 }: PostCardProps) {
   const [imageError, setImageError] = useState(false)
 
+  // Função para processar URL da imagem em desenvolvimento
+  const getImageUrl = (url: string) => {
+    if (process.env.NODE_ENV === 'development' && url.startsWith('/uploads/')) {
+      return `/api/uploads${url}`
+    }
+    return url
+  }
+
   const formatDate = (date: Date) => {
     return formatDistanceToNow(new Date(date), { 
       addSuffix: true, 
@@ -61,8 +69,8 @@ export default function PostCard({
     return text.substring(0, maxLength) + '...'
   }
 
-  // Remover função getImageUrl e usar diretamente o campo
-  const processedImageUrl = post.featuredImage || null;
+  // Usar a função getImageUrl para processar a URL
+  const processedImageUrl = post.featuredImage ? getImageUrl(post.featuredImage) : null;
 
   // Componente de fallback para imagem
   const ImageFallback = ({ className = "" }: { className?: string }) => (

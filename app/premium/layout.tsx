@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import SidebarMenu from '../../components/SidebarMenu';
 
 export const metadata: Metadata = {
   title: 'Seja Premium - Bebaby App | Encontre Conexões Extraordinárias',
@@ -18,5 +19,10 @@ export default function PremiumLayout({
 }: {
   children: React.ReactNode
 }) {
-  return children
+  return (
+    <>
+      <SidebarMenu />
+      {children}
+    </>
+  );
 } 

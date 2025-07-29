@@ -5,7 +5,6 @@ export const userSchema = z.object({
   email: z.string().email('Email inválido'),
   username: z.string().min(3, 'Username deve ter pelo menos 3 caracteres').max(30, 'Username deve ter no máximo 30 caracteres'),
   password: z.string().min(8, 'Senha deve ter pelo menos 8 caracteres'),
-  name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres').max(100, 'Nome deve ter no máximo 100 caracteres'),
   birthdate: z.string().refine((date) => {
     const age = new Date().getFullYear() - new Date(date).getFullYear()
     return age >= 18 && age <= 100
@@ -19,15 +18,15 @@ export const userSchema = z.object({
 export const profileUpdateSchema = z.object({
   about: z.string().max(1000, 'Sobre deve ter no máximo 1000 caracteres').optional(),
   lookingFor: z.string().max(1000, 'O que busca deve ter no máximo 1000 caracteres').optional(),
-  height: z.string().max(10).optional(),
-  weight: z.string().max(10).optional(),
+  
+  
   education: z.string().max(100).optional(),
   profession: z.string().max(100).optional(),
-  relationshipType: z.string().max(100).optional(),
-  availableForTravel: z.boolean().optional(),
-  hasChildren: z.boolean().optional(),
-  smokes: z.boolean().optional(),
-  drinks: z.boolean().optional(),
+  
+  
+  
+  
+  
 })
 
 export const messageSchema = z.object({

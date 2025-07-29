@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { useAuth } from '@/hooks/useAuth'
+import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Search, Filter, MapPin, Heart, Eye, Crown, Shield } from 'lucide-react'
@@ -24,7 +24,7 @@ interface Profile {
 }
 
 export default function BuscarPage() {
-  const { user, loading: authLoading } = useAuth()
+  const { data: session, status } = useSession()
   const router = useRouter()
   const [profiles, setProfiles] = useState<Profile[]>([])
   const [loading, setLoading] = useState(true)
@@ -37,26 +37,25 @@ export default function BuscarPage() {
   const [maxAge, setMaxAge] = useState('100')
   const [showFilters, setShowFilters] = useState(false)
 
-  // Verificar autenticação
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (status === 'unauthenticated') {
       router.push('/login')
       return
     }
-  }, [user, authLoading, router])
+    if (status === 'authenticated' && session?.user) {
+      loadProfiles(session.user)
+    }
+  }, [status, session, router])
 
-  const loadProfiles = async () => {
+  const loadProfiles = async (user: any) => {
     if (!user) return
-    
     try {
       setLoading(true)
-      
       // Construir parâmetros de busca
       const params = new URLSearchParams({
         limit: '50',
         page: '1'
       })
-
       if (searchTerm) params.append('search', searchTerm)
       if (selectedState) params.append('state', selectedState)
       if (selectedCity) params.append('city', selectedCity)
@@ -64,13 +63,14 @@ export default function BuscarPage() {
       if (selectedGender) params.append('gender', selectedGender)
       if (minAge) params.append('minAge', minAge)
       if (maxAge) params.append('maxAge', maxAge)
-      
-      const response = await fetch(`/api/explore?${params}`)
-      
+      const response = await fetch(`/api/explore?${params}`, {
+        headers: {
+          'x-user-id': user.id
+        }
+      })
       if (!response.ok) {
         throw new Error('Erro ao buscar perfis')
       }
-      
       const data = await response.json()
       const profilesData: Profile[] = data.users.map((userData: any) => ({
         id: userData.id,
@@ -86,9 +86,7 @@ export default function BuscarPage() {
         bio: userData.about,
         gender: userData.gender
       }))
-      
       setProfiles(profilesData)
-      
     } catch (error) {
       console.error('Erro ao carregar perfis:', error)
       toast.error('Erro ao carregar perfis')
@@ -97,14 +95,8 @@ export default function BuscarPage() {
     }
   }
 
-  useEffect(() => {
-    if (user) {
-      loadProfiles()
-    }
-  }, [user])
-
   const handleSearch = () => {
-    loadProfiles()
+    loadProfiles(session?.user)
   }
 
   const clearFilters = () => {
@@ -117,21 +109,11 @@ export default function BuscarPage() {
     setMaxAge('100')
   }
 
-  // Loading state
-  if (authLoading || loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando perfis...</p>
-        </div>
-      </div>
-    )
+  if (status === 'loading') {
+    return <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center">Carregando...</div>
   }
-
-  // User not authenticated
-  if (!user) {
-    return null
+  if (status === 'unauthenticated' || !session?.user) {
+    return <div className="min-h-screen bg-gradient-to-br from-pink-50 to-purple-50 flex items-center justify-center">Acesso negado</div>
   }
 
   return (

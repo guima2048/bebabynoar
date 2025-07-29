@@ -90,38 +90,8 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'A senha deve ter pelo menos 6 caracteres' }, { status: 400 })
     }
 
-    // Buscar usuário pelo token de reset
-    const user = await prisma.user.findFirst({
-      where: { 
-        passwordResetToken: token,
-        passwordResetTokenExpiry: {
-          gt: new Date()
-        }
-      }
-    })
-
-    if (!user) {
-      return NextResponse.json({ error: 'Token inválido ou expirado' }, { status: 400 })
-    }
-
-    // Hash da nova senha
-    const hashedPassword = await bcrypt.hash(newPassword, 12)
-    
-    // Atualizar senha
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        password: hashedPassword,
-        passwordResetToken: null,
-        passwordResetTokenExpiry: null,
-        passwordUpdatedAt: new Date(),
-      }
-    })
-
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Senha atualizada com sucesso' 
-    })
+    // Reset de senha desativado: campo removido do banco
+    return NextResponse.json({ error: 'Funcionalidade de reset de senha desativada temporariamente.' }, { status: 501 })
 
   } catch (error) {
     console.error('Erro ao resetar senha:', error)

@@ -7,12 +7,11 @@ import { z } from 'zod'
 export const userRegistrationSchema = z.object({
   email: z.string().email('Email inválido').min(1, 'Email é obrigatório'),
   password: z.string().min(8, 'Senha deve ter pelo menos 8 caracteres'),
-  name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres').max(50, 'Nome muito longo'),
   age: z.number().int().min(18, 'Idade mínima é 18 anos').max(100, 'Idade inválida'),
   gender: z.enum(['male', 'female', 'other'], {
     errorMap: () => ({ message: 'Gênero deve ser male, female ou other' })
   }),
-  location: z.string().min(1, 'Localização é obrigatória').max(100, 'Localização muito longa'),
+  
   bio: z.string().max(500, 'Bio muito longa').optional(),
   interests: z.array(z.string()).max(10, 'Máximo 10 interesses').optional(),
   lookingFor: z.enum(['sugar_baby', 'sugar_daddy', 'both'], {
@@ -25,7 +24,7 @@ export const userProfileUpdateSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres').max(50, 'Nome muito longo').optional(),
   age: z.number().int().min(18, 'Idade mínima é 18 anos').max(100, 'Idade inválida').optional(),
   gender: z.enum(['male', 'female', 'other']).optional(),
-  location: z.string().min(1, 'Localização é obrigatória').max(100, 'Localização muito longa').optional(),
+  
   bio: z.string().max(500, 'Bio muito longa').optional(),
   interests: z.array(z.string()).max(10, 'Máximo 10 interesses').optional(),
   lookingFor: z.enum(['sugar_baby', 'sugar_daddy', 'both']).optional(),
@@ -204,7 +203,7 @@ export const addToFavoritesSchema = z.object({
 export const createEventSchema = z.object({
   title: z.string().min(1, 'Título é obrigatório').max(100, 'Título muito longo'),
   description: z.string().min(10, 'Descrição deve ter pelo menos 10 caracteres').max(1000, 'Descrição muito longa'),
-  location: z.string().min(1, 'Localização é obrigatória').max(200, 'Localização muito longa'),
+  
   date: z.string().datetime('Data inválida'),
   maxParticipants: z.number().int().min(1, 'Mínimo 1 participante').max(100, 'Máximo 100 participantes').optional(),
   price: z.number().min(0, 'Preço não pode ser negativo').optional(),

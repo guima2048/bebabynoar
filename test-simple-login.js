@@ -7,7 +7,7 @@ function testSimpleLogin() {
   // Dados básicos do login
   const loginData = {
     email: 'sugar_daddy1@example.com',
-    password: '123456'
+    password: process.env.TEST_USER_PASSWORD || '123456'
   };
 
   const postData = querystring.stringify(loginData);

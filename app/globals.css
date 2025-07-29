@@ -7,17 +7,14 @@
     font-family: 'Inter', system-ui, sans-serif;
     scroll-behavior: smooth;
   }
-  
   body {
     @apply bg-secondary-50 text-secondary-900;
     font-family: 'Inter', sans-serif;
     line-height: 1.5;
   }
-
   /* Prevenção de CLS */
   * { box-sizing: border-box; }
   img { max-width: 100%; height: auto; }
-  
   /* Custom selection */
   ::selection {
     background: rgba(245, 158, 11, 0.3);
@@ -27,7 +24,6 @@
     background: rgba(245, 158, 11, 0.3);
     color: white;
   }
-
   /* Custom scrollbar */
   ::-webkit-scrollbar {
     width: 8px;
@@ -78,12 +74,10 @@
     transform: translateY(-2px);
     box-shadow: 0 10px 30px rgba(245, 158, 11, 0.4);
   }
-
   /* Campos de entrada */
   .input-field {
     @apply w-full px-3 py-2 border border-secondary-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
   }
-
   /* Cards */
   .card {
     @apply bg-white rounded-xl shadow-sm border border-secondary-200 p-6;
@@ -93,9 +87,8 @@
   }
   .card-hover:hover {
     transform: translateY(-4px) scale(1.02);
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
   }
-
   /* Utilitários de cores */
   .text-primary-600 { @apply text-pink-600; }
   .text-secondary-600 { @apply text-gray-600; }
@@ -106,14 +99,12 @@
   .focus:ring-primary-500 { @apply focus:ring-pink-500; }
   .hover:bg-primary-700 { @apply hover:bg-pink-700; }
   .bg-primary-600 { @apply bg-pink-600; }
-
   /* Glass morphism */
   .glass {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255,255,255,0.1);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255,255,255,0.2);
   }
-
   /* Loading states */
   .loading { opacity: 0; transition: opacity 0.3s ease; }
   .loaded { opacity: 1; }
@@ -132,7 +123,6 @@
     content: '';
     animation: dots 1.5s steps(5, end) infinite;
   }
-
   /* Scrollbar hide */
   .scrollbar-hide {
     -ms-overflow-style: none;
@@ -141,7 +131,6 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
-
   /* Line clamp */
   .line-clamp-2 {
     display: -webkit-box;
@@ -149,7 +138,6 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-
   /* Focus ring */
   .focus-ring:focus {
     outline: 2px solid #f59e0b;
@@ -177,17 +165,15 @@
   .animate-fade-in {
     animation: fadeIn 0.5s ease-out;
   }
-
   /* Hover effects */
   .hover-lift {
     transition: transform 0.3s ease, box-shadow 0.3s ease;
   }
   .hover-lift:hover {
     transform: translateY(-5px);
-    box-shadow: 0 20px 40px rgba(245, 158, 11, 0.3);
+    box-shadow: 0 20px 40px rgba(245,158,11,0.3);
   }
-
-  /* Gradient text */
+  /* Gradiente texto */
   .gradient-text-animate {
     background: linear-gradient(135deg, #f59e0b, #eab308, #f59e0b);
     background-size: 200% 200%;
@@ -196,7 +182,6 @@
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
-
   /* Responsive text */
   @media (max-width: 640px) {
     .text-responsive {
@@ -208,7 +193,6 @@
       font-size: clamp(2rem, 4vw, 4rem);
     }
   }
-
   /* Gradientes */
   .bg-gradient-radial {
     background: radial-gradient(ellipse at center, var(--tw-gradient-stops));
@@ -218,7 +202,7 @@
   }
 }
 
-/* Keyframes - Definidos uma vez só */
+/* Keyframes */
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
@@ -263,7 +247,7 @@
   100% { background-position: 0% 50%; }
 }
 
-/* Font faces - Movidos para o final */
+/* Font faces */
 @font-face {
   font-family: 'Inter';
   src: url('/fonts/inter/Inter-Regular.woff2') format('woff2');
@@ -277,13 +261,12 @@
   font-weight: 700;
   font-style: normal;
   font-display: swap;
-} 
+}
 
 /* Estilos premium para conteúdo do blog */
 .prose {
   @apply prose-pink prose-lg max-w-none;
 }
-
 .prose h1, .prose h2, .prose h3, .prose h4 {
   @apply font-display font-bold text-gray-900;
 }
@@ -304,4 +287,4 @@
 }
 .prose img {
   @apply rounded-xl shadow-md my-6;
-} 
+}

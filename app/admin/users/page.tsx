@@ -2,12 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
-import { useCSRF } from '@/hooks/useCSRF'
 
 interface User {
   id: string
   username: string
-  name?: string
   email: string
   userType: string
   birthdate: string
@@ -42,7 +40,6 @@ export default function AdminUsersPage() {
   const [premiumDays, setPremiumDays] = useState('')
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
   const [loadingActions, setLoadingActions] = useState<Record<string, boolean>>({})
-  const { csrfToken } = useCSRF()
 
   useEffect(() => {
     fetchUsers()
@@ -68,7 +65,6 @@ export default function AdminUsersPage() {
       const realUsers: User[] = (data.users || []).map((u: any) => ({
         id: u.id,
         username: u.username || 'Usuário',
-        name: u.name,
         email: u.email || '',
         userType: u.userType || 'sugar_baby',
         birthdate: u.birthdate || '',
@@ -113,7 +109,6 @@ export default function AdminUsersPage() {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
-          ...(csrfToken && { 'X-CSRF-Token': csrfToken })
         },
         body: JSON.stringify({
           userId,
@@ -155,7 +150,6 @@ export default function AdminUsersPage() {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
-          ...(csrfToken && { 'X-CSRF-Token': csrfToken })
         },
         body: JSON.stringify({
           userId,
@@ -215,7 +209,6 @@ export default function AdminUsersPage() {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
-          ...(csrfToken && { 'X-CSRF-Token': csrfToken })
         },
         body: JSON.stringify({
           userId: selectedUserId,
@@ -245,7 +238,7 @@ export default function AdminUsersPage() {
   }
 
   const handleDeleteUser = async (userId: string) => {
-    if (!confirm('Tem certeza que deseja excluir este usuário?')) { return }
+    if (!confirm('Tem certeza que deseja excluir este usuário? Esta ação é irreversível!')) { return }
 
     const actionKey = `delete-user-${userId}`
     setLoadingActions(prev => ({ ...prev, [actionKey]: true }))
@@ -255,7 +248,6 @@ export default function AdminUsersPage() {
         method: 'DELETE',
         headers: { 
           'Content-Type': 'application/json',
-          ...(csrfToken && { 'X-CSRF-Token': csrfToken })
         },
         body: JSON.stringify({
           userId,
@@ -264,11 +256,12 @@ export default function AdminUsersPage() {
       })
 
       if (response.ok) {
+        // Remover usuário da lista local
         setUsers(prev => prev.filter(user => user.id !== userId))
-        toast.success('Usuário excluído com sucesso')
-        fetchUsers()
+        toast.success('Usuário excluído permanentemente com sucesso')
       } else {
-        toast.error('Erro ao excluir usuário')
+        const errorData = await response.json()
+        toast.error(errorData.error || 'Erro ao excluir usuário')
       }
     } catch (error) {
       console.error('Erro:', error)
@@ -310,7 +303,8 @@ export default function AdminUsersPage() {
         </div>
         <button
           onClick={() => window.location.href = '/admin/search-users'}
-          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-2"
+          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-2 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
+          aria-label="Buscar TONYY"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -325,17 +319,19 @@ export default function AdminUsersPage() {
           <div className="flex-1">
             <input
               type="text"
-              placeholder="Buscar por nome, e-mail ou cidade..."
+              placeholder="Buscar por nome, e-mail ou username..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+              onChange={e => setSearchTerm(e.target.value)}
+              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-4 focus:ring-pink-400 focus:border-pink-600 text-gray-900 placeholder:text-gray-700"
+              aria-label="Buscar usuário"
             />
           </div>
           <div>
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+              className="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-4 focus:ring-pink-400 focus:border-pink-600 text-gray-900 placeholder:text-gray-700"
+              aria-label="Filtrar usuários"
             >
               <option value="all">Todos</option>
               <option value="active">Ativos</option>
@@ -351,7 +347,7 @@ export default function AdminUsersPage() {
       {/* Tabela de Usuários */}
       <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[800px]">
+          <table className="w-full min-w-[800px] border-2 border-pink-400 focus:outline-none focus:ring-4 focus:ring-pink-400">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -393,15 +389,13 @@ export default function AdminUsersPage() {
                     <div className="flex flex-col">
                       <a 
                         href={`/profile/${user.id}`}
-                        className="font-bold text-blue-600 hover:text-blue-800 hover:underline"
+                        className="font-bold text-blue-600 hover:text-blue-800 hover:underline focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
                         target="_blank"
                         rel="noopener noreferrer"
+                        aria-label={`Ver perfil de ${user.username}`}
                       >
                         @{user.username}
                       </a>
-                      {user.name && (
-                        <span className="text-xs text-gray-500 mt-1">{user.name}</span>
-                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -475,7 +469,8 @@ export default function AdminUsersPage() {
                           user.ativo 
                             ? 'bg-red-100 text-red-700 hover:bg-red-200 disabled:opacity-50' 
                             : 'bg-green-100 text-green-700 hover:bg-green-200 disabled:opacity-50'
-                        }`}
+                        } focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none`}
+                        aria-label={user.ativo ? 'Bloquear usuário' : 'Desbloquear usuário'}
                       >
                         {loadingActions[`toggle-status-${user.id}`] ? (
                           <>
@@ -493,7 +488,8 @@ export default function AdminUsersPage() {
                           user.premium 
                             ? 'bg-gray-100 text-gray-700 hover:bg-gray-200 disabled:opacity-50' 
                             : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 disabled:opacity-50'
-                        }`}
+                        } focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none`}
+                        aria-label={user.premium ? 'Remover Premium' : 'Tornar Premium'}
                       >
                         {loadingActions[`toggle-premium-${user.id}`] ? (
                           <>
@@ -507,7 +503,8 @@ export default function AdminUsersPage() {
                       <button
                         onClick={() => handleDeleteUser(user.id)}
                         disabled={loadingActions[`delete-user-${user.id}`]}
-                        className="text-xs px-2 sm:px-3 py-1 rounded-md bg-red-100 text-red-700 hover:bg-red-200 disabled:opacity-50 flex items-center gap-1"
+                        className="text-xs px-2 sm:px-3 py-1 rounded-md bg-red-100 text-red-700 hover:bg-red-200 disabled:opacity-50 flex items-center gap-1 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
+                        aria-label="Excluir usuário"
                       >
                         {loadingActions[`delete-user-${user.id}`] ? (
                           <>
@@ -520,7 +517,8 @@ export default function AdminUsersPage() {
                       </button>
                       <button
                         onClick={() => window.location.href = `/admin/users/${user.id}`}
-                        className="text-xs px-2 sm:px-3 py-1 rounded-md bg-blue-100 text-blue-700 hover:bg-blue-200"
+                        className="text-xs px-2 sm:px-3 py-1 rounded-md bg-blue-100 text-blue-700 hover:bg-blue-200 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
+                        aria-label="Editar usuário"
                       >
                         Editar
                       </button>
@@ -557,7 +555,8 @@ export default function AdminUsersPage() {
                   setPremiumDays('')
                   setSelectedUserId(null)
                 }}
-                className="text-gray-400 hover:text-gray-600"
+                className="text-gray-400 hover:text-gray-600 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
+                aria-label="Fechar modal de ativar premium"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -581,8 +580,9 @@ export default function AdminUsersPage() {
                   }
                 }}
                 placeholder="Ex: 30"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-4 focus:ring-pink-400 focus:border-pink-500 text-gray-900 placeholder:text-gray-700"
                 autoFocus
+                aria-label="Digite o número de dias de premium"
               />
               <p className="text-xs text-gray-500 mt-1">
                 Digite um número entre 1 e 365 dias
@@ -593,7 +593,8 @@ export default function AdminUsersPage() {
               <button
                 onClick={handleActivatePremium}
                 disabled={!!selectedUserId && loadingActions[`activate-premium-${selectedUserId}`]}
-                className="flex-1 bg-pink-600 text-white py-2 px-4 rounded-md hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="flex-1 bg-pink-600 text-white py-2 px-4 rounded-md hover:bg-pink-700 focus:outline-none focus:ring-4 focus:ring-pink-400 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                aria-label="Ativar premium"
               >
                 {!!selectedUserId && loadingActions[`activate-premium-${selectedUserId}`] ? (
                   <>
@@ -610,7 +611,8 @@ export default function AdminUsersPage() {
                   setPremiumDays('')
                   setSelectedUserId(null)
                 }}
-                className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-4 focus:ring-gray-500 focus:ring-offset-2"
+                aria-label="Cancelar ativação de premium"
               >
                 Cancelar
               </button>

@@ -7,7 +7,7 @@ function testLogin() {
   // Dados do login
   const loginData = {
     email: 'sugar_daddy1@example.com',
-    password: '123456',
+    password: process.env.TEST_USER_PASSWORD || '123456',
     callbackUrl: 'http://localhost:3001/profile',
     json: 'true'
   };

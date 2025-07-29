@@ -7,7 +7,7 @@ async function setUserPassword() {
   console.log('🔐 Definindo senha para o usuário sugar_daddy1@example.com...');
   
   try {
-    const password = '123456'; // Senha simples para teste
+    const password = process.env.TEST_USER_PASSWORD || '123456'; // Senha simples para teste
     const hashedPassword = await bcrypt.hash(password, 12);
     
     // Atualizar a senha do usuário

@@ -1,0 +1,370 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/admin-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("ADMIN_DATABASE_URL")
+}
+
+// ===== MODELOS ADMINISTRATIVOS =====
+
+model AdminUser {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  username  String   @unique
+  password  String
+  name      String
+  role      AdminRole @default(ADMIN)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  lastLogin DateTime?
+
+  // Relações
+  actions   AdminAction[]
+  payments  Payment[]
+  plans     Plan[]
+  manualActivations ManualActivation[]
+
+  @@map("admin_users")
+}
+
+model AdminAction {
+  id          String      @id @default(cuid())
+  adminId     String
+  action      String      // "user_ban", "payment_approve", "content_moderate"
+  targetType  String      // "user", "payment", "content"
+  targetId    String      // ID do alvo da ação
+  details     Json?       // Detalhes da ação
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime    @default(now())
+  admin       AdminUser   @relation(fields: [adminId], references: [id])
+
+  @@map("admin_actions")
+}
+
+// ===== SISTEMA DE PAGAMENTOS =====
+
+model Plan {
+  id          String   @id @default(cuid())
+  name        String   // "Básico", "Premium", "VIP"
+  description String
+  price       Decimal
+  currency    String   @default("BRL")
+  duration    Int      // dias de duração
+  features    Json     // array de funcionalidades
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  paymentLinks PaymentLink[]
+  payments     Payment[]
+  manualActivations ManualActivation[]
+
+  @@map("plans")
+}
+
+model PaymentLink {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  link        String   // URL do checkout
+  planId      String
+  plan        Plan     @relation(fields: [planId], references: [id])
+  isActive    Boolean  @default(true)
+  maxUses     Int?
+  currentUses Int      @default(0)
+  expiresAt   DateTime?
+  createdAt   DateTime @default(now())
+  
+  payments    Payment[]
+
+  @@map("payment_links")
+}
+
+model Payment {
+  id                    String        @id @default(cuid())
+  userId                String        // ID do usuário no banco principal
+  planId                String
+  amount                Decimal
+  currency              String        @default("BRL")
+  status                PaymentStatus @default(PENDING)
+  stripePaymentIntentId String?       @unique
+  stripeCustomerId      String?
+  paymentLinkId         String?
+  paymentLink           PaymentLink?  @relation(fields: [paymentLinkId], references: [id])
+  plan                  Plan          @relation(fields: [planId], references: [id])
+  processedBy           String?       // ID do admin que processou
+  processedByUser       AdminUser?    @relation(fields: [processedBy], references: [id])
+  createdAt             DateTime      @default(now())
+  processedAt           DateTime?
+
+  @@map("payments")
+}
+
+model ManualActivation {
+  id          String   @id @default(cuid())
+  userId      String   // ID do usuário no banco principal
+  planId      String
+  plan        Plan     @relation(fields: [planId], references: [id])
+  activatedBy String
+  admin       AdminUser @relation(fields: [activatedBy], references: [id])
+  reason      String   // Motivo da ativação
+  duration    Int      // dias de duração
+  startDate   DateTime @default(now())
+  endDate     DateTime
+  isActive    Boolean  @default(true)
+  adminNotes  String?  // Notas adicionais
+  createdAt   DateTime @default(now())
+  
+  @@map("manual_activations")
+}
+
+// ===== SISTEMA DE EMAIL =====
+
+model EmailConfig {
+  id        String   @id @default("main")
+  provider  String   // "sendgrid", "smtp"
+  apiKey    String?
+  host      String?
+  port      Int?
+  user      String?
+  pass      String?
+  from      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("email_config")
+}
+
+model EmailTemplate {
+  id         String   @id @default(cuid())
+  slug       String   @unique // "email-confirmation", "message-received"
+  name       String
+  templateId String   // ID do template do SendGrid
+  enabled    Boolean  @default(true)
+  testEmail  String?
+  testData   Json?    // Variáveis de teste
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("email_templates")
+}
+
+model EmailLog {
+  id        String      @id @default(cuid())
+  to        String
+  subject   String
+  body      String
+  status    EmailStatus @default(PENDING)
+  error     String?
+  sentAt    DateTime?
+  createdAt DateTime    @default(now())
+
+  @@map("email_logs")
+}
+
+// ===== SISTEMA DE BLOG =====
+
+model BlogPost {
+  id              String             @id @default(cuid())
+  title           String
+  slug            String             @unique
+  content         String
+  excerpt         String?
+  publishedAt     DateTime?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  metaTitle       String?
+  metaDescription String?
+  tags            String[]
+  scheduledFor    DateTime?
+  readTime        Int?
+  authorId        String
+  featuredImage   String?
+  featuredImageAlt String?
+  likesCount      Int                @default(0)
+  viewsCount      Int                @default(0)
+  status          BlogPostStatus     @default(DRAFT)
+  
+  // Relações
+  comments        BlogComment[]
+  categories      BlogPostCategory[]
+  views           BlogView[]
+  analytics       BlogAnalytics[]
+
+  @@map("blog_posts")
+}
+
+model BlogCategory {
+  id          String             @id @default(cuid())
+  name        String
+  slug        String             @unique
+  description String?
+  color       String             @default("#EC4899")
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  posts       BlogPostCategory[]
+
+  @@map("blog_categories")
+}
+
+model BlogPostCategory {
+  postId     String
+  categoryId String
+  category   BlogCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  post       BlogPost     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@id([postId, categoryId])
+  @@map("blog_post_categories")
+}
+
+model BlogComment {
+  id        String        @id @default(cuid())
+  content   String
+  status    CommentStatus @default(PENDING)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  postId    String
+  userId    String        // ID do usuário no banco principal
+  post      BlogPost      @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@map("blog_comments")
+}
+
+model BlogView {
+  id          String   @id @default(cuid())
+  sessionId   String
+  pageView    Boolean  @default(true)
+  timeSpent   Int?
+  scrollDepth Int?
+  bounce      Boolean  @default(false)
+  ipAddress   String?
+  userAgent   String?
+  referrer    String?
+  createdAt   DateTime @default(now())
+  postId      String
+  userId      String?  // ID do usuário no banco principal
+  post        BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@map("blog_views")
+}
+
+model BlogAnalytics {
+  id        String   @id @default(cuid())
+  eventType String
+  eventData Json?
+  createdAt DateTime @default(now())
+  postId    String
+  userId    String?  // ID do usuário no banco principal
+  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@map("blog_analytics")
+}
+
+// ===== CONFIGURAÇÕES DO SITE =====
+
+model SiteConfig {
+  id                  String   @id @default("main")
+  siteName            String   @default("Bebaby App")
+  siteDescription     String?
+  siteUrl             String?
+  contactEmail        String?
+  supportEmail        String?
+  primaryColor        String   @default("#EC4899")
+  secondaryColor      String   @default("#F59E0B")
+  logoUrl             String?
+  faviconUrl          String?
+  updatedAt           DateTime @updatedAt
+
+  @@map("site_config")
+}
+
+model LandingSettings {
+  id                  String   @id @default("main")
+  bannerImageURL      String?
+  bannerTitle         String?
+  bannerSubtitle      String?
+  bannerDescription   String?
+  primaryButtonText   String?
+  primaryButtonLink   String?
+  secondaryButtonText String?
+  secondaryButtonLink String?
+  heroBaby1Image      String?
+  heroDaddy1Image     String?
+  heroBaby2Image      String?
+  heroDaddy2Image     String?
+  updatedAt           DateTime @updatedAt
+
+  @@map("landing_settings")
+}
+
+model Testimonial {
+  id       String  @id @default(cuid())
+  name     String
+  location String
+  story    String
+  rating   Int
+  photo    String?
+  isActive Boolean @default(true)
+  createdAt DateTime @default(now())
+
+  @@map("testimonials")
+}
+
+model ProfileCard {
+  id         String  @id @default(cuid())
+  name       String
+  location   String
+  profession String
+  photo      String?
+  isActive   Boolean @default(true)
+  type       String  // "sugar_baby", "sugar_daddy"
+  createdAt  DateTime @default(now())
+
+  @@map("profile_cards")
+}
+
+// ===== ENUMS =====
+
+enum AdminRole {
+  SUPER_ADMIN
+  ADMIN
+  MODERATOR
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+enum EmailStatus {
+  PENDING
+  SENT
+  DELIVERED
+  OPENED
+  CLICKED
+  FAILED
+  BOUNCED
+}
+
+enum BlogPostStatus {
+  DRAFT
+  PUBLISHED
+  SCHEDULED
+  ARCHIVED
+}
+
+enum CommentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SPAM
+} 

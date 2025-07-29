@@ -23,24 +23,26 @@ interface ProfileData {
   photoURL?: string
   email?: string
   name?: string
-  location?: string
+  
   gender?: string
   status?: string
   photos?: Array<{ url: string; isPrivate: boolean; id?: string }>
-  relationshipType?: string
-  height?: string
-  weight?: string
-  hasChildren?: boolean
-  smokes?: boolean
-  drinks?: boolean
+  
+  
+  
+  
+  
+  
   education?: string
   profession?: string
-  availableForTravel?: string
+  
 }
+
+interface AuthUser { id: string; username?: string; userType?: string; [key: string]: any }
 
 export default function ProfileViewPage() {
   const { id } = useParams<{ id: string }>()
-  const { user } = useAuth()
+  const { user } = useAuth() as { user: AuthUser | null }
   const [profile, setProfile] = useState<ProfileData | null>(null)
   const [galleryPublic, setGalleryPublic] = useState<string[]>([])
   const [galleryPrivate, setGalleryPrivate] = useState<string[]>([])
@@ -87,7 +89,11 @@ export default function ProfileViewPage() {
       setLoading(true)
       
       // Buscar perfil via API
-      const response = await fetch(`/api/user/profile/${id}`)
+      const response = await fetch(`/api/user/profile/${id}`, {
+        headers: {
+          'x-user-id': user?.id || ''
+        }
+      })
       
       if (!response.ok) {
         setError('Perfil não encontrado')
@@ -134,7 +140,7 @@ export default function ProfileViewPage() {
         body: JSON.stringify({
           viewerId: user.id,
           profileId: profileId,
-          viewerUsername: user.name || user.email?.split('@')[0] || 'Usuário',
+          viewerUsername: user.username || user.email?.split('@')[0] || 'Usuário',
         })
       })
     } catch (error) {
@@ -169,7 +175,7 @@ export default function ProfileViewPage() {
       userType: user.userType as any,
       gender: user.gender as any || 'female',
       lookingFor: user.lookingFor as any || 'male',
-      username: user.name
+      username: user.username || ''
     }
 
     const targetUser: User = {
@@ -177,7 +183,7 @@ export default function ProfileViewPage() {
       userType: profile.userType as any,
       gender: profile.gender as any || 'female',
       lookingFor: profile.lookingFor as any || 'male',
-      username: profile.username
+      username: profile.username || ''
     }
 
     if (!canUsersSeeEachOther(currentUser, targetUser)) {
@@ -248,7 +254,7 @@ export default function ProfileViewPage() {
         body: JSON.stringify({
           requesterId: user.id,
           targetId: id,
-          requesterUsername: user.name || user.email?.split('@')[0] || 'Usuário',
+          requesterUsername: user.username || user.email?.split('@')[0] || 'Usuário',
         })
       })
       toast.success('Interesse enviado com sucesso!')
@@ -274,7 +280,7 @@ export default function ProfileViewPage() {
         body: JSON.stringify({
           requesterId: user.id,
           targetId: id,
-          requesterUsername: user.name || user.email?.split('@')[0] || 'Usuário',
+          requesterUsername: user.username || user.email?.split('@')[0] || 'Usuário',
           targetEmail: profile?.email || '',
         })
       })
@@ -460,15 +466,15 @@ export default function ProfileViewPage() {
               {JSON.stringify({
                 about: profile.about,
                 lookingFor: profile.lookingFor,
-                relationshipType: profile.relationshipType,
-                height: profile.height,
-                weight: profile.weight,
-                hasChildren: profile.hasChildren,
-                smokes: profile.smokes,
-                drinks: profile.drinks,
+                
+                
+                
+                
+                
+                
                 education: profile.education,
                 profession: profile.profession,
-                availableForTravel: profile.availableForTravel,
+                
                 gender: profile.gender
               }, null, 2)}
             </pre>
@@ -477,27 +483,13 @@ export default function ProfileViewPage() {
         
         {/* Blocos de Relacionamento sugar e Estilo de vida */}
         <div className="flex flex-col gap-4 mt-6 items-start">
-          {/* Relacionamento sugar */}
-          {profile.relationshipType && (
-            <div className="flex flex-wrap gap-2">
-              <span className="text-pink-400 text-sm sm:text-base font-semibold leading-tight">{profile.relationshipType}</span>
-            </div>
-          )}
           {/* Estilo de vida */}
           <div className="flex flex-wrap gap-2 sm:gap-3 text-pink-400 text-sm sm:text-base font-semibold leading-tight justify-start">
-            {profile.height && <span>Altura: {profile.height}</span>}
-            {profile.weight && <span>Peso: {profile.weight}</span>}
-            {profile.hasChildren !== undefined && <span>Filhos: {profile.hasChildren ? 'Sim' : 'Não'}</span>}
-            {profile.smokes !== undefined && <span>Fuma: {profile.smokes ? 'Sim' : 'Não'}</span>}
-            {profile.drinks !== undefined && <span>Bebe: {profile.drinks ? 'Sim' : 'Não'}</span>}
             {profile.education && <span>Educação: {profile.education}</span>}
             {profile.profession && <span>Profissão: {profile.profession}</span>}
-            {profile.availableForTravel && (
-              <span>Disponível para viagem: {profile.availableForTravel === 'Sim' ? 'Sim' : 'Não'}</span>
-            )}
           </div>
           {/* Debug: Mostrar se não há dados */}
-          {!profile.relationshipType && !profile.height && !profile.weight && profile.hasChildren === undefined && profile.smokes === undefined && profile.drinks === undefined && !profile.education && !profile.profession && !profile.availableForTravel && (
+          {!profile.education && !profile.profession && (
             <span className="text-neutral-500 text-sm">Nenhuma informação de estilo de vida disponível.</span>
           )}
         </div>

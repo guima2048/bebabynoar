@@ -20,8 +20,10 @@ const REPORT_REASONS = [
   'Outro'
 ]
 
+interface AuthUser { id: string; username?: string; email?: string; [key: string]: any }
+
 export default function ReportUserModal({ isOpen, onClose, reportedUserId, reportedUserName }: ReportUserModalProps) {
-  const { user } = useAuth()
+  const { user } = useAuth() as { user: AuthUser | null }
   const [reason, setReason] = useState('')
   const [description, setDescription] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)

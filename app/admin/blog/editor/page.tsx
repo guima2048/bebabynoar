@@ -228,7 +228,7 @@ export default function BlogEditorPage() {
             <div className="flex items-center gap-4">
               <Link
                 href="/admin/blog"
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Voltar
@@ -242,7 +242,7 @@ export default function BlogEditorPage() {
               <button
                 onClick={handleSave}
                 disabled={isLoading}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
               >
                 <Save className="w-4 h-4" />
                 {isLoading ? 'Salvando...' : 'Salvar Rascunho'}
@@ -250,7 +250,7 @@ export default function BlogEditorPage() {
               <button
                 onClick={handlePublish}
                 disabled={isLoading}
-                className="flex items-center gap-2 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors disabled:opacity-50 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
               >
                 <Eye className="w-4 h-4" />
                 {isLoading ? 'Publicando...' : 'Publicar'}
@@ -274,7 +274,7 @@ export default function BlogEditorPage() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Digite o título do post..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none text-gray-900 placeholder:text-gray-700"
               />
             </div>
 
@@ -292,7 +292,7 @@ export default function BlogEditorPage() {
                 value={featuredImageAlt}
                 onChange={e => setFeaturedImageAlt(e.target.value)}
                 placeholder="Texto alternativo da imagem (acessibilidade e SEO)"
-                className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent text-sm"
+                className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none text-sm text-gray-900 placeholder:text-gray-700"
               />
             </div>
 
@@ -306,7 +306,7 @@ export default function BlogEditorPage() {
                 onChange={(e) => setExcerpt(e.target.value)}
                 placeholder="Digite um resumo do post (opcional)..."
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none text-gray-900 placeholder:text-gray-700"
               />
               <p className="text-xs text-gray-500 mt-1">
                 Se não preenchido, será gerado automaticamente a partir do conteúdo
@@ -321,7 +321,7 @@ export default function BlogEditorPage() {
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none text-gray-900 placeholder:text-gray-700"
               >
                 <option value="DRAFT">📝 Rascunho</option>
                 <option value="PUBLISHED">✅ Publicado</option>
@@ -338,7 +338,7 @@ export default function BlogEditorPage() {
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="Digite o conteúdo do post..."
                 rows={15}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent font-mono text-sm"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none font-mono text-sm text-gray-900 placeholder:text-gray-700"
               />
             </div>
 
@@ -346,7 +346,7 @@ export default function BlogEditorPage() {
             {content && (
               <div className="mb-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Prévia</h3>
-                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none">
                   <h2 className="text-xl font-bold text-gray-900 mb-2">{title || 'Título do Post'}</h2>
                   {excerpt && (
                     <p className="text-gray-600 mb-4 italic">&ldquo;{excerpt}&rdquo;</p>
@@ -371,7 +371,7 @@ export default function BlogEditorPage() {
                 <button
                   onClick={handleSave}
                   disabled={isLoading}
-                  className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50"
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
                 >
                   <Save className="w-4 h-4" />
                   {isLoading ? 'Salvando...' : 'Salvar Rascunho'}
@@ -379,7 +379,7 @@ export default function BlogEditorPage() {
                 <button
                   onClick={handlePublish}
                   disabled={isLoading}
-                  className="flex items-center gap-2 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors disabled:opacity-50"
+                  className="flex items-center gap-2 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors disabled:opacity-50 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
                 >
                   <Eye className="w-4 h-4" />
                   {isLoading ? 'Publicando...' : 'Publicar'}

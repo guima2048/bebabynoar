@@ -23,7 +23,7 @@ export async function PUT(req: NextRequest) {
     await prisma.report.update({
       where: { id: reportId },
       data: {
-        status: action === 'review' ? 'INVESTIGATING' : 'RESOLVED',
+        status: action === 'review' ? 'PENDING' : 'RESOLVED',
       }
     })
 
@@ -46,34 +46,7 @@ export async function PUT(req: NextRequest) {
         })
       }
 
-      // Envia e-mail de notificação para o usuário denunciado
-      if (report.reported?.email) {
-        const res = await fetch('https://api.brevo.com/v3/smtp/email', {
-          method: 'POST',
-          headers: {
-            'api-key': process.env.BREVO_API_KEY!,
-            'Content-Type': 'application/json',
-            'accept': 'application/json',
-          },
-          body: JSON.stringify({
-            sender: { name: 'Bebaby App', email: 'no-reply@bebaby.app' },
-            to: [{ email: report.reported.email }],
-            subject: action === 'block_user' ? 'Conta bloqueada - Bebaby App' : 'Conta removida - Bebaby App',
-            htmlContent: `
-              <h2>${action === 'block_user' ? 'Sua conta foi bloqueada' : 'Sua conta foi removida'}</h2>
-              <p>Olá,</p>
-              <p>${action === 'block_user' ? 'Sua conta no Bebaby App foi bloqueada' : 'Sua conta no Bebaby App foi removida'} devido a uma denúncia de outro usuário.</p>
-              <p><strong>Motivo:</strong> ${adminNotes || 'Violação das diretrizes da comunidade'}</p>
-              <p>Se você acredita que isso foi um erro, entre em contato conosco.</p>
-              <p>Atenciosamente,<br>Equipe Bebaby App</p>
-            `
-          })
-        })
 
-        if (!res.ok) {
-          console.error('Erro ao enviar e-mail de notificação:', await res.text())
-        }
-      }
     }
 
     return NextResponse.json({

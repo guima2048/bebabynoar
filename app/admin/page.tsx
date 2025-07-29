@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import toast from 'react-hot-toast'
-import { useCSRF } from '@/hooks/useCSRF'
 import Image from 'next/image'
 
 // Validação de entrada
@@ -29,7 +28,6 @@ export default function AdminPage() {
   const [errors, setErrors] = useState<{ username?: string; password?: string }>({})
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { csrfToken, loading: csrfLoading, error: csrfError, refreshToken } = useCSRF()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -59,7 +57,6 @@ export default function AdminPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(csrfToken && { 'X-CSRF-Token': csrfToken })
         },
         body: JSON.stringify({ username, password }),
         credentials: 'include'
@@ -107,9 +104,6 @@ export default function AdminPage() {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          {csrfLoading && (
-            <div className="mb-4 text-center text-pink-600 font-medium">Carregando token de segurança...</div>
-          )}
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-gray-700">
@@ -182,7 +176,7 @@ export default function AdminPage() {
             <div>
               <button
                 type="submit"
-                disabled={isLoading || csrfLoading || !csrfToken}
+                disabled={isLoading}
                 className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-pink-600 hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? 'Entrando...' : 'Entrar'}

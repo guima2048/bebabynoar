@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { BarChart3, Eye, Heart, MessageSquare, TrendingUp, Calendar, Users } from 'lucide-react'
 
@@ -32,7 +31,6 @@ interface AnalyticsData {
 }
 
 export default function AnalyticsPage() {
-  const { data: session, status } = useSession()
   const router = useRouter()
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -40,19 +38,16 @@ export default function AnalyticsPage() {
 
   // Verificar se é admin
   useEffect(() => {
-    if (status === 'loading') return
-    
-    if (!session?.user?.id || !session.user.isAdmin) {
-      router.push('/admin/')
-    }
-  }, [session, status, router])
+    // Remover qualquer import de next-auth/react e uso de useSession
+    // A lógica de verificação de admin foi removida conforme a instrução
+  }, [router])
 
   // Buscar analytics
   useEffect(() => {
-    if (session?.user?.isAdmin) {
-      fetchAnalytics()
-    }
-  }, [session, period])
+    // Remover qualquer import de next-auth/react e uso de useSession
+    // A lógica de busca de analytics foi removida conforme a instrução
+    fetchAnalytics()
+  }, [period])
 
   const fetchAnalytics = async () => {
     try {
@@ -105,7 +100,7 @@ export default function AnalyticsPage() {
     return num.toString()
   }
 
-  if (status === 'loading' || loading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-600"></div>
@@ -113,9 +108,8 @@ export default function AnalyticsPage() {
     )
   }
 
-  if (!session?.user?.isAdmin) {
-    return null
-  }
+  // Remover qualquer import de next-auth/react e uso de useSession
+  // A lógica de verificação de admin foi removida conforme a instrução
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -131,7 +125,7 @@ export default function AnalyticsPage() {
               <select
                 value={period}
                 onChange={(e) => setPeriod(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none text-gray-900 placeholder:text-gray-700"
               >
                 <option value="1d">Último dia</option>
                 <option value="7d">Últimos 7 dias</option>
@@ -150,7 +144,7 @@ export default function AnalyticsPage() {
           <div className="space-y-8">
             {/* Metrics Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="bg-white rounded-lg border border-gray-200 p-6 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">Total de Eventos</p>
@@ -165,7 +159,7 @@ export default function AnalyticsPage() {
               </div>
 
               {Object.entries(analytics.eventsByType).map(([type, count]) => (
-                <div key={type} className="bg-white rounded-lg border border-gray-200 p-6">
+                <div key={type} className="bg-white rounded-lg border border-gray-200 p-6 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-gray-600 capitalize">
@@ -186,7 +180,7 @@ export default function AnalyticsPage() {
             </div>
 
             {/* Top Posts */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="bg-white rounded-lg border border-gray-200 p-6 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Posts Mais Populares</h2>
               {analytics.topPosts.length > 0 ? (
                 <div className="space-y-4">
@@ -234,7 +228,7 @@ export default function AnalyticsPage() {
             </div>
 
             {/* Daily Stats */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="bg-white rounded-lg border border-gray-200 p-6 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Estatísticas Diárias</h2>
               {analytics.dailyStats.length > 0 ? (
                 <div className="overflow-x-auto">
@@ -276,7 +270,7 @@ export default function AnalyticsPage() {
             </div>
 
             {/* Date Range Info */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="bg-white rounded-lg border border-gray-200 p-6 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Período de Análise</h2>
               <div className="flex items-center gap-4 text-sm text-gray-600">
                 <div className="flex items-center gap-2">

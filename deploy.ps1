@@ -51,25 +51,27 @@ $sshCommands = @"
 cd /var/www/bebaby-app
 
 # Criar arquivo .env
+# ATENÇÃO: As credenciais reais devem ser configuradas via painel admin (/admin/env-config)
 echo "🔧 Criando arquivo .env..."
 cat > .env << 'ENV_EOF'
 # Database
-DATABASE_URL="postgresql://bebaby_user:Maria#01@localhost:5432/bebaby_db"
+DATABASE_URL="postgresql://USUARIO_SUA_APP:SENHA_AQUI@localhost:5432/NOME_DO_BANCO"
 
 # NextAuth
-NEXTAUTH_SECRET="bebaby-secret-key-2024-production-vps"
-NEXTAUTH_URL="http://177.153.20.125:3000"
+NEXTAUTH_SECRET="SUA_CHAVE_SECRETA_AQUI"
+NEXTAUTH_URL="http://SEU_DOMINIO_OU_IP:3000"
 
 # Stripe (configurar depois)
-STRIPE_SECRET_KEY="sk_test_..."
-STRIPE_PUBLISHABLE_KEY="pk_test_..."
-STRIPE_WEBHOOK_SECRET="whsec_..."
+STRIPE_SECRET_KEY="sua_stripe_secret_key"
+STRIPE_PUBLISHABLE_KEY="sua_stripe_publishable_key"
+STRIPE_WEBHOOK_SECRET="seu_webhook_secret"
 
 # Email (configurar depois)
-BREVO_API_KEY="your-brevo-api-key"
+SENDGRID_API_KEY="sua_sendgrid_api_key"
+EMAIL_FROM="no-reply@seudominio.com"
 
 # App
-NEXT_PUBLIC_APP_URL="http://177.153.20.125:3000"
+NEXT_PUBLIC_APP_URL="http://SEU_DOMINIO_OU_IP:3000"
 ENV_EOF
 
 echo "✅ Arquivo .env criado"

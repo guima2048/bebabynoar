@@ -12,13 +12,6 @@ if (!fs.existsSync(envPath)) {
   console.log('📝 Crie o arquivo .env.local na raiz do projeto com as seguintes variáveis:\n');
   
   const requiredEnvVars = [
-    'NEXT_PUBLIC_FIREBASE_API_KEY',
-    'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN',
-    'NEXT_PUBLIC_FIREBASE_PROJECT_ID',
-    'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET',
-    'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
-    'NEXT_PUBLIC_FIREBASE_APP_ID',
-    'BREVO_API_KEY',
     'STRIPE_SECRET_KEY',
     'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY',
     'ADMIN_USERNAME',
@@ -37,9 +30,11 @@ if (!fs.existsSync(envPath)) {
   // Verificar variáveis críticas
   const envContent = fs.readFileSync(envPath, 'utf8');
   const criticalVars = [
-    'NEXT_PUBLIC_FIREBASE_API_KEY',
-    'NEXT_PUBLIC_FIREBASE_PROJECT_ID',
-    'BREVO_API_KEY'
+    'STRIPE_SECRET_KEY',
+    'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY',
+    'ADMIN_USERNAME',
+    'ADMIN_PASSWORD',
+    'NEXT_PUBLIC_APP_URL'
   ];
   
   let missingVars = [];
@@ -83,11 +78,8 @@ try {
 
 // Verificar estrutura de arquivos importantes
 const importantFiles = [
-  'lib/firebase.ts',
   'contexts/AuthContext.tsx',
-  'app/layout.tsx',
-  'firestore.rules',
-  'firebase.json'
+  'app/layout.tsx'
 ];
 
 console.log('\n📁 Verificando arquivos importantes...');
@@ -99,15 +91,6 @@ importantFiles.forEach(file => {
     console.log(`❌ ${file} - Arquivo não encontrado`);
   }
 });
-
-// Verificar configuração do Firebase
-const firebaseConfigPath = path.join(process.cwd(), 'firebase.json');
-if (fs.existsSync(firebaseConfigPath)) {
-  console.log('\n🔥 Firebase configurado');
-} else {
-  console.log('\n❌ firebase.json não encontrado');
-  console.log('💡 Execute: firebase init');
-}
 
 console.log('\n🎯 Status do Projeto:');
 console.log('📋 O projeto está estruturalmente completo');

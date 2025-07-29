@@ -13,6 +13,9 @@ const registerSchema = z.object({
   birthdate: z.string(),
   gender: z.string(),
   userType: z.string(),
+  orientation: z.enum(['HETERO', 'HOMO', 'BI', 'PAN', 'OTHER']),
+  relationshipStatus: z.enum(['SOLTEIRO', 'CASADO', 'VIUVO', 'DIVORCIADO', 'OUTRO']),
+  financialExpectation: z.enum(['NENHUMA', 'R500_PLUS', 'R2000_PLUS', 'A_COMBINAR']),
   lookingFor: z.string().optional(),
   state: z.string(),
   city: z.string(),
@@ -103,6 +106,9 @@ export async function POST(request: NextRequest) {
       birthdate: new Date(validatedData.birthdate),
       gender: (genderMap[validatedData.gender] as any) || 'OTHER',
       userType: (userTypeMap[validatedData.userType] as any) || 'SUGAR_BABY',
+      orientation: validatedData.orientation,
+      relationshipStatus: validatedData.relationshipStatus,
+      financialExpectation: validatedData.financialExpectation,
       lookingFor: lookingFor as any,
       state: validatedData.state,
       city: validatedData.city,
@@ -129,33 +135,13 @@ export async function POST(request: NextRequest) {
 
     const user = await prisma.user.create({
       data: {
-        ...userData,
-        emailVerificationToken: verificationToken,
-        emailVerificationExpiry: tokenExpiry,
-        lastVerificationEmailSent: new Date()
+        ...userData
+        // Removido: emailVerificationToken, emailVerificationExpiry, lastVerificationEmailSent
       }
     })
 
-    // Verificar se o template de confirmação de e-mail está ativo
-    const emailTemplate = await prisma.emailTemplate.findUnique({
-      where: { slug: 'email-confirmation' }
-    })
-
-    if (emailTemplate && emailTemplate.enabled) {
-      try {
-        // Enviar e-mail de confirmação usando o EmailService
-        const verificationUrl = `${process.env.NEXT_PUBLIC_APP_URL}/verify-email?token=${verificationToken}&email=${encodeURIComponent(user.email)}`
-        
-        await EmailService.sendEmailConfirmation(
-          user.email,
-          user.name || user.username,
-          verificationUrl
-        )
-      } catch (error) {
-        console.error('Erro ao enviar e-mail de confirmação:', error)
-        // Não falhar o registro se o e-mail não for enviado
-      }
-    }
+    // Envio de email desativado: modelos removidos do banco
+    // Se necessário, implemente integração direta com serviço externo aqui
 
     // Remover senha do response
     const { password, ...userWithoutPassword } = user
@@ -163,7 +149,7 @@ export async function POST(request: NextRequest) {
       { 
         message: 'Usuário criado com sucesso. Verifique seu e-mail para confirmar a conta.',
         user: userWithoutPassword,
-        emailVerificationRequired: emailTemplate?.enabled || false
+        emailVerificationRequired: false // Email verification is no longer handled by templates
       },
       { status: 201 }
     )

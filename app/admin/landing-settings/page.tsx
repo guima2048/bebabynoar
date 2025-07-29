@@ -48,6 +48,7 @@ interface LandingSettings {
   heroDaddy1Image?: string;
   heroBaby2Image?: string;
   heroDaddy2Image?: string;
+  faviconUrl?: string; // Novo campo para favicon
 }
 
 export default function LandingSettingsPage() {
@@ -70,7 +71,8 @@ export default function LandingSettingsPage() {
     heroBaby1Image: '',
     heroDaddy1Image: '',
     heroBaby2Image: '',
-    heroDaddy2Image: ''
+    heroDaddy2Image: '',
+    faviconUrl: '' // Novo campo
   })
 
   // Carregar configurações do Firebase
@@ -380,6 +382,21 @@ export default function LandingSettingsPage() {
                     onImageRemove={() => setFormData({ ...formData, bannerImageURL: '' })}
                     label="Imagem do Banner"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Favicon do Site
+                  </label>
+                  <ImageUpload
+                    currentImageUrl={formData.faviconUrl || ''}
+                    onImageUpload={url => setFormData(prev => ({ ...prev, faviconUrl: url }))}
+                    onImageRemove={() => setFormData(prev => ({ ...prev, faviconUrl: '' }))}
+                    label="Favicon (PNG 32x32px ou 48x48px, fundo transparente)"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    O favicon deve ser uma imagem quadrada, preferencialmente PNG, tamanho 32x32px ou 48x48px, fundo transparente. Após salvar, será usado como ícone do site nos navegadores.
+                  </p>
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">

@@ -1,14 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
 // GET - Listar reports (apenas para admins)
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.id || !session?.user?.isAdmin) {
+    const userId = request.headers.get('x-user-id');
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Acesso negado. ID do usuário não fornecido.' },
+        { status: 401 }
+      );
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, isAdmin: true }
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Usuário não encontrado.' },
+        { status: 404 }
+      );
+    }
+
+    if (!user.isAdmin) {
       return NextResponse.json(
         { error: 'Acesso negado. Apenas administradores.' },
         { status: 403 }
@@ -33,7 +49,6 @@ export async function GET(request: NextRequest) {
         reporter: {
           select: {
             id: true,
-            name: true,
             username: true,
             email: true,
             userType: true
@@ -42,7 +57,6 @@ export async function GET(request: NextRequest) {
         reported: {
           select: {
             id: true,
-            name: true,
             username: true,
             email: true,
             userType: true
@@ -67,8 +81,7 @@ export async function GET(request: NextRequest) {
         status: report.status,
         reporter: report.reporter,
         reportedUser: report.reported,
-        createdAt: report.createdAt,
-        updatedAt: report.updatedAt
+        createdAt: report.createdAt
       })),
       pagination: {
         page,
@@ -89,12 +102,23 @@ export async function GET(request: NextRequest) {
 // POST - Criar um novo report
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.id) {
+    const userId = request.headers.get('x-user-id');
+    if (!userId) {
       return NextResponse.json(
-        { error: 'Não autorizado' },
+        { error: 'Não autorizado. ID do usuário não fornecido.' },
         { status: 401 }
+      );
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true }
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Usuário não encontrado.' },
+        { status: 404 }
       );
     }
 
@@ -120,7 +144,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar se não está tentando reportar a si mesmo
-    if (session.user.id === targetUserId) {
+    if (user.id === targetUserId) {
       return NextResponse.json(
         { error: 'Não é possível reportar a si mesmo' },
         { status: 400 }
@@ -130,7 +154,7 @@ export async function POST(request: NextRequest) {
     // Verificar se já existe um report pendente do mesmo usuário
     const existingReport = await prisma.report.findFirst({
       where: {
-        reporterId: session.user.id,
+        reporterId: user.id,
         reportedId: targetUserId,
         status: 'PENDING'
       }
@@ -146,7 +170,7 @@ export async function POST(request: NextRequest) {
     // Criar o report
     const report = await prisma.report.create({
       data: {
-        reporterId: session.user.id,
+        reporterId: user.id,
         reportedId: targetUserId,
         reason: reason,
         description: description || '',
@@ -156,7 +180,6 @@ export async function POST(request: NextRequest) {
         reporter: {
           select: {
             id: true,
-            name: true,
             username: true,
             userType: true
           }
@@ -164,7 +187,6 @@ export async function POST(request: NextRequest) {
         reported: {
           select: {
             id: true,
-            name: true,
             username: true,
             userType: true
           }

@@ -1,0 +1,239 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
+import { canUsersSeeEachOther } from '@/lib/user-matching'
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const currentUserId = request.headers.get('x-user-id');
+    if (!currentUserId) {
+      return NextResponse.json(
+        { message: 'Não autorizado' },
+        { status: 401 }
+      )
+    }
+    const userId = params.id
+    const currentUser = await prisma.user.findUnique({
+      where: { id: currentUserId },
+      select: {
+        id: true,
+        userType: true,
+        gender: true,
+        lookingFor: true,
+        state: true,
+        city: true,
+        premium: true,
+        username: true
+      }
+    })
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        birthdate: true,
+        gender: true,
+        userType: true,
+        lookingFor: true,
+        state: true,
+        city: true,
+        about: true,
+        photoURL: true,
+        emailVerified: true,
+        emailVerifiedAt: true,
+        premium: true,
+        premiumExpiry: true,
+        status: true,
+        education: true,
+        profession: true,
+        acceptsTravel: true,
+        meetingFrequency: true,
+        relationshipType: true,
+        sponsorshipStyle: true,
+        availableTime: true,
+        acceptsExclusivity: true,
+        relationshipFormat: true,
+        relationshipGoal: true,
+        verified: true,
+        createdAt: true,
+        updatedAt: true,
+        lastActive: true,
+        isAdmin: true,
+        photos: {
+          select: {
+            id: true,
+            url: true,
+            isPrivate: true,
+            uploadedAt: true,
+          }
+        }
+      }
+    })
+    if (!user) {
+      return NextResponse.json(
+        { message: 'Usuário não encontrado' },
+        { status: 404 }
+      )
+    }
+    if (
+      !currentUser ||
+      !user ||
+      !canUsersSeeEachOther(
+        {
+          id: currentUser.id,
+          userType: (currentUser.userType as string).toLowerCase() as any,
+          gender: (currentUser.gender as string).toLowerCase() as any,
+          lookingFor: (currentUser.lookingFor as string)?.toLowerCase() as any,
+          username: currentUser.username,
+          state: currentUser.state,
+          city: currentUser.city,
+          premium: currentUser.premium,
+        },
+        {
+          id: user.id,
+          userType: (user.userType as string).toLowerCase() as any,
+          gender: (user.gender as string).toLowerCase() as any,
+          lookingFor: (user.lookingFor as string)?.toLowerCase() as any,
+          username: user.username || '',
+          state: user.state,
+          city: user.city,
+          premium: user.premium,
+        }
+      )
+    ) {
+      return NextResponse.json(
+        { message: 'Você não tem permissão para visualizar este perfil.' },
+        { status: 403 }
+      )
+    }
+    return NextResponse.json({ user })
+  } catch (error) {
+    console.error('Erro ao buscar perfil:', error)
+    return NextResponse.json(
+      { message: 'Erro interno do servidor' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const currentUserId = request.headers.get('x-user-id');
+    if (!currentUserId) {
+      return NextResponse.json(
+        { message: 'Não autorizado' },
+        { status: 401 }
+      )
+    }
+    if (currentUserId !== params.id) {
+      return NextResponse.json(
+        { message: 'Não autorizado para editar este perfil' },
+        { status: 403 }
+      )
+    }
+    const body = await request.json()
+    // Conversão dos campos de string para enums do banco
+    const enumMap = {
+      acceptsTravel: { 'Sim': 'YES', 'Não': 'NO', 'Depende': 'DEPENDS' },
+      meetingFrequency: {
+        '1x por semana': 'ONCE_WEEK',
+        '2x por semana': 'TWICE_WEEK',
+        'Diário': 'DAILY',
+        'Quando der': 'WHEN_POSSIBLE'
+      },
+      relationshipType: {
+        'Encontros': 'MEETINGS',
+        'Relacionamento sério': 'SERIOUS_RELATIONSHIP',
+        'Acordo Sugar': 'SUGAR_AGREEMENT'
+      },
+      sponsorshipStyle: {
+        'Mensal': 'MONTHLY',
+        'Por encontro': 'PER_MEETING',
+        'Presentes': 'GIFTS',
+        'A combinar': 'TO_COMBINE'
+      },
+      availableTime: {
+        'Manhã': 'MORNING',
+        'Tarde': 'AFTERNOON',
+        'Noite': 'EVENING',
+        'Fins de semana': 'WEEKENDS',
+        'Livre': 'FREE'
+      },
+      acceptsExclusivity: {
+        'Sim': 'YES',
+        'Não': 'NO',
+        'Depende da proposta': 'DEPENDS_ON_PROPOSAL'
+      },
+      relationshipFormat: {
+        'Presencial': 'IN_PERSON',
+        'Online': 'ONLINE',
+        'Viagens': 'TRAVELS'
+      },
+      relationshipGoal: {
+        'Apenas casual': 'CASUAL',
+        'Algo fixo': 'FIXED',
+        'Aberto a ambos': 'BOTH'
+      }
+    }
+    const data = { ...body }
+    Object.keys(enumMap).forEach((field) => {
+      if (data[field] === '') {
+        data[field] = null;
+      } else if (data[field]) {
+        const group = enumMap[field as keyof typeof enumMap] as Record<string, string> | undefined;
+        data[field] = group?.[data[field] as string] || null;
+      }
+    })
+    const updatedUser = await prisma.user.update({
+      where: { id: params.id },
+      data,
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        birthdate: true,
+        gender: true,
+        userType: true,
+        lookingFor: true,
+        state: true,
+        city: true,
+        about: true,
+        photoURL: true,
+        premium: true,
+        premiumExpiry: true,
+        status: true,
+        education: true,
+        profession: true,
+        acceptsTravel: true,
+        meetingFrequency: true,
+        relationshipType: true,
+        sponsorshipStyle: true,
+        availableTime: true,
+        acceptsExclusivity: true,
+        relationshipFormat: true,
+        relationshipGoal: true,
+        verified: true,
+        createdAt: true,
+        updatedAt: true,
+        lastActive: true,
+        isAdmin: true,
+      }
+    })
+    return NextResponse.json({
+      message: 'Perfil atualizado com sucesso',
+      user: updatedUser
+    })
+  } catch (error) {
+    console.error('Erro ao atualizar perfil:', error)
+    return NextResponse.json(
+      { message: 'Erro interno do servidor' },
+      { status: 500 }
+    )
+  }
+} 

@@ -2,9 +2,11 @@ import { useNotifications } from '@/contexts/NotificationContext'
 import toast from 'react-hot-toast'
 import { useAuth } from '@/hooks/useAuth'
 
+interface AuthUser { id: string; username?: string; email?: string; [key: string]: any }
+
 export const useNotificationActions = () => {
   const { markAsRead, markAllAsRead } = useNotifications()
-  const { user } = useAuth()
+  const { user } = useAuth() as { user: AuthUser | null }
 
   const handleMarkAsRead = async (notificationId: string) => {
     if (!user) { return }

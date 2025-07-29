@@ -1,0 +1,197 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===== MODELOS CORE (LIMPOS) =====
+
+model User {
+  id              String       @id @default(cuid())
+  email           String       @unique
+  username        String       @unique
+  password        String?
+  birthdate       DateTime
+  gender          Gender
+  userType        UserType
+  lookingFor      UserType?
+  state           String
+  city            String
+  about           String?
+  photoURL        String?
+  profession      String?
+  education       String?
+  emailVerified   Boolean      @default(false)
+  emailVerifiedAt DateTime?
+  status          UserStatus   @default(ACTIVE)
+  isAdmin         Boolean      @default(false)
+  premium         Boolean      @default(false)
+  premiumExpiry   DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  lastActive      DateTime     @default(now())
+  
+  // Relações
+  photos          Photo[]
+  sentMessages    Message[]    @relation("SenderMessages")
+  receivedMessages Message[]   @relation("ReceiverMessages")
+  sentInterests   Interest[]   @relation("SentInterests")
+  receivedInterests Interest[] @relation("ReceivedInterests")
+  notifications   Notification[]
+  profileViews    ProfileView[] @relation("ViewedProfile")
+  viewedProfiles  ProfileView[] @relation("ViewerProfile")
+  blocks          Block[]      @relation("UserBlocks")
+  blockedBy       Block[]      @relation("TargetUserBlocks")
+  favorites       Favorite[]   @relation("UserFavorites")
+  favoritedBy     Favorite[]   @relation("TargetUserFavorites")
+  reports         Report[]     @relation("SentReports")
+  reportedBy      Report[]     @relation("ReceivedReports")
+
+  @@map("users")
+}
+
+model Photo {
+  id         String   @id @default(cuid())
+  url        String
+  isPrivate  Boolean  @default(false)
+  uploadedAt DateTime @default(now())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("photos")
+}
+
+model Message {
+  id         String       @id @default(cuid())
+  content    String
+  read       Boolean      @default(false)
+  createdAt  DateTime     @default(now())
+  senderId   String
+  receiverId String
+  sender     User         @relation("SenderMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User         @relation("ReceiverMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+model Interest {
+  id         String         @id @default(cuid())
+  message    String?
+  status     InterestStatus @default(PENDING)
+  createdAt  DateTime       @default(now())
+  senderId   String
+  receiverId String
+  sender     User           @relation("SentInterests", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User           @relation("ReceivedInterests", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, receiverId])
+  @@map("interests")
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  title     String
+  message   String
+  type      NotificationType
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model ProfileView {
+  id       String   @id @default(cuid())
+  viewedAt DateTime @default(now())
+  viewerId String
+  viewedId String
+  viewer   User     @relation("ViewerProfile", fields: [viewerId], references: [id], onDelete: Cascade)
+  viewed   User     @relation("ViewedProfile", fields: [viewedId], references: [id], onDelete: Cascade)
+
+  @@unique([viewerId, viewedId])
+  @@map("profile_views")
+}
+
+model Block {
+  id           String   @id @default(cuid())
+  reason       String?
+  createdAt    DateTime @default(now())
+  userId       String
+  targetUserId String
+  user         User     @relation("UserBlocks", fields: [userId], references: [id], onDelete: Cascade)
+  targetUser   User     @relation("TargetUserBlocks", fields: [targetUserId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, targetUserId])
+  @@map("blocks")
+}
+
+model Favorite {
+  id           String   @id @default(cuid())
+  createdAt    DateTime @default(now())
+  userId       String
+  targetUserId String
+  user         User     @relation("UserFavorites", fields: [userId], references: [id], onDelete: Cascade)
+  targetUser   User     @relation("TargetUserFavorites", fields: [targetUserId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, targetUserId])
+  @@map("favorites")
+}
+
+model Report {
+  id          String       @id @default(cuid())
+  reason      String
+  description String?
+  status      ReportStatus @default(PENDING)
+  createdAt   DateTime     @default(now())
+  reporterId  String
+  reportedId  String
+  reporter    User         @relation("SentReports", fields: [reporterId], references: [id], onDelete: Cascade)
+  reported    User         @relation("ReceivedReports", fields: [reportedId], references: [id], onDelete: Cascade)
+
+  @@map("reports")
+}
+
+// ===== ENUMS =====
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum UserType {
+  SUGAR_BABY
+  SUGAR_DADDY
+  SUGAR_MOMMY
+  SUGAR_BABYBOY
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  BANNED
+  PENDING
+}
+
+enum InterestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum NotificationType {
+  MESSAGE
+  INTEREST
+  SYSTEM
+  PROFILE_VIEW
+}
+
+enum ReportStatus {
+  PENDING
+  RESOLVED
+  DISMISSED
+} 

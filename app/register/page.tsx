@@ -52,8 +52,11 @@ const schema = z.object({
   password: z.string().min(8, 'Mínimo 8 caracteres').regex(/[A-Z]/, '1 maiúscula').regex(/[a-z]/, '1 minúscula').regex(/[0-9]/, '1 número').regex(/[^A-Za-z0-9]/, '1 caractere especial'),
   state: z.string().refine((val) => estados.some(e => e.sigla === val), { message: 'Selecione um estado válido' }),
   city: z.string().min(2, 'Informe a cidade'),
-  userType: z.enum(['sugar_baby', 'sugar_daddy', 'sugar_mommy', 'sugar_babyboy'], { required_error: 'Selecione o tipo de usuário' }),
-  lookingFor: z.enum(['male', 'female', 'both'], { required_error: 'Selecione quem você procura' }),
+  userType: z.enum(['SUGAR_BABY', 'SUGAR_DADDY', 'SUGAR_MOMMY', 'SUGAR_BABYBOY'], { required_error: 'Selecione o tipo de usuário' }),
+  orientation: z.enum(['HETERO', 'HOMO', 'BI', 'PAN', 'OTHER'], { required_error: 'Selecione a orientação sexual' }),
+  relationshipStatus: z.enum(['SOLTEIRO', 'CASADO', 'VIUVO', 'DIVORCIADO', 'OUTRO'], { required_error: 'Selecione o status de relacionamento' }),
+  financialExpectation: z.enum(['NENHUMA', 'R500_PLUS', 'R2000_PLUS', 'A_COMBINAR'], { required_error: 'Selecione a expectativa financeira' }),
+  lookingFor: z.string().min(1, 'Informe quem você procura'),
   terms: z.literal(true, { errorMap: () => ({ message: 'Você deve aceitar os termos' }) }),
 }).refine((data) => data.email === data.emailConfirm, {
   message: 'Os e-mails não coincidem',
@@ -143,7 +146,10 @@ export default function RegisterPage() {
         state: data.state,
         city: data.city,
         userType: data.userType,
-        gender: getGenderFromUserType(data.userType), // Gênero definido automaticamente
+        gender: getGenderFromUserType(data.userType),
+        orientation: data.orientation,
+        relationshipStatus: data.relationshipStatus,
+        financialExpectation: data.financialExpectation,
         lookingFor: data.lookingFor,
         password: data.password
       }
@@ -159,9 +165,17 @@ export default function RegisterPage() {
       })
       
       if (response.ok) {
-        console.log('Dados salvos com sucesso')
-        toast.success('Cadastro realizado com sucesso!')
-        router.push('/profile/edit')
+        const responseData = await response.json()
+        console.log('Dados salvos com sucesso', responseData)
+        
+        // Se o email de verificação é necessário, redirecionar para /verify-email
+        if (responseData.emailVerificationRequired) {
+          toast.success('Cadastro realizado com sucesso! Verifique seu email para confirmar a conta.')
+          router.push('/verify-email')
+        } else {
+          toast.success('Cadastro realizado com sucesso!')
+          router.push('/profile/edit')
+        }
       } else {
         const errorData = await response.json()
         if (errorData.error === 'username_exists') {
@@ -197,7 +211,7 @@ export default function RegisterPage() {
       <div className="absolute inset-0 z-0">
         <img
           src="/landing/baby-1.png"
-          alt="Banner Bebaby"
+          alt="Banner Bebaby - imagem de fundo da tela de cadastro"
           className="w-full h-full object-cover object-center"
         />
         {/* Overlay */}
@@ -211,33 +225,33 @@ export default function RegisterPage() {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
             <label className="block mb-1 font-medium" htmlFor="username">Nome de Usuário</label>
-            <input id="username" type="text" className="input-field" {...register('username')} autoComplete="off" />
+            <input id="username" type="text" className="input-field focus:ring-4 focus:ring-pink-400 focus:border-pink-600 placeholder:text-gray-700" {...register('username')} autoComplete="off" aria-label="Nome de Usuário" />
             {errors.username && <span className="text-red-500 text-sm">{errors.username.message}</span>}
           </div>
           <div>
             <label className="block mb-1 font-medium" htmlFor="birthdate">Data de Nascimento</label>
-            <input id="birthdate" type="date" className="input-field" {...register('birthdate')} />
+            <input id="birthdate" type="date" className="input-field focus:ring-4 focus:ring-pink-400 focus:border-pink-600 placeholder:text-gray-700" {...register('birthdate')} aria-label="Data de Nascimento" />
             {errors.birthdate && <span className="text-red-500 text-sm">{errors.birthdate.message}</span>}
           </div>
           <div>
             <label className="block mb-1 font-medium" htmlFor="email">E-mail</label>
-            <input id="email" type="email" className="input-field" {...register('email')} autoComplete="off" />
+            <input id="email" type="email" className="input-field focus:ring-4 focus:ring-pink-400 focus:border-pink-600 placeholder:text-gray-700" {...register('email')} autoComplete="off" aria-label="E-mail" />
             {errors.email && <span className="text-red-500 text-sm">{errors.email.message}</span>}
           </div>
           <div>
             <label className="block mb-1 font-medium" htmlFor="emailConfirm">Confirme o E-mail</label>
-            <input id="emailConfirm" type="email" className="input-field" {...register('emailConfirm')} autoComplete="off" />
+            <input id="emailConfirm" type="email" className="input-field focus:ring-4 focus:ring-pink-400 focus:border-pink-600 placeholder:text-gray-700" {...register('emailConfirm')} autoComplete="off" aria-label="Confirme o E-mail" />
             {errors.emailConfirm && <span className="text-red-500 text-sm">{errors.emailConfirm.message}</span>}
           </div>
           <div>
             <label className="block mb-1 font-medium" htmlFor="password">Senha</label>
-            <input id="password" type="password" className="input-field" {...register('password')} autoComplete="new-password" />
+            <input id="password" type="password" className="input-field focus:ring-4 focus:ring-pink-400 focus:border-pink-600 placeholder:text-gray-700" {...register('password')} autoComplete="new-password" aria-label="Senha" />
             {errors.password && <span className="text-red-500 text-sm">{errors.password.message}</span>}
           </div>
           <div className="flex gap-2">
             <div className="flex-1">
               <label className="block mb-1 font-medium" htmlFor="state">Estado</label>
-              <select id="state" className="input-field w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" {...register('state')}>
+              <select id="state" className="input-field w-full p-3 border border-gray-300 rounded-lg focus:ring-4 focus:ring-pink-400 focus:border-pink-600 text-gray-900 placeholder:text-gray-700" {...register('state')} aria-label="Estado">
                 <option value="">Selecione o estado</option>
                 {estados.map((estado) => (
                   <option key={estado.sigla} value={estado.sigla}>{estado.nome}</option>
@@ -247,11 +261,11 @@ export default function RegisterPage() {
             </div>
             <div className="flex-1">
               <label className="block mb-1 font-medium" htmlFor="city">Cidade</label>
-              <select id="city" className={`input-field w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+              <select id="city" className={`input-field w-full p-3 border rounded-lg focus:ring-4 focus:ring-pink-400 focus:border-pink-600 text-gray-900 placeholder:text-gray-700 ${
                 !selectedState || loadingCidades 
                   ? 'border-gray-200 bg-gray-50 text-gray-500' 
                   : 'border-gray-300'
-              }`} {...register('city')} disabled={!selectedState || loadingCidades}>
+              }`} {...register('city')} disabled={!selectedState || loadingCidades} aria-label="Cidade">
                 <option value="">
                   {loadingCidades ? 'Carregando...' : selectedState ? 'Selecione a cidade' : 'Selecione um estado primeiro'}
                 </option>
@@ -266,39 +280,74 @@ export default function RegisterPage() {
             <label className="block mb-1 font-medium" htmlFor="userType">Tipo de Usuário</label>
             <div className="flex gap-4">
               <label className="flex items-center gap-2" htmlFor="userType-sugar_baby">
-                <input id="userType-sugar_baby" type="radio" value="sugar_baby" {...register('userType')} /> Sugar Baby
+                <input id="userType-sugar_baby" type="radio" value="sugar_baby" {...register('userType')} aria-label="Sugar Baby" /> Sugar Baby
               </label>
               <label className="flex items-center gap-2" htmlFor="userType-sugar_daddy">
-                <input id="userType-sugar_daddy" type="radio" value="sugar_daddy" {...register('userType')} /> Sugar Daddy
+                <input id="userType-sugar_daddy" type="radio" value="sugar_daddy" {...register('userType')} aria-label="Sugar Daddy" /> Sugar Daddy
               </label>
               <label className="flex items-center gap-2" htmlFor="userType-sugar_mommy">
-                <input id="userType-sugar_mommy" type="radio" value="sugar_mommy" {...register('userType')} /> Sugar Mommy
+                <input id="userType-sugar_mommy" type="radio" value="sugar_mommy" {...register('userType')} aria-label="Sugar Mommy" /> Sugar Mommy
               </label>
               <label className="flex items-center gap-2" htmlFor="userType-sugar_babyboy">
-                <input id="userType-sugar_babyboy" type="radio" value="sugar_babyboy" {...register('userType')} /> Sugar Babyboy
+                <input id="userType-sugar_babyboy" type="radio" value="sugar_babyboy" {...register('userType')} aria-label="Sugar Babyboy" /> Sugar Babyboy
               </label>
             </div>
             {errors.userType && <span className="text-red-500 text-sm">{errors.userType.message}</span>}
           </div>
 
           <div>
+            <label className="block mb-1 font-medium" htmlFor="orientation">Orientação Sexual</label>
+            <select id="orientation" className="input-field w-full p-3 border border-gray-300 rounded-lg focus:ring-4 focus:ring-pink-400 focus:border-pink-600 text-gray-900 placeholder:text-gray-700" {...register('orientation')} aria-label="Orientação Sexual">
+              <option value="">Selecione a orientação</option>
+              <option value="HETERO">Heterossexual</option>
+              <option value="HOMO">Homossexual</option>
+              <option value="BI">Bissexual</option>
+              <option value="PAN">Pansexual</option>
+              <option value="OTHER">Outro</option>
+            </select>
+            {errors.orientation && <span className="text-red-500 text-sm">{errors.orientation.message}</span>}
+          </div>
+          <div>
+            <label className="block mb-1 font-medium" htmlFor="relationshipStatus">Status de Relacionamento</label>
+            <select id="relationshipStatus" className="input-field w-full p-3 border border-gray-300 rounded-lg focus:ring-4 focus:ring-pink-400 focus:border-pink-600 text-gray-900 placeholder:text-gray-700" {...register('relationshipStatus')} aria-label="Status de Relacionamento">
+              <option value="">Selecione o status</option>
+              <option value="SOLTEIRO">Solteiro(a)</option>
+              <option value="CASADO">Casado(a)</option>
+              <option value="VIUVO">Viúvo(a)</option>
+              <option value="DIVORCIADO">Divorciado(a)</option>
+              <option value="OUTRO">Outro</option>
+            </select>
+            {errors.relationshipStatus && <span className="text-red-500 text-sm">{errors.relationshipStatus.message}</span>}
+          </div>
+          <div>
+            <label className="block mb-1 font-medium" htmlFor="financialExpectation">Expectativa Financeira</label>
+            <select id="financialExpectation" className="input-field w-full p-3 border border-gray-300 rounded-lg focus:ring-4 focus:ring-pink-400 focus:border-pink-600 text-gray-900 placeholder:text-gray-700" {...register('financialExpectation')} aria-label="Expectativa Financeira">
+              <option value="">Selecione a expectativa</option>
+              <option value="NENHUMA">Nenhuma</option>
+              <option value="R500_PLUS">R$500+</option>
+              <option value="R2000_PLUS">R$2000+</option>
+              <option value="A_COMBINAR">A combinar</option>
+            </select>
+            {errors.financialExpectation && <span className="text-red-500 text-sm">{errors.financialExpectation.message}</span>}
+          </div>
+          <div>
             <label className="block mb-1 font-medium" htmlFor="lookingFor">Procuro</label>
             <div className="flex gap-4">
               <label className="flex items-center gap-2" htmlFor="lookingFor-male">
-                <input id="lookingFor-male" type="radio" value="male" {...register('lookingFor')} /> Homens
+                <input id="lookingFor-male" type="radio" value="male" {...register('lookingFor')} aria-label="Procuro Homens" /> Homens
               </label>
               <label className="flex items-center gap-2" htmlFor="lookingFor-female">
-                <input id="lookingFor-female" type="radio" value="female" {...register('lookingFor')} /> Mulheres
+                <input id="lookingFor-female" type="radio" value="female" {...register('lookingFor')} aria-label="Procuro Mulheres" /> Mulheres
               </label>
               <label className="flex items-center gap-2" htmlFor="lookingFor-both">
-                <input id="lookingFor-both" type="radio" value="both" {...register('lookingFor')} /> Ambos
+                <input id="lookingFor-both" type="radio" value="both" {...register('lookingFor')} aria-label="Procuro Ambos" /> Ambos
               </label>
             </div>
             {errors.lookingFor && <span className="text-red-500 text-sm">{errors.lookingFor.message}</span>}
           </div>
           <div className="flex items-center gap-2">
             <label className="block mb-1 font-medium" htmlFor="terms">Aceito os</label>
-            <input id="terms" type="checkbox" {...register('terms')} />
+            <input id="terms" type="checkbox" {...register('terms')} aria-label="Aceito os Termos de Uso e Política de Privacidade" />
             <span>
               <Link href="/terms" className="underline ml-1" target="_blank">Termos de Uso</Link>
               e a
@@ -309,14 +358,15 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-xl font-semibold text-lg shadow-md transition-all duration-300 bg-gradient-to-r from-yellow-400 via-pink-500 to-rose-500 text-white hover:from-yellow-500 hover:to-pink-600 focus:ring-2 focus:ring-yellow-300 focus:outline-none mt-4"
+            className="w-full py-3 rounded-xl font-semibold text-lg shadow-md transition-all duration-300 bg-gradient-to-r from-yellow-400 via-pink-500 to-rose-500 text-white hover:from-yellow-500 hover:to-pink-600 focus:ring-4 focus:ring-pink-400 focus:outline-none mt-4"
+            aria-label="Criar Conta"
           >
             {loading ? 'Criando...' : 'Criar Conta'}
           </button>
         </form>
         <p className="text-center text-secondary-600 mt-6">
           Já tem conta?{' '}
-          <Link href="/login" className="underline text-primary-600">Entrar</Link>
+          <Link href="/login" className="underline text-primary-600" aria-label="Ir para tela de login">Entrar</Link>
         </p>
       </div>
     </div>

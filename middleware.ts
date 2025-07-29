@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { checkEmailVerification, shouldRedirectToVerification } from '@/lib/auth-guard'
+import { getToken } from 'next-auth/jwt';
 
 // Cache simples para rate limiting
 const rateLimitCache = new Map<string, { count: number; resetTime: number }>()
@@ -9,7 +9,7 @@ const rateLimitCache = new Map<string, { count: number; resetTime: number }>()
 const RATE_LIMIT_WINDOW = 60 * 1000 // 1 minuto
 const RATE_LIMIT_MAX_REQUESTS = 100 // 100 requests por minuto
 const UPLOAD_RATE_LIMIT_MAX_REQUESTS = 10 // 10 uploads por minuto
-const AUTH_RATE_LIMIT_MAX_REQUESTS = 20 // 20 tentativas de login por minuto
+const AUTH_RATE_LIMIT_MAX_REQUESTS = 100 // 100 tentativas de login por minuto (era 20)
 const ADMIN_RATE_LIMIT_MAX_REQUESTS = 50 // 50 requests por minuto para admin
 
 function getClientIP(request: NextRequest): string {
@@ -40,6 +40,26 @@ function isRateLimited(ip: string, maxRequests: number): boolean {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const clientIP = getClientIP(request)
+  
+  // Proteção de rotas autenticadas
+  const protectedPaths = [
+    '/profile',
+    '/profile/',
+    '/profile/edit',
+    '/profile/favorites',
+    '/profile/favorited-by',
+    '/profile/requests',
+    '/profile/who-viewed-me',
+    '/messages',
+    '/notifications',
+    // adicione outras rotas protegidas aqui
+  ];
+  if (protectedPaths.some(path => pathname.startsWith(path))) {
+    const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET! });
+    if (!token) {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
+  }
   
   // Verificação de e-mail será implementada no lado do cliente
   // para evitar problemas com o Edge Runtime
@@ -76,9 +96,7 @@ export async function middleware(request: NextRequest) {
   
   // Rate limiting para autenticação (exceto rotas de sessão do NextAuth)
   if (
-    pathname.startsWith('/api/auth') &&
-    !pathname.startsWith('/api/auth/session') &&
-    !pathname.startsWith('/api/auth/_log')
+    pathname.startsWith('/api/auth')
   ) {
     if (isRateLimited(clientIP, AUTH_RATE_LIMIT_MAX_REQUESTS)) {
       return new NextResponse(

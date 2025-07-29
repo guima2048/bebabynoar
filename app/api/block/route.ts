@@ -51,8 +51,6 @@ export async function POST(request: NextRequest) {
         userId,
         targetUserId,
         reason: reason || 'Bloqueio solicitado pelo usuário',
-        userType: user.userType,
-        targetUserType: targetUser.userType,
       }
     })
 
@@ -141,10 +139,7 @@ export async function GET(_request: NextRequest) {
         targetUser: {
           select: {
             id: true,
-            name: true,
             email: true,
-            userType: true,
-            location: true,
             photos: true,
             premium: true,
           }
@@ -160,14 +155,9 @@ export async function GET(_request: NextRequest) {
       targetUserId: block.targetUserId,
       reason: block.reason,
       createdAt: block.createdAt,
-      userType: block.userType,
-      targetUserType: block.targetUserType,
       targetUser: {
         id: block.targetUser.id,
-        name: block.targetUser.name || 'Usuário',
         email: block.targetUser.email,
-        userType: block.targetUser.userType,
-        location: block.targetUser.location,
         photos: block.targetUser.photos || [],
         isPremium: block.targetUser.premium || false,
       }

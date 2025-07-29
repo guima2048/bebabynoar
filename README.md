@@ -1,65 +1,47 @@
-# 🍯 Bebaby App
+# 🍯 Bebaby App - Versão Simplificada
 
-Plataforma de relacionamento Sugar Baby e Sugar Daddy desenvolvida com Next.js 14, PostgreSQL e NextAuth.js.
+Plataforma de relacionamento Sugar Baby e Sugar Daddy desenvolvida com Next.js 14, PostgreSQL e NextAuth.js. **Versão simplificada para desenvolvimento rápido e fácil.**
 
 ## 🚀 Tecnologias
 
-- **Frontend**: Next.js 14, React 18, TypeScript, Tailwind CSS
+- **Frontend**: Next.js 14act 18, TypeScript, Tailwind CSS
 - **Backend**: Next.js API Routes, PostgreSQL, Prisma ORM
-- **Autenticação**: NextAuth.js com JWT
+- **Autenticação**: NextAuth.js com JWT (Simplificada)
 - **Banco de Dados**: PostgreSQL
-- **Storage**: Sistema de arquivos local + S3/Cloudinary
-- **Pagamentos**: Stripe
-- **Email**: Brevo
+- **Storage**: Sistema de arquivos local
 - **Deploy**: VPS com PM2 + Nginx
 
-## ✨ Funcionalidades
+## ✨ Funcionalidades Principais
 
 ### 👥 Usuários
-- ✅ Registro e login seguro
-- ✅ Perfis detalhados com fotos
-- ✅ Verificação de email
-- ✅ Sistema premium
+- ✅ Registro e login direto (sem verificação de email)
+- ✅ Perfis com fotos
+- ✅ Sistema premium básico
 - ✅ Bloqueio de usuários
-- ✅ Denúncias e moderação
 
 ### 💬 Comunicação
 - ✅ Mensagens em tempo real
 - ✅ Conversas organizadas
-- ✅ Envio de interesses
-- ✅ Notificações push
 - ✅ Upload de fotos nas mensagens
 
 ### 🔍 Exploração
-- ✅ Busca avançada de usuários
-- ✅ Filtros por localização, idade, tipo
-- ✅ Sistema de matching inteligente
+- ✅ Busca de usuários
+- ✅ Filtros básicos
 - ✅ Visualização de perfis
-- ✅ Histórico de visualizações
-
-### 💳 Pagamentos
-- ✅ Integração com Stripe
-- ✅ Planos premium
-- ✅ Histórico de pagamentos
-- ✅ Webhooks seguros
 
 ### 📱 Admin
 - ✅ Dashboard administrativo
-- ✅ Moderação de conteúdo
 - ✅ Gestão de usuários
-- ✅ Relatórios e estatísticas
-- ✅ Configurações do sistema
-- ✅ Sistema de e-mails automáticos
+- ✅ Configurações básicas
 
-## 🛠️ Instalação
+## 🛠️ Instalação Rápida
 
 ### Pré-requisitos
 
-- Node.js 18+
-- PostgreSQL 14+
-- npm ou yarn
+- Node.js18
+- PostgreSQL14- npm ou yarn
 
-### 1. Clone o repositório
+### 1lone o repositório
 
 ```bash
 git clone https://github.com/seu-usuario/bebaby-app.git
@@ -80,29 +62,20 @@ Copie o arquivo `env.example` para `.env.local`:
 cp env.example .env.local
 ```
 
-Configure as variáveis:
+Configure as variáveis mínimas:
 
 ```env
 # Database
-DATABASE_URL="postgresql://username:password@localhost:5432/bebaby_db"
+DATABASE_URL="postgresql://username:password@localhost:5432bebaby_db"
 
-# NextAuth
-NEXTAUTH_SECRET="sua-chave-secreta"
-NEXTAUTH_URL="http://localhost:3000"
-
-# Stripe
-STRIPE_SECRET_KEY="sk_test_..."
-STRIPE_PUBLISHABLE_KEY="pk_test_..."
-STRIPE_WEBHOOK_SECRET="whsec_..."
-
-# Email
-BREVO_API_KEY="sua-chave-brevo"
-
+# NextAuth (Simplificado)
+NEXTAUTH_SECRET=sua-chave-secreta-simples"
+NEXTAUTH_URL=http://localhost:300
 # App
-NEXT_PUBLIC_APP_URL="http://localhost:3000"
+NEXT_PUBLIC_APP_URL=http://localhost:3000"
 ```
 
-### 4. Configure o banco de dados
+### 4 Configure o banco de dados
 
 ```bash
 # Gerar cliente Prisma
@@ -111,8 +84,8 @@ npx prisma generate
 # Sincronizar schema
 npx prisma db push
 
-# Popular dados iniciais
-npm run db:seed
+# Setup simplificado com usuários de teste
+node scripts/setup-simple.js
 ```
 
 ### 5. Inicie o servidor de desenvolvimento
@@ -123,11 +96,16 @@ npm run dev
 
 Acesse [http://localhost:3000](http://localhost:3000) para ver a aplicação.
 
+## 🎯 Dados de Teste
+
+Após executar `node scripts/setup-simple.js`, você terá acesso a:
+
+- **👤 Admin:** `admin@bebaby.app` / `admin123`
+- **👧 Sugar Baby:** `sugar_baby1xample.com` / `123456- **👨 Sugar Daddy:** `sugar_daddy1xample.com` / `123456`
+
 ## 🚀 Deploy em Produção
 
 ### Setup Automatizado do VPS
-
-Execute o script de setup:
 
 ```bash
 chmod +x scripts/setup-vps.sh
@@ -136,18 +114,15 @@ sudo ./scripts/setup-vps.sh
 
 ### Deploy Manual
 
-1. **Configure o VPS**:
+1 **Configure o VPS**:
    ```bash
-   # Instalar Node.js, PostgreSQL, Nginx, PM2
-   curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+   curl -fsSL https://deb.nodesource.com/setup_18 | sudo -E bash -
    sudo apt-get install -y nodejs postgresql nginx
    npm install -g pm2
-   ```
-
-2. **Configure o banco**:
+   ```2 **Configure o banco**:
    ```sql
    CREATE DATABASE bebaby_db;
-   CREATE USER bebaby_user WITH PASSWORD 'sua_senha';
+   CREATE USER bebaby_user WITH PASSWORD sua_senha;
    GRANT ALL PRIVILEGES ON DATABASE bebaby_db TO bebaby_user;
    ```
 
@@ -158,25 +133,17 @@ sudo ./scripts/setup-vps.sh
    npm install
    npx prisma generate
    npx prisma db push
+   node scripts/setup-simple.js
    npm run build
-   pm2 start npm --name "bebaby-app" -- start
+   pm2start npm --name "bebaby-app" -- start
    ```
-
-### Deploy Automatizado
-
-Use o script de deploy:
-
-```bash
-chmod +x scripts/deploy.sh
-./scripts/deploy.sh production
-```
 
 ## 📁 Estrutura do Projeto
 
 ```
 bebaby-app/
 ├── app/                    # Next.js App Router
-│   ├── api/               # API Routes
+│   ├── api/               # API Routes (Simplificadas)
 │   ├── admin/             # Área administrativa
 │   ├── profile/           # Perfis de usuário
 │   ├── messages/          # Sistema de mensagens
@@ -184,8 +151,12 @@ bebaby-app/
 ├── components/            # Componentes React
 ├── contexts/              # Contextos (Auth, Notifications)
 ├── lib/                   # Utilitários e configurações
+│   ├── auth-simple.ts     # Autenticação simplificada
+│   └── prisma.ts          # Cliente Prisma
 ├── prisma/                # Schema e migrations
+│   └── schema-simple.prisma # Schema simplificado
 ├── scripts/               # Scripts de deploy e setup
+│   └── setup-simple.js    # Setup simplificado
 ├── types/                 # Tipos TypeScript
 └── public/                # Arquivos estáticos
 ```
@@ -201,26 +172,18 @@ npm run start            # Servidor de produção
 # Banco de dados
 npm run db:generate      # Gerar cliente Prisma
 npm run db:push          # Sincronizar schema
-npm run db:migrate       # Executar migrações
 npm run db:studio        # Abrir Prisma Studio
-npm run db:seed          # Popular dados iniciais
-node scripts/seed-email-templates.js  # Popular templates de e-mail
-
-# Testes
-npm test                 # Executar testes
-npm run test:watch       # Testes em modo watch
-npm run test:coverage    # Cobertura de testes
+node scripts/setup-simple.js  # Setup simplificado
 
 # Deploy
 ./scripts/deploy.sh      # Deploy automatizado
 ./scripts/setup-vps.sh   # Setup do VPS
 ```
 
-## 🔐 APIs Principais
+## 🔐 APIs Principais (Simplificadas)
 
 ### Autenticação
-- `POST /api/auth/register` - Registro de usuários
-- `POST /api/auth/reset-password` - Reset de senha
+- `POST /api/auth/register-simple` - Registro simplificado
 - `GET/POST /api/auth/[...nextauth]` - NextAuth routes
 
 ### Usuários
@@ -232,107 +195,78 @@ npm run test:coverage    # Cobertura de testes
 - `POST /api/messages` - Enviar mensagem
 - `GET /api/conversations` - Listar conversas
 
-### Exploração
-- `GET /api/explore` - Buscar usuários
-- `POST /api/send-interest` - Enviar interesse
-- `PUT /api/send-interest` - Responder interesse
-
 ### Upload
 - `POST /api/upload-photo` - Upload de foto
 - `DELETE /api/upload-photo` - Deletar foto
 
-### E-mails
-- `GET /api/admin/emails/config` - Buscar configuração SMTP
-- `POST /api/admin/emails/config` - Salvar configuração SMTP
-- `GET /api/admin/emails/templates` - Buscar templates
-- `POST /api/admin/emails/templates` - Salvar template
-- `POST /api/admin/emails/send-test` - Enviar e-mail de teste
+## 🎉 Simplificações Implementadas
 
-## 🗄️ Schema do Banco
+### ✅ **Autenticação Simplificada**
+- Login direto com usuário e senha
+- Sem verificação de email
+- Usuários já verificados por padrão
+- Sessões mais longas (30dias)
 
-O projeto usa PostgreSQL com as seguintes tabelas principais:
+### ✅ **Banco de Dados Simplificado**
+- Schema mais limpo
+- Apenas campos essenciais
+- Menos relacionamentos complexos
 
-- **users** - Usuários e perfis
-- **photos** - Fotos dos usuários
-- **conversations** - Conversas
-- **messages** - Mensagens
-- **interests** - Interesses entre usuários
-- **notifications** - Notificações
-- **payments** - Pagamentos
-- **reports** - Denúncias
-- **blog_posts** - Posts do blog
-- **smtp_config** - Configuração SMTP
-- **email_templates** - Templates de e-mail
+### ✅ **Middleware Simplificado**
+- Sem rate limiting complexo
+- Headers de segurança básicos
+- Proteção simples para admin
 
-## 🔒 Segurança
+### ✅ **APIs Simplificadas**
+- Registro sem verificação
+- Validações básicas
+- Respostas diretas
 
-- ✅ Autenticação JWT segura
-- ✅ Validação de dados com Zod
-- ✅ Sanitização de inputs
-- ✅ Rate limiting
-- ✅ Headers de segurança
-- ✅ Backup automático
-- ✅ SSL/HTTPS
+## 🚀 Benefícios da Simplificação
 
-## 📊 Monitoramento
+- **Desenvolvimento Mais Rápido** - Menos complexidade
+- **Menos Bugs** - Código mais simples
+- **Performance Melhor** - Menos verificações
+- **Experiência Fluida** - Login e registro diretos
+- **Manutenção Fácil** - Estrutura clara
 
-- **Logs**: PM2 + Nginx
-- **Backup**: Automático diário
-- **Performance**: Otimizações PostgreSQL
-- **Uptime**: PM2 process manager
+## 📝 Próximos Passos
+
+1Teste as funcionalidades básicas**
+2Adicione funcionalidades gradualmente**
+3. **Melhore a segurança quando necessário**
+4. **Expanda conforme a necessidade**
 
 ## 🤝 Contribuição
 
 1. Fork o projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
+2ie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
+3mmit suas mudanças (`git commit -mAdd some AmazingFeature`)
+4.Push para a branch (`git push origin feature/AmazingFeature`)
 5. Abra um Pull Request
 
-## 📝 Licença
+## 📄 Licença
 
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalhes.
 
 ## 🆘 Suporte
 
-- 📧 Email: suporte@bebaby.app
-- 📖 Documentação: [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md)
-- 🐛 Issues: [GitHub Issues](https://github.com/seu-usuario/bebaby-app/issues)
+Se você encontrar algum problema ou tiver dúvidas:
 
-## 🎉 Agradecimentos
-
-- Next.js team pelo framework incrível
-- Prisma team pelo ORM
-- Vercel pela inspiração
-- Comunidade open source
+1. Verifique a documentação
+2. Procure por issues similares
+3. Abra uma nova issue
 
 ---
 
-**Bebaby App** - Conectando pessoas, criando relacionamentos 💕
+**Desenvolvido com ❤️ para facilitar relacionamentos sugar!** 🍯
 
----
+## Configuração do SendGrid (Envio de Emails)
 
-**Updated at Sat, Jun 28, 2025 11:11:26 AM**
+1. Crie uma conta no SendGrid e gere uma API Key.
+2. Adicione a variável no seu arquivo `.env`:
 
-# Forcing new deployment
+SENDGRID_API_KEY=sua_chave_api_aqui
 
-## 🚀 Como garantir uploads automáticos de imagens do blog em produção
-
-1. Abra o arquivo de configuração do seu site no Nginx (ex: `/etc/nginx/sites-available/bebaby-app`).
-2. Cole o bloco abaixo dentro do bloco `server { ... }`:
-
-```nginx
-location /uploads/ {
-    alias /var/www/bebaby-app/public/uploads/;
-    expires 1y;
-    add_header Cache-Control "public, immutable";
-    access_log off;
-    try_files $uri $uri/ =404;
-}
-```
-3. Salve e recarregue o Nginx:
-```sh
-sudo systemctl reload nginx
-```
-4. Pronto! Agora qualquer imagem enviada via upload estará disponível imediatamente em `/uploads/blog/` sem precisar rebuildar o Next.js.
+3. O remetente (from) deve ser um email verificado no painel do SendGrid.
 

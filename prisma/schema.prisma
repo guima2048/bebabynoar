@@ -60,6 +60,7 @@ model User {
   reportedBy              Report[]                  @relation("ReceivedReports")
   reports                 Report[]                  @relation("SentReports")
   conversations2          Conversation[]            @relation("ConversationUsers")
+  payments                Payment[]                 @relation("UserPayments")
 
   @@map("users")
 }
@@ -239,6 +240,21 @@ model ConversationParticipant {
   @@map("conversation_participants")
 }
 
+model Payment {
+  id          String        @id @default(cuid())
+  userId      String
+  plan        String
+  amount      Float
+  status      PaymentStatus @default(PENDING)
+  method      String?
+  proof       String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  user        User          @relation("UserPayments", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
 model BlogPost {
   id               String         @id @default(cuid())
   title            String
@@ -304,6 +320,13 @@ model BlogImage {
   createdAt DateTime @default(now())
 
   @@map("blog_images")
+}
+
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
 }
 
 enum Gender {

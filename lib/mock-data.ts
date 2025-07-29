@@ -10,7 +10,7 @@ export interface MockProfile {
   photoURL?: string
   about?: string
   isPremium?: boolean
-  isVerified?: boolean
+  emailVerified?: boolean
   photos?: Array<{
     url: string
     isPrivate: boolean
@@ -32,7 +32,7 @@ export const mockProfiles: MockProfile[] = [
     photoURL: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=400&h=400&fit=crop&crop=face',
     about: 'Adoro viajar e conhecer lugares novos. Busco alguém especial para compartilhar momentos únicos.',
     isPremium: true,
-    isVerified: true,
+    emailVerified: true,
     photos: [
       { url: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=400&h=400&fit=crop&crop=face', isPrivate: false },
       { url: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop&crop=face', isPrivate: false },
@@ -55,7 +55,7 @@ export const mockProfiles: MockProfile[] = [
     photoURL: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop&crop=face',
     about: 'Estudante de medicina, apaixonada por arte e cultura. Procuro conexões genuínas.',
     isPremium: false,
-    isVerified: true,
+    emailVerified: true,
     photos: [
       { url: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop&crop=face', isPrivate: false },
       { url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=400&fit=crop&crop=face', isPrivate: false }
@@ -77,7 +77,7 @@ export const mockProfiles: MockProfile[] = [
     photoURL: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=400&fit=crop&crop=face',
     about: 'Modelo e influencer. Amo moda, viagens e experiências únicas.',
     isPremium: true,
-    isVerified: false,
+    emailVerified: false,
     photos: [
       { url: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=400&fit=crop&crop=face', isPrivate: false },
       { url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face', isPrivate: false }
@@ -101,7 +101,7 @@ export const mockProfiles: MockProfile[] = [
     photoURL: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face',
     about: 'Empresário bem-sucedido, adoro viajar e conhecer pessoas interessantes.',
     isPremium: true,
-    isVerified: true,
+    emailVerified: true,
     photos: [
       { url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face', isPrivate: false },
       { url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face', isPrivate: false }
@@ -123,7 +123,7 @@ export const mockProfiles: MockProfile[] = [
     photoURL: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face',
     about: 'Executivo de multinacional, apaixonado por esportes e boa companhia.',
     isPremium: false,
-    isVerified: true,
+    emailVerified: true,
     photos: [
       { url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face', isPrivate: false }
     ],
@@ -145,7 +145,7 @@ export const mockProfiles: MockProfile[] = [
     photoURL: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=400&fit=crop&crop=face',
     about: 'Médica cardiologista, independente e bem-sucedida. Busco companhia masculina.',
     isPremium: true,
-    isVerified: true,
+    emailVerified: true,
     photos: [
       { url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=400&fit=crop&crop=face', isPrivate: false },
       { url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&h=400&fit=crop&crop=face', isPrivate: false }
@@ -167,7 +167,7 @@ export const mockProfiles: MockProfile[] = [
     photoURL: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&h=400&fit=crop&crop=face',
     about: 'Advogada especializada em direito empresarial. Gosto de homens jovens e ambiciosos.',
     isPremium: false,
-    isVerified: false,
+    emailVerified: false,
     photos: [
       { url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&h=400&fit=crop&crop=face', isPrivate: false }
     ],
@@ -189,7 +189,7 @@ export const mockProfiles: MockProfile[] = [
     photoURL: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop&crop=face',
     about: 'Estudante de engenharia, atleta e muito sociável. Procuro uma sugar mommy especial.',
     isPremium: true,
-    isVerified: true,
+    emailVerified: true,
     photos: [
       { url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop&crop=face', isPrivate: false },
       { url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face', isPrivate: false }
@@ -211,7 +211,7 @@ export const mockProfiles: MockProfile[] = [
     photoURL: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face',
     about: 'Modelo e personal trainer. Busco uma mulher madura e bem-sucedida.',
     isPremium: false,
-    isVerified: false,
+    emailVerified: false,
     photos: [
       { url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face', isPrivate: false }
     ],
@@ -233,7 +233,7 @@ export const mockProfiles: MockProfile[] = [
     photoURL: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=400&h=400&fit=crop&crop=face',
     about: 'Designer gráfica criativa, adoro arte e cultura. Procuro alguém para compartilhar experiências.',
     isPremium: true,
-    isVerified: true,
+    emailVerified: true,
     photos: [
       { url: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=400&h=400&fit=crop&crop=face', isPrivate: false }
     ],
@@ -253,7 +253,7 @@ export const mockProfiles: MockProfile[] = [
     photoURL: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face',
     about: 'Empresário do setor de tecnologia, apaixonado por inovação e mulheres jovens.',
     isPremium: true,
-    isVerified: false,
+    emailVerified: false,
     photos: [
       { url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face', isPrivate: false }
     ],
@@ -274,7 +274,7 @@ export interface MockConversation {
     photoURL?: string
     userType: string
     premium: boolean
-    verified: boolean
+    emailVerified: boolean
     online: boolean
   }
 }
@@ -291,7 +291,7 @@ export const mockConversations: MockConversation[] = [
       photoURL: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
       userType: 'sugar_baby',
       premium: true,
-      verified: true,
+      emailVerified: true,
       online: true
     }
   },
@@ -306,7 +306,7 @@ export const mockConversations: MockConversation[] = [
       photoURL: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
       userType: 'sugar_baby',
       premium: false,
-      verified: true,
+      emailVerified: true,
       online: false
     }
   },
@@ -321,7 +321,7 @@ export const mockConversations: MockConversation[] = [
       photoURL: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face',
       userType: 'sugar_baby',
       premium: true,
-      verified: false,
+      emailVerified: false,
       online: true
     }
   },
@@ -336,7 +336,7 @@ export const mockConversations: MockConversation[] = [
       photoURL: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
       userType: 'sugar_baby',
       premium: false,
-      verified: true,
+      emailVerified: true,
       online: false
     }
   },
@@ -351,7 +351,7 @@ export const mockConversations: MockConversation[] = [
       photoURL: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face',
       userType: 'sugar_baby',
       premium: true,
-      verified: true,
+      emailVerified: true,
       online: true
     }
   },
@@ -366,7 +366,7 @@ export const mockConversations: MockConversation[] = [
       photoURL: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&h=150&fit=crop&crop=face',
       userType: 'sugar_baby',
       premium: false,
-      verified: false,
+      emailVerified: false,
       online: false
     }
   },
@@ -381,7 +381,7 @@ export const mockConversations: MockConversation[] = [
       photoURL: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face',
       userType: 'sugar_baby',
       premium: true,
-      verified: true,
+      emailVerified: true,
       online: false
     }
   }
@@ -409,7 +409,7 @@ export interface MockChatUser {
   photoURL?: string
   userType: string
   premium: boolean
-  verified: boolean
+  emailVerified: boolean
   online: boolean
   lastSeen?: Date
 }
@@ -421,7 +421,7 @@ export const mockUsers: Record<string, MockChatUser> = {
     photoURL: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
     userType: 'sugar_baby',
     premium: true,
-    verified: true,
+    emailVerified: true,
     online: true
   },
   'user2': {
@@ -430,7 +430,7 @@ export const mockUsers: Record<string, MockChatUser> = {
     photoURL: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
     userType: 'sugar_baby',
     premium: false,
-    verified: true,
+    emailVerified: true,
     online: false,
     lastSeen: new Date(Date.now() - 30 * 60 * 1000)
   },
@@ -440,7 +440,7 @@ export const mockUsers: Record<string, MockChatUser> = {
     photoURL: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face',
     userType: 'sugar_baby',
     premium: true,
-    verified: false,
+    emailVerified: false,
     online: true
   },
   'user4': {
@@ -449,7 +449,7 @@ export const mockUsers: Record<string, MockChatUser> = {
     photoURL: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
     userType: 'sugar_baby',
     premium: false,
-    verified: true,
+    emailVerified: true,
     online: false,
     lastSeen: new Date(Date.now() - 2 * 60 * 60 * 1000)
   },
@@ -459,7 +459,7 @@ export const mockUsers: Record<string, MockChatUser> = {
     photoURL: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face',
     userType: 'sugar_baby',
     premium: true,
-    verified: true,
+    emailVerified: true,
     online: true
   }
 }

@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
@@ -17,9 +15,9 @@ const respondInterestSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const userId = request.headers.get('x-user-id')
     
-    if (!session?.user?.id) {
+    if (!userId) {
       return NextResponse.json(
         { message: 'Não autorizado' },
         { status: 401 }
@@ -44,7 +42,7 @@ export async function POST(request: NextRequest) {
     // Verificar se já existe um interesse
     const existingInterest = await prisma.interest.findFirst({
       where: {
-        senderId: session.user.id,
+        senderId: userId,
         receiverId
       }
     })
@@ -59,7 +57,7 @@ export async function POST(request: NextRequest) {
     // Criar interesse
     const interest = await prisma.interest.create({
       data: {
-        senderId: session.user.id,
+        senderId: userId,
         receiverId,
         message: message ?? null,
         status: 'PENDING'
@@ -68,7 +66,6 @@ export async function POST(request: NextRequest) {
         sender: {
           select: {
             id: true,
-            name: true,
             username: true,
             photoURL: true,
             userType: true,
@@ -77,7 +74,6 @@ export async function POST(request: NextRequest) {
         receiver: {
           select: {
             id: true,
-            name: true,
             username: true,
             photoURL: true,
             userType: true,
@@ -91,13 +87,8 @@ export async function POST(request: NextRequest) {
       data: {
         userId: receiverId,
         title: 'Novo interesse!',
-        message: `${interest.sender.name} enviou interesse por você`,
+        message: `${interest.sender.username} enviou interesse por você`,
         type: 'INTEREST',
-        data: {
-          interestId: interest.id,
-          senderId: session.user.id,
-          senderName: interest.sender.name,
-        }
       }
     })
 
@@ -125,9 +116,9 @@ export async function POST(request: NextRequest) {
 // Responder ao interesse
 export async function PUT(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const userId = request.headers.get('x-user-id')
     
-    if (!session?.user?.id) {
+    if (!userId) {
       return NextResponse.json(
         { message: 'Não autorizado' },
         { status: 401 }
@@ -144,7 +135,6 @@ export async function PUT(request: NextRequest) {
         sender: {
           select: {
             id: true,
-            name: true,
             username: true,
             photoURL: true,
           }
@@ -152,7 +142,6 @@ export async function PUT(request: NextRequest) {
         receiver: {
           select: {
             id: true,
-            name: true,
             username: true,
             photoURL: true,
           }
@@ -168,7 +157,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Verificar se o usuário atual é o receptor
-    if (interest.receiverId !== session.user.id) {
+    if (interest.receiverId !== userId) {
       return NextResponse.json(
         { message: 'Acesso negado' },
         { status: 403 }
@@ -180,13 +169,11 @@ export async function PUT(request: NextRequest) {
       where: { id: interestId },
       data: {
         status: response,
-        updatedAt: new Date()
       },
       include: {
         sender: {
           select: {
             id: true,
-            name: true,
             username: true,
             photoURL: true,
           }
@@ -194,7 +181,6 @@ export async function PUT(request: NextRequest) {
         receiver: {
           select: {
             id: true,
-            name: true,
             username: true,
             photoURL: true,
           }
@@ -204,8 +190,8 @@ export async function PUT(request: NextRequest) {
 
     // Criar notificação para o remetente
     const notificationTitle = response === 'ACCEPTED' 
-      ? `${interest.receiver.name} aceitou seu interesse!` 
-      : `${interest.receiver.name} não aceitou seu interesse`
+      ? `${interest.receiver.username} aceitou seu interesse!` 
+      : `${interest.receiver.username} não aceitou seu interesse`
 
     await prisma.notification.create({
       data: {
@@ -213,12 +199,6 @@ export async function PUT(request: NextRequest) {
         title: notificationTitle,
         message: message ?? (response === 'ACCEPTED' ? 'Vocês podem começar a conversar!' : 'Não desanime, continue tentando!'),
         type: 'INTEREST',
-        data: {
-          interestId,
-          response,
-          receiverId: interest.receiverId,
-          receiverName: interest.receiver.name,
-        }
       }
     })
 

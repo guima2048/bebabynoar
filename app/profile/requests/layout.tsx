@@ -10,5 +10,9 @@ export default function RequestsLayout({
 }: {
   children: React.ReactNode
 }) {
-  return children
+  return (
+    <>
+      {children}
+    </>
+  );
 } 

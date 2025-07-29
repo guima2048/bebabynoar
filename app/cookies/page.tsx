@@ -99,7 +99,7 @@ export default function CookiesPage() {
             <li><strong>Google Analytics:</strong> Para análise de tráfego e uso do site</li>
             <li><strong>Facebook Pixel:</strong> Para publicidade e análise</li>
             <li><strong>Stripe/PayPal:</strong> Para processamento de pagamentos</li>
-            <li><strong>Brevo:</strong> Para envio de e-mails</li>
+            
           </ul>
         </section>
 

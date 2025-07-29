@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation"
 import toast from "react-hot-toast"
 
 export default function CreateAdminUserPage() {
-  const [name, setName] = useState("")
   const [username, setUsername] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -17,10 +16,6 @@ export default function CreateAdminUserPage() {
     
     // Validação robusta
     const errors: string[] = []
-    
-    if (!name.trim()) errors.push("Nome é obrigatório")
-    if (name.length < 2) errors.push("Nome deve ter pelo menos 2 caracteres")
-    if (name.length > 50) errors.push("Nome deve ter no máximo 50 caracteres")
     
     if (!username.trim()) errors.push("Username é obrigatório")
     if (username.length < 3) errors.push("Username deve ter pelo menos 3 caracteres")
@@ -44,12 +39,11 @@ export default function CreateAdminUserPage() {
       const res = await fetch("/api/admin/create-admin-user", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, username, email, password })
+        body: JSON.stringify({ username, email, password })
       })
       const data = await res.json()
       if (res.ok) {
         toast.success("Usuário admin criado com sucesso!")
-        setName("")
         setUsername("")
         setEmail("")
         setPassword("")
@@ -73,16 +67,6 @@ export default function CreateAdminUserPage() {
 
       <div className="max-w-md bg-white rounded-lg shadow-sm border p-6">
         <form className="space-y-4" onSubmit={handleSubmit}>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
-            <input 
-              type="text" 
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500" 
-              value={name} 
-              onChange={e => setName(e.target.value)} 
-              required 
-            />
-          </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
             <input 

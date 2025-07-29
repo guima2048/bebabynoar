@@ -7,9 +7,35 @@ import toast from 'react-hot-toast';
 interface PremiumUser {
   id: string;
   email: string;
-  name: string;
+  username: string;
   isPremium: boolean;
   premiumExpiry?: string;
+  createdAt: string;
+}
+
+interface Plan {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  currency: string;
+  duration: number;
+  features: any;
+  isActive: boolean;
+  createdAt: string;
+}
+
+interface PaymentLink {
+  id: string;
+  name: string;
+  description: string;
+  link: string;
+  planId: string;
+  plan: { id: string; name: string };
+  isActive: boolean;
+  maxUses?: number;
+  currentUses: number;
+  expiresAt?: string;
   createdAt: string;
 }
 
@@ -48,8 +74,44 @@ export default function PremiumManagementPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState<'all' | 'premium' | 'non-premium'>('all');
-  const [activeTab, setActiveTab] = useState<'users' | 'features'>('users');
+  const [activeTab, setActiveTab] = useState<'users' | 'features' | 'planos' | 'pagamentos' | 'liberacao-manual'>('users');
   const [featureConfig, setFeatureConfig] = useState<any>({});
+  
+  // Estados para planos
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [showCreatePlan, setShowCreatePlan] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
+  const [newPlan, setNewPlan] = useState({
+    name: '',
+    description: '',
+    price: '',
+    currency: 'BRL',
+    duration: '30',
+    features: [],
+    isActive: true
+  });
+  
+  // Estados para links de pagamento
+  const [paymentLinks, setPaymentLinks] = useState<PaymentLink[]>([]);
+  const [showCreateLink, setShowCreateLink] = useState(false);
+  const [newLink, setNewLink] = useState({
+    name: '',
+    description: '',
+    link: '',
+    planId: '',
+    maxUses: '',
+    expiresAt: ''
+  });
+  
+  // Estados para liberação manual
+  const [manualActivation, setManualActivation] = useState({
+    userId: '',
+    planId: '',
+    reason: '',
+    duration: '30',
+    adminNotes: ''
+  });
+  
   const router = useRouter();
 
   useEffect(() => {
@@ -59,6 +121,10 @@ export default function PremiumManagementPage() {
   useEffect(() => {
     if (activeTab === 'features') {
       fetchFeatureConfig();
+    } else if (activeTab === 'planos') {
+      fetchPlans();
+    } else if (activeTab === 'pagamentos') {
+      fetchPaymentLinks();
     }
   }, [activeTab]);
 
@@ -126,8 +192,126 @@ export default function PremiumManagementPage() {
     }
   };
 
+  // Funções para planos
+  const fetchPlans = async () => {
+    try {
+      const response = await fetch('/api/admin/planos');
+      if (response.ok) {
+        const data = await response.json();
+        setPlans(data);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar planos:', error);
+      toast.error('Erro ao carregar planos');
+    }
+  };
+
+  const createPlan = async () => {
+    try {
+      const response = await fetch('/api/admin/planos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newPlan)
+      });
+      if (response.ok) {
+        toast.success('Plano criado com sucesso!');
+        setShowCreatePlan(false);
+        setNewPlan({
+          name: '',
+          description: '',
+          price: '',
+          currency: 'BRL',
+          duration: '30',
+          features: [],
+          isActive: true
+        });
+        fetchPlans();
+      }
+    } catch (error) {
+      toast.error('Erro ao criar plano');
+    }
+  };
+
+  // Funções para links de pagamento
+  const fetchPaymentLinks = async () => {
+    try {
+      const response = await fetch('/api/admin/payments/links');
+      if (response.ok) {
+        const data = await response.json();
+        setPaymentLinks(data);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar links de pagamento:', error);
+      toast.error('Erro ao carregar links de pagamento');
+    }
+  };
+
+  const createPaymentLink = async () => {
+    try {
+      const response = await fetch('/api/admin/payments/links', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newLink)
+      });
+      if (response.ok) {
+        toast.success('Link de pagamento criado com sucesso!');
+        setShowCreateLink(false);
+        setNewLink({
+          name: '',
+          description: '',
+          link: '',
+          planId: '',
+          maxUses: '',
+          expiresAt: ''
+        });
+        fetchPaymentLinks();
+      }
+    } catch (error) {
+      toast.error('Erro ao criar link de pagamento');
+    }
+  };
+
+  const togglePaymentLink = async (linkId: string, isActive: boolean) => {
+    try {
+      const response = await fetch(`/api/admin/payments/links/${linkId}/toggle`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive: !isActive })
+      });
+      if (response.ok) {
+        toast.success('Status do link atualizado!');
+        fetchPaymentLinks();
+      }
+    } catch (error) {
+      toast.error('Erro ao atualizar status do link');
+    }
+  };
+
+  // Funções para liberação manual
+  const activateManualAccess = async () => {
+    try {
+      const response = await fetch('/api/admin/manual-activations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(manualActivation)
+      });
+      if (response.ok) {
+        toast.success('Acesso premium ativado com sucesso!');
+        setManualActivation({
+          userId: '',
+          planId: '',
+          reason: '',
+          duration: '30',
+          adminNotes: ''
+        });
+      }
+    } catch (error) {
+      toast.error('Erro ao ativar acesso premium');
+    }
+  };
+
   const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchTerm.toLowerCase());
     
     if (filter === 'premium') { return matchesSearch && user.isPremium }
@@ -163,18 +347,36 @@ export default function PremiumManagementPage() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-4 mb-8 border-b">
+        <div className="flex gap-4 mb-8 border-b overflow-x-auto">
           <button
-            className={`px-4 py-2 font-semibold ${activeTab === 'users' ? 'border-b-2 border-pink-600 text-pink-700' : 'text-gray-600'}`}
+            className={`px-4 py-2 font-semibold whitespace-nowrap ${activeTab === 'users' ? 'border-b-2 border-pink-600 text-pink-700' : 'text-gray-600'}`}
             onClick={() => setActiveTab('users')}
           >
             Usuários Premium
           </button>
           <button
-            className={`px-4 py-2 font-semibold ${activeTab === 'features' ? 'border-b-2 border-pink-600 text-pink-700' : 'text-gray-600'}`}
+            className={`px-4 py-2 font-semibold whitespace-nowrap ${activeTab === 'features' ? 'border-b-2 border-pink-600 text-pink-700' : 'text-gray-600'}`}
             onClick={() => setActiveTab('features')}
           >
             Funções
+          </button>
+          <button
+            className={`px-4 py-2 font-semibold whitespace-nowrap ${activeTab === 'planos' ? 'border-b-2 border-pink-600 text-pink-700' : 'text-gray-600'}`}
+            onClick={() => setActiveTab('planos')}
+          >
+            Gerenciar Planos
+          </button>
+          <button
+            className={`px-4 py-2 font-semibold whitespace-nowrap ${activeTab === 'pagamentos' ? 'border-b-2 border-pink-600 text-pink-700' : 'text-gray-600'}`}
+            onClick={() => setActiveTab('pagamentos')}
+          >
+            Pagamentos
+          </button>
+          <button
+            className={`px-4 py-2 font-semibold whitespace-nowrap ${activeTab === 'liberacao-manual' ? 'border-b-2 border-pink-600 text-pink-700' : 'text-gray-600'}`}
+            onClick={() => setActiveTab('liberacao-manual')}
+          >
+            Liberação Manual
           </button>
         </div>
 
@@ -292,7 +494,7 @@ export default function PremiumManagementPage() {
                         <tr key={user.id}>
                       <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex flex-col">
-                              <span className="font-bold text-gray-900">{user.name}</span>
+                              <span className="font-bold text-gray-900">{user.username}</span>
                               <span className="text-xs text-gray-500 mt-1">{user.email}</span>
                         </div>
                       </td>
@@ -344,14 +546,58 @@ export default function PremiumManagementPage() {
         {activeTab === 'features' && (
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-2xl font-bold mb-6 text-gray-900">Configuração de Funções Premium/VIP</h2>
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-blue-800 text-sm">
+              <strong>Como funciona:</strong> Cada função só pode ser marcada como Gratuito, Premium ou VIP.<br />
+              <strong>VIP</strong> sempre herda todas as funções do Premium.<br />
+              Use os botões abaixo para selecionar todas as funções para uma categoria de uma vez.
+            </div>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Função</th>
-                    <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">Gratuito</th>
-                    <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">Premium</th>
-                    <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">VIP</th>
+                    <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">
+                      Gratuito
+                      <button
+                        className="ml-2 px-2 py-1 bg-gray-200 text-gray-700 rounded text-xs hover:bg-gray-300"
+                        onClick={() => {
+                          setFeatureConfig((prev: any) => {
+                            const novo = { ...prev };
+                            PREMIUM_FEATURES.forEach(f => { novo[f.key] = 'free'; });
+                            return novo;
+                          });
+                        }}
+                        type="button"
+                      >Selecionar tudo</button>
+                    </th>
+                    <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">
+                      Premium
+                      <button
+                        className="ml-2 px-2 py-1 bg-pink-100 text-pink-700 rounded text-xs hover:bg-pink-200"
+                        onClick={() => {
+                          setFeatureConfig((prev: any) => {
+                            const novo = { ...prev };
+                            PREMIUM_FEATURES.forEach(f => { novo[f.key] = 'premium'; });
+                            return novo;
+                          });
+                        }}
+                        type="button"
+                      >Selecionar tudo</button>
+                    </th>
+                    <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">
+                      VIP
+                      <button
+                        className="ml-2 px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs hover:bg-yellow-200"
+                        onClick={() => {
+                          setFeatureConfig((prev: any) => {
+                            const novo = { ...prev };
+                            PREMIUM_FEATURES.forEach(f => { novo[f.key] = 'vip'; });
+                            return novo;
+                          });
+                        }}
+                        type="button"
+                      >Selecionar tudo</button>
+                    </th>
                     <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">Limite</th>
                   </tr>
                 </thead>
@@ -403,6 +649,475 @@ export default function PremiumManagementPage() {
               <button className="bg-pink-600 hover:bg-pink-700 text-white px-6 py-2 rounded-lg font-semibold shadow" onClick={saveFeatureConfig}>
                 Salvar configurações
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Aba Gerenciar Planos */}
+        {activeTab === 'planos' && (
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Gerenciar Planos Premium</h2>
+              <button
+                onClick={() => setShowCreatePlan(true)}
+                className="bg-pink-600 text-white px-4 py-2 rounded-lg hover:bg-pink-700 transition-colors"
+              >
+                + Criar Plano
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {plans.map((plan) => (
+                <div key={plan.id} className="border border-gray-200 rounded-lg p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">{plan.name}</h3>
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      plan.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                      {plan.isActive ? 'Ativo' : 'Inativo'}
+                    </span>
+                  </div>
+                  <p className="text-gray-600 mb-4">{plan.description}</p>
+                  <div className="space-y-2 mb-4">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-500">Preço:</span>
+                      <span className="font-semibold">R$ {plan.price.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-gray-500">Duração:</span>
+                      <span>{plan.duration} dias</span>
+                    </div>
+                  </div>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => setEditingPlan(plan)}
+                      className="flex-1 bg-blue-600 text-white px-3 py-2 rounded text-sm hover:bg-blue-700"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => {/* TODO: Implementar delete */}}
+                      className="flex-1 bg-red-600 text-white px-3 py-2 rounded text-sm hover:bg-red-700"
+                    >
+                      Excluir
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {plans.length === 0 && (
+              <div className="text-center py-12">
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum plano criado</h3>
+                <p className="text-gray-500 mb-4">Crie seu primeiro plano premium para começar</p>
+                <button
+                  onClick={() => setShowCreatePlan(true)}
+                  className="bg-pink-600 text-white px-4 py-2 rounded-lg hover:bg-pink-700"
+                >
+                  Criar Primeiro Plano
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Aba Pagamentos */}
+        {activeTab === 'pagamentos' && (
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Links de Pagamento</h2>
+              <button
+                onClick={() => setShowCreateLink(true)}
+                className="bg-pink-600 text-white px-4 py-2 rounded-lg hover:bg-pink-700 transition-colors"
+              >
+                + Criar Link
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {paymentLinks.map((link) => (
+                <div key={link.id} className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-3 mb-2">
+                        <h3 className="text-lg font-medium text-gray-900">{link.name}</h3>
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          link.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                        }`}>
+                          {link.isActive ? 'Ativo' : 'Inativo'}
+                        </span>
+                      </div>
+                      <p className="text-gray-600 mb-2">{link.description}</p>
+                      <div className="flex items-center space-x-4 text-sm text-gray-500">
+                        <span>Plano: {link.plan.name}</span>
+                        <span>•</span>
+                        <span>{link.currentUses} usos</span>
+                        {link.maxUses && (
+                          <>
+                            <span>•</span>
+                            <span>Limite: {link.maxUses}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => navigator.clipboard.writeText(link.link)}
+                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                      >
+                        Copiar Link
+                      </button>
+                      <button
+                        onClick={() => togglePaymentLink(link.id, link.isActive)}
+                        className={`px-3 py-1 text-xs font-medium rounded ${
+                          link.isActive
+                            ? 'bg-red-100 text-red-800 hover:bg-red-200'
+                            : 'bg-green-100 text-green-800 hover:bg-green-200'
+                        }`}
+                      >
+                        {link.isActive ? 'Desativar' : 'Ativar'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {paymentLinks.length === 0 && (
+              <div className="text-center py-12">
+                <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum link de pagamento</h3>
+                <p className="text-gray-500 mb-4">Crie links de pagamento para seus planos</p>
+                <button
+                  onClick={() => setShowCreateLink(true)}
+                  className="bg-pink-600 text-white px-4 py-2 rounded-lg hover:bg-pink-700"
+                >
+                  Criar Primeiro Link
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Aba Liberação Manual */}
+        {activeTab === 'liberacao-manual' && (
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-2xl font-bold mb-6 text-gray-900">Liberação Manual de Acesso Premium</h2>
+            
+            <div className="max-w-2xl">
+              <div className="space-y-6">
+                {/* Buscar Usuário */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Buscar Usuário *
+                  </label>
+                  <input
+                    type="text"
+                    value={manualActivation.userId}
+                    onChange={(e) => setManualActivation(prev => ({ ...prev, userId: e.target.value }))}
+                    placeholder="Email, username ou ID do usuário"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  />
+                </div>
+
+                {/* Selecionar Plano */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Plano *
+                  </label>
+                  <select
+                    value={manualActivation.planId}
+                    onChange={(e) => setManualActivation(prev => ({ ...prev, planId: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  >
+                    <option value="">Selecione um plano</option>
+                    {plans.map((plan) => (
+                      <option key={plan.id} value={plan.id}>
+                        {plan.name} - R$ {plan.price.toFixed(2)} ({plan.duration} dias)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Motivo */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Motivo da Ativação *
+                  </label>
+                  <select
+                    value={manualActivation.reason}
+                    onChange={(e) => setManualActivation(prev => ({ ...prev, reason: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  >
+                    <option value="">Selecione o motivo</option>
+                    <option value="email_payment">Pagamento via Email</option>
+                    <option value="promotion">Promoção</option>
+                    <option value="support">Suporte ao Cliente</option>
+                    <option value="test">Teste</option>
+                    <option value="other">Outro</option>
+                  </select>
+                </div>
+
+                {/* Duração */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Duração (dias) *
+                  </label>
+                  <input
+                    type="number"
+                    value={manualActivation.duration}
+                    onChange={(e) => setManualActivation(prev => ({ ...prev, duration: e.target.value }))}
+                    min="1"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  />
+                </div>
+
+                {/* Notas */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Notas Adicionais
+                  </label>
+                  <textarea
+                    value={manualActivation.adminNotes}
+                    onChange={(e) => setManualActivation(prev => ({ ...prev, adminNotes: e.target.value }))}
+                    rows={3}
+                    placeholder="Observações sobre a ativação..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 resize-vertical"
+                  />
+                </div>
+
+                {/* Botão Ativar */}
+                <div>
+                  <button
+                    onClick={activateManualAccess}
+                    disabled={!manualActivation.userId || !manualActivation.planId || !manualActivation.reason}
+                    className="w-full bg-pink-600 text-white py-3 px-4 rounded-lg hover:bg-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Ativar Acesso Premium
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de Criação de Plano */}
+        {showCreatePlan && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Criar Novo Plano</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nome do Plano *
+                  </label>
+                  <input
+                    type="text"
+                    value={newPlan.name}
+                    onChange={(e) => setNewPlan(prev => ({ ...prev, name: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    placeholder="Ex: Premium Mensal"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Descrição *
+                  </label>
+                  <textarea
+                    value={newPlan.description}
+                    onChange={(e) => setNewPlan(prev => ({ ...prev, description: e.target.value }))}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 resize-vertical"
+                    placeholder="Descreva os benefícios do plano"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Preço *
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={newPlan.price}
+                      onChange={(e) => setNewPlan(prev => ({ ...prev, price: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                      placeholder="29.90"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Duração (dias) *
+                    </label>
+                    <input
+                      type="number"
+                      value={newPlan.duration}
+                      onChange={(e) => setNewPlan(prev => ({ ...prev, duration: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                      placeholder="30"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Moeda
+                  </label>
+                  <select
+                    value={newPlan.currency}
+                    onChange={(e) => setNewPlan(prev => ({ ...prev, currency: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  >
+                    <option value="BRL">BRL (Real)</option>
+                    <option value="USD">USD (Dólar)</option>
+                    <option value="EUR">EUR (Euro)</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="isActive"
+                    checked={newPlan.isActive}
+                    onChange={(e) => setNewPlan(prev => ({ ...prev, isActive: e.target.checked }))}
+                    className="h-4 w-4 text-pink-600 focus:ring-pink-500 border-gray-300 rounded"
+                  />
+                  <label htmlFor="isActive" className="ml-2 block text-sm text-gray-900">
+                    Plano ativo
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => setShowCreatePlan(false)}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={createPlan}
+                  disabled={!newPlan.name || !newPlan.description || !newPlan.price || !newPlan.duration}
+                  className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Criar Plano
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de Criação de Link de Pagamento */}
+        {showCreateLink && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Criar Link de Pagamento</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Nome do Produto *
+                  </label>
+                  <input
+                    type="text"
+                    value={newLink.name}
+                    onChange={(e) => setNewLink(prev => ({ ...prev, name: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    placeholder="Ex: Plano Premium Mensal"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Descrição *
+                  </label>
+                  <textarea
+                    value={newLink.description}
+                    onChange={(e) => setNewLink(prev => ({ ...prev, description: e.target.value }))}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 resize-vertical"
+                    placeholder="Descreva o que o cliente receberá"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Plano *
+                  </label>
+                  <select
+                    value={newLink.planId}
+                    onChange={(e) => setNewLink(prev => ({ ...prev, planId: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                  >
+                    <option value="">Selecione um plano</option>
+                    {plans.map((plan) => (
+                      <option key={plan.id} value={plan.id}>
+                        {plan.name} - R$ {plan.price.toFixed(2)} ({plan.duration} dias)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Link de Pagamento *
+                  </label>
+                  <input
+                    type="url"
+                    value={newLink.link}
+                    onChange={(e) => setNewLink(prev => ({ ...prev, link: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    placeholder="https://checkout.stripe.com/pay/..."
+                    required
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Limite de Usos (opcional)
+                    </label>
+                    <input
+                      type="number"
+                      value={newLink.maxUses}
+                      onChange={(e) => setNewLink(prev => ({ ...prev, maxUses: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                      placeholder="1000"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Data de Expiração (opcional)
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={newLink.expiresAt}
+                      onChange={(e) => setNewLink(prev => ({ ...prev, expiresAt: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  onClick={() => setShowCreateLink(false)}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={createPaymentLink}
+                  disabled={!newLink.name || !newLink.description || !newLink.link || !newLink.planId}
+                  className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Criar Link
+                </button>
+              </div>
             </div>
           </div>
         )}

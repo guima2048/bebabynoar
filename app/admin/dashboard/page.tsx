@@ -177,7 +177,8 @@ export default function AdminDashboardPage() {
           </div>
           <button
             onClick={fetchStats}
-            className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors flex items-center"
+            className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors flex items-center focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
+            aria-label="Atualizar métricas do dashboard"
           >
             <TrendingUp className="w-4 h-4 mr-2" />
             Atualizar
@@ -197,18 +198,16 @@ export default function AdminDashboardPage() {
           <Link
             key={card.title}
             href={card.href}
-            className="bg-white rounded-xl shadow-sm border p-6 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1"
+            className="bg-white rounded-xl shadow-sm border p-6 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
           >
             <div className="flex items-center justify-between mb-4">
-              <div className={`${card.color} rounded-lg p-3 text-white`}>
+              <div className={`${card.color} rounded-lg p-3 text-white border-2 border-pink-400 focus:outline-none focus:ring-4 focus:ring-pink-400`}>
                 <card.icon className="w-6 h-6" />
               </div>
-              <span className={`text-xs font-medium ${card.trendColor}`}>
-                {card.trend}
-              </span>
+              <span className={`text-xs font-medium ${card.trendColor}`}>{card.trend}</span>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-600 mb-1">{card.title}</p>
+              <p className="text-sm font-medium text-gray-900 mb-1">{card.title}</p>
               <p className="text-2xl font-bold text-gray-900">{card.value}</p>
             </div>
           </Link>
@@ -221,18 +220,16 @@ export default function AdminDashboardPage() {
           <Link
             key={card.title}
             href={card.href}
-            className="bg-white rounded-xl shadow-sm border p-6 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1"
+            className="bg-white rounded-xl shadow-sm border p-6 hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
           >
             <div className="flex items-center justify-between mb-4">
-              <div className={`${card.color} rounded-lg p-3 text-white`}>
+              <div className={`${card.color} rounded-lg p-3 text-white border-2 border-pink-400 focus:outline-none focus:ring-4 focus:ring-pink-400`}>
                 <card.icon className="w-6 h-6" />
               </div>
-              <span className={`text-xs font-medium ${card.trendColor}`}>
-                {card.trend}
-              </span>
+              <span className={`text-xs font-medium ${card.trendColor}`}>{card.trend}</span>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-600 mb-1">{card.title}</p>
+              <p className="text-sm font-medium text-gray-900 mb-1">{card.title}</p>
               <p className="text-2xl font-bold text-gray-900">{card.value}</p>
             </div>
           </Link>
@@ -240,12 +237,12 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Ações Rápidas */}
-      <div className="bg-white rounded-xl shadow-sm border p-6 mb-8">
+      <div className="bg-white rounded-xl shadow-sm border p-6 mb-8 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none">
         <h2 className="text-xl font-semibold text-gray-900 mb-6">Ações Rápidas</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Link
             href="/admin/reports"
-            className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group"
+            className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
           >
             <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center mr-4 group-hover:bg-red-200 transition-colors">
               <AlertTriangle className="w-5 h-5 text-red-600" />
@@ -258,7 +255,7 @@ export default function AdminDashboardPage() {
 
           <Link
             href="/admin/pending-content"
-            className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group"
+            className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
           >
             <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center mr-4 group-hover:bg-orange-200 transition-colors">
               <Clock className="w-5 h-5 text-orange-600" />
@@ -271,7 +268,7 @@ export default function AdminDashboardPage() {
 
           <Link
             href="/admin/users"
-            className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group"
+            className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
           >
             <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-4 group-hover:bg-blue-200 transition-colors">
               <Users className="w-5 h-5 text-blue-600" />
@@ -284,7 +281,7 @@ export default function AdminDashboardPage() {
 
           <Link
             href="/admin/blog"
-            className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group"
+            className="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
           >
             <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center mr-4 group-hover:bg-indigo-200 transition-colors">
               <FileText className="w-5 h-5 text-indigo-600" />
@@ -299,7 +296,7 @@ export default function AdminDashboardPage() {
 
       {/* Informações do Sistema */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border p-6">
+        <div className="bg-white rounded-xl shadow-sm border p-6 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Status dos Serviços</h2>
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -312,7 +309,7 @@ export default function AdminDashboardPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
-                <span className="text-sm text-gray-700">Brevo (E-mail)</span>
+                
               </div>
               <span className="text-sm text-green-600 font-medium">Online</span>
             </div>
@@ -333,7 +330,7 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border p-6">
+        <div className="bg-white rounded-xl shadow-sm border p-6 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Atividade Recente</h2>
           <div className="space-y-3">
             <div className="flex items-center justify-between">

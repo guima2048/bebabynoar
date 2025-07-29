@@ -32,7 +32,8 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7 // 7 dias
+      maxAge: 60 * 60 * 24 * 7, // 7 dias
+      path: '/', // Garante envio do cookie em todas as rotas
     })
 
     return NextResponse.json({
@@ -41,7 +42,6 @@ export async function POST(request: NextRequest) {
       user: {
         id: adminUser.id,
         username: adminUser.username,
-        name: adminUser.name
       }
     })
 

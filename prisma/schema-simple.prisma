@@ -1,0 +1,84 @@
+generator client [object Object]provider =prisma-client-js
+}
+
+datasource db {
+  provider = postgresql  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  username    String   @unique
+  password    String
+  name        String?
+  birthdate   DateTime
+  gender      Gender
+  userType    UserType
+  lookingFor  UserType?
+  state       String
+  city        String
+  about       String?
+  photoURL    String?
+  premium     Boolean  @default(false)
+  isAdmin     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relacionamentos essenciais
+  photos      Photo[]
+  messages    Messagetions ConversationParticipant
+  @@map("users")
+}
+
+model Photo {
+  id         String   @id @default(cuid())
+  url        String
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@map(photosmodel Conversation {
+  id              String                    @id @default(cuid())
+  lastMessage     String?
+  lastMessageTime DateTime                  @default(now())
+  createdAt       DateTime                  @default(now())
+  participants    ConversationParticipant[]
+  messages        Message[]
+
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  id             String       @id @default(cuid())
+  conversationId String
+  userId         String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@map("conversation_participants")
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  content        String
+  createdAt      DateTime     @default(now())
+  conversationId String
+  senderId       String
+  receiverId     String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+enum Gender [object Object]
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum UserType [object Object]  SUGAR_BABY
+  SUGAR_DADDY
+  SUGAR_MOMMY
+} 

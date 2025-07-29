@@ -222,7 +222,7 @@ export default function BlogSettingsPage() {
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
               >
                 <Save className="h-4 w-4" />
                 <span>{saving ? 'Salvando...' : 'Salvar Configurações'}</span>
@@ -249,13 +249,13 @@ export default function BlogSettingsPage() {
                         type="color"
                         value={settings.primaryColor}
                         onChange={(e) => handleInputChange('primaryColor', e.target.value)}
-                        className="w-12 h-10 rounded border"
+                        className="w-12 h-10 rounded border focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
                       />
                       <input
                         type="text"
                         value={settings.primaryColor}
                         onChange={(e) => handleInputChange('primaryColor', e.target.value)}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none text-gray-900 placeholder:text-gray-700"
                         placeholder="#D4AF37"
                       />
                     </div>
@@ -270,13 +270,13 @@ export default function BlogSettingsPage() {
                         type="color"
                         value={settings.secondaryColor}
                         onChange={(e) => handleInputChange('secondaryColor', e.target.value)}
-                        className="w-12 h-10 rounded border"
+                        className="w-12 h-10 rounded border focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
                       />
                       <input
                         type="text"
                         value={settings.secondaryColor}
                         onChange={(e) => handleInputChange('secondaryColor', e.target.value)}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none text-gray-900 placeholder:text-gray-700"
                         placeholder="#4A1E3A"
                       />
                     </div>
@@ -291,13 +291,13 @@ export default function BlogSettingsPage() {
                         type="color"
                         value={settings.backgroundColor}
                         onChange={(e) => handleInputChange('backgroundColor', e.target.value)}
-                        className="w-12 h-10 rounded border"
+                        className="w-12 h-10 rounded border focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
                       />
                       <input
                         type="text"
                         value={settings.backgroundColor}
                         onChange={(e) => handleInputChange('backgroundColor', e.target.value)}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none text-gray-900 placeholder:text-gray-700"
                         placeholder="#FAFAFA"
                       />
                     </div>
@@ -312,13 +312,13 @@ export default function BlogSettingsPage() {
                         type="color"
                         value={settings.textColor}
                         onChange={(e) => handleInputChange('textColor', e.target.value)}
-                        className="w-12 h-10 rounded border"
+                        className="w-12 h-10 rounded border focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
                       />
                       <input
                         type="text"
                         value={settings.textColor}
                         onChange={(e) => handleInputChange('textColor', e.target.value)}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none text-gray-900 placeholder:text-gray-700"
                         placeholder="#2D3748"
                       />
                     </div>
@@ -333,13 +333,13 @@ export default function BlogSettingsPage() {
                         type="color"
                         value={settings.titleColor}
                         onChange={(e) => handleInputChange('titleColor', e.target.value)}
-                        className="w-12 h-10 rounded border"
+                        className="w-12 h-10 rounded border focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
                       />
                       <input
                         type="text"
                         value={settings.titleColor}
                         onChange={(e) => handleInputChange('titleColor', e.target.value)}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md"
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none text-gray-900 placeholder:text-gray-700"
                         placeholder="#D4AF37"
                       />
                     </div>
@@ -362,7 +362,7 @@ export default function BlogSettingsPage() {
                     <select
                       value={settings.titleFont}
                       onChange={(e) => handleInputChange('titleFont', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none text-gray-900 placeholder:text-gray-700"
                     >
                       {fontOptions.map(font => (
                         <option key={font} value={font}>{font}</option>
@@ -377,7 +377,7 @@ export default function BlogSettingsPage() {
                     <select
                       value={settings.bodyFont}
                       onChange={(e) => handleInputChange('bodyFont', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none text-gray-900 placeholder:text-gray-700"
                     >
                       {fontOptions.map(font => (
                         <option key={font} value={font}>{font}</option>
@@ -404,7 +404,7 @@ export default function BlogSettingsPage() {
                     type="text"
                     value={settings.heroTitle}
                     onChange={(e) => handleInputChange('heroTitle', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none text-gray-900 placeholder:text-gray-700"
                     placeholder="Título da Hero Section"
                   />
                 </div>
@@ -417,7 +417,7 @@ export default function BlogSettingsPage() {
                     type="text"
                     value={settings.heroSubtitle}
                     onChange={(e) => handleInputChange('heroSubtitle', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none text-gray-900 placeholder:text-gray-700"
                     placeholder="Subtítulo da Hero Section"
                   />
                 </div>
@@ -435,13 +435,13 @@ export default function BlogSettingsPage() {
                         if (file) { handleImageUpload(file); }
                       }}
                       disabled={uploadingImage}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none text-gray-900 placeholder:text-gray-700"
                     />
                     {settings.heroBackgroundImage && (
                       <img
                         src={settings.heroBackgroundImage}
                         alt="Preview"
-                        className="w-full h-32 object-cover rounded-md"
+                        className="w-full h-32 object-cover rounded-md focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
                       />
                     )}
                   </div>
@@ -455,7 +455,7 @@ export default function BlogSettingsPage() {
                     type="text"
                     value={settings.heroBackgroundAlt}
                     onChange={(e) => handleInputChange('heroBackgroundAlt', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none text-gray-900 placeholder:text-gray-700"
                     placeholder="Descrição da imagem para SEO"
                   />
                 </div>
@@ -475,7 +475,7 @@ export default function BlogSettingsPage() {
                     type="text"
                     value={settings.siteTitle}
                     onChange={(e) => handleInputChange('siteTitle', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none text-gray-900 placeholder:text-gray-700"
                     placeholder="Título que aparece nas abas do navegador"
                   />
                 </div>
@@ -488,7 +488,7 @@ export default function BlogSettingsPage() {
                     value={settings.siteDescription}
                     onChange={(e) => handleInputChange('siteDescription', e.target.value)}
                     rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none text-gray-900 placeholder:text-gray-700"
                     placeholder="Descrição que aparece nos resultados de busca"
                   />
                 </div>
@@ -501,7 +501,7 @@ export default function BlogSettingsPage() {
                     type="text"
                     value={settings.defaultKeywords}
                     onChange={(e) => handleInputChange('defaultKeywords', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none text-gray-900 placeholder:text-gray-700"
                     placeholder="Universo sugar, Patrocinador, Sugar baby, sugar daddy, site de relacionamento sugar"
                   />
                 </div>
@@ -521,7 +521,7 @@ export default function BlogSettingsPage() {
                     type="text"
                     value={settings.searchPlaceholder}
                     onChange={(e) => handleInputChange('searchPlaceholder', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none text-gray-900 placeholder:text-gray-700"
                     placeholder="Texto do campo de busca"
                   />
                 </div>
@@ -534,7 +534,7 @@ export default function BlogSettingsPage() {
                     type="text"
                     value={settings.recentArticlesTitle}
                     onChange={(e) => handleInputChange('recentArticlesTitle', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none text-gray-900 placeholder:text-gray-700"
                     placeholder="Título da seção de artigos recentes"
                   />
                 </div>
@@ -547,7 +547,7 @@ export default function BlogSettingsPage() {
                     type="text"
                     value={settings.popularArticlesTitle}
                     onChange={(e) => handleInputChange('popularArticlesTitle', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none text-gray-900 placeholder:text-gray-700"
                     placeholder="Título da seção de artigos populares"
                   />
                 </div>
@@ -560,7 +560,7 @@ export default function BlogSettingsPage() {
                     type="text"
                     value={settings.readMoreText}
                     onChange={(e) => handleInputChange('readMoreText', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none text-gray-900 placeholder:text-gray-700"
                     placeholder="Texto do botão ler mais"
                   />
                 </div>
@@ -573,7 +573,7 @@ export default function BlogSettingsPage() {
                     type="text"
                     value={settings.noArticlesText}
                     onChange={(e) => handleInputChange('noArticlesText', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none text-gray-900 placeholder:text-gray-700"
                     placeholder="Mensagem quando não há artigos"
                   />
                 </div>
@@ -593,7 +593,7 @@ export default function BlogSettingsPage() {
                     type="text"
                     value={settings.footerText}
                     onChange={(e) => handleInputChange('footerText', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none text-gray-900 placeholder:text-gray-700"
                     placeholder="© 2024 Universo Sugar. Todos os direitos reservados."
                   />
                 </div>
@@ -606,7 +606,7 @@ export default function BlogSettingsPage() {
                     type="text"
                     value={settings.privacyPolicyText}
                     onChange={(e) => handleInputChange('privacyPolicyText', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none text-gray-900 placeholder:text-gray-700"
                     placeholder="Política de Privacidade"
                   />
                 </div>
@@ -619,7 +619,7 @@ export default function BlogSettingsPage() {
                     type="text"
                     value={settings.termsText}
                     onChange={(e) => handleInputChange('termsText', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none text-gray-900 placeholder:text-gray-700"
                     placeholder="Termos de Uso"
                   />
                 </div>
@@ -632,7 +632,7 @@ export default function BlogSettingsPage() {
                     type="text"
                     value={settings.contactText}
                     onChange={(e) => handleInputChange('contactText', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none text-gray-900 placeholder:text-gray-700"
                     placeholder="Contato"
                   />
                 </div>
@@ -650,11 +650,11 @@ export default function BlogSettingsPage() {
                   <h3 className="font-semibold text-gray-800">H1</h3>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Tamanho da Fonte</label>
-                    <input type="text" value={settings.h1FontSize} onChange={e => handleInputChange('h1FontSize', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="Ex: 3rem ou 48px" />
+                    <input type="text" value={settings.h1FontSize} onChange={e => handleInputChange('h1FontSize', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none text-gray-900 placeholder:text-gray-700" placeholder="Ex: 3rem ou 48px" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Alinhamento</label>
-                    <select value={settings.h1Align} onChange={e => handleInputChange('h1Align', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md">
+                    <select value={settings.h1Align} onChange={e => handleInputChange('h1Align', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none text-gray-900 placeholder:text-gray-700">
                       <option value="left">Esquerda</option>
                       <option value="center">Centro</option>
                       <option value="right">Direita</option>
@@ -662,18 +662,18 @@ export default function BlogSettingsPage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Altura da Linha</label>
-                    <input type="text" value={settings.h1LineHeight} onChange={e => handleInputChange('h1LineHeight', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="Ex: 1.2 ou 56px" />
+                    <input type="text" value={settings.h1LineHeight} onChange={e => handleInputChange('h1LineHeight', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none text-gray-900 placeholder:text-gray-700" placeholder="Ex: 1.2 ou 56px" />
                   </div>
                 </div>
                 <div className="space-y-4">
                   <h3 className="font-semibold text-gray-800">H2</h3>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Tamanho da Fonte</label>
-                    <input type="text" value={settings.h2FontSize} onChange={e => handleInputChange('h2FontSize', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="Ex: 2rem ou 32px" />
+                    <input type="text" value={settings.h2FontSize} onChange={e => handleInputChange('h2FontSize', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none text-gray-900 placeholder:text-gray-700" placeholder="Ex: 2rem ou 32px" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Alinhamento</label>
-                    <select value={settings.h2Align} onChange={e => handleInputChange('h2Align', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md">
+                    <select value={settings.h2Align} onChange={e => handleInputChange('h2Align', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none text-gray-900 placeholder:text-gray-700">
                       <option value="left">Esquerda</option>
                       <option value="center">Centro</option>
                       <option value="right">Direita</option>
@@ -681,7 +681,7 @@ export default function BlogSettingsPage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Altura da Linha</label>
-                    <input type="text" value={settings.h2LineHeight} onChange={e => handleInputChange('h2LineHeight', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="Ex: 1.2 ou 40px" />
+                    <input type="text" value={settings.h2LineHeight} onChange={e => handleInputChange('h2LineHeight', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none text-gray-900 placeholder:text-gray-700" placeholder="Ex: 1.2 ou 40px" />
                   </div>
                 </div>
               </div>

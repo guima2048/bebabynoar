@@ -194,7 +194,7 @@ export default function AdminPendingContentPage() {
         <div className="flex space-x-1">
           <button
             onClick={() => setActiveTab('photos')}
-            className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+            className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none ${
               activeTab === 'photos'
                 ? 'bg-pink-600 text-white'
                 : 'text-gray-600 hover:bg-gray-100'
@@ -204,7 +204,7 @@ export default function AdminPendingContentPage() {
           </button>
           <button
             onClick={() => setActiveTab('texts')}
-            className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors ${
+            className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none ${
               activeTab === 'texts'
                 ? 'bg-pink-600 text-white'
                 : 'text-gray-600 hover:bg-gray-100'
@@ -221,13 +221,13 @@ export default function AdminPendingContentPage() {
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Fotos Pendentes</h2>
           
           {pendingPhotos.length === 0 ? (
-            <div className="text-center py-8 bg-white rounded-lg shadow-sm border">
+            <div className="text-center py-8 bg-white rounded-lg shadow-sm border focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none">
               <p className="text-gray-500">Nenhuma foto pendente de aprovação.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {pendingPhotos.map((photo) => (
-                <div key={photo.id} className="bg-white rounded-lg shadow-sm border overflow-hidden">
+                <div key={photo.id} className="bg-white rounded-lg shadow-sm border overflow-hidden focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none">
                   <img
                     src={photo.photoURL}
                     alt="Foto pendente"
@@ -251,13 +251,13 @@ export default function AdminPendingContentPage() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleApprovePhoto(photo.id)}
-                        className="flex-1 px-3 py-2 text-sm bg-green-100 text-green-700 rounded-md hover:bg-green-200"
+                        className="flex-1 px-3 py-2 text-sm bg-green-100 text-green-700 rounded-md hover:bg-green-200 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
                       >
                         ✅ Aprovar
                       </button>
                       <button
                         onClick={() => handleRejectPhoto(photo.id)}
-                        className="flex-1 px-3 py-2 text-sm bg-red-100 text-red-700 rounded-md hover:bg-red-200"
+                        className="flex-1 px-3 py-2 text-sm bg-red-100 text-red-700 rounded-md hover:bg-red-200 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
                       >
                         ❌ Rejeitar
                       </button>
@@ -275,13 +275,13 @@ export default function AdminPendingContentPage() {
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Textos Pendentes</h2>
           
           {pendingTexts.length === 0 ? (
-            <div className="text-center py-8 bg-white rounded-lg shadow-sm border">
+            <div className="text-center py-8 bg-white rounded-lg shadow-sm border focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none">
               <p className="text-gray-500">Nenhum texto pendente de aprovação.</p>
             </div>
           ) : (
             <div className="space-y-4">
               {pendingTexts.map((text) => (
-                <div key={text.id} className="bg-white rounded-lg shadow-sm border p-6">
+                <div key={text.id} className="bg-white rounded-lg shadow-sm border p-6 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none">
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h3 className="font-medium text-gray-900">{text.userName}</h3>
@@ -304,13 +304,13 @@ export default function AdminPendingContentPage() {
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleApproveText(text.id)}
-                      className="flex-1 px-3 py-2 text-sm bg-green-100 text-green-700 rounded-md hover:bg-green-200"
+                      className="flex-1 px-3 py-2 text-sm bg-green-100 text-green-700 rounded-md hover:bg-green-200 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
                     >
                       ✅ Aprovar
                     </button>
                     <button
                       onClick={() => handleRejectText(text.id)}
-                      className="flex-1 px-3 py-2 text-sm bg-red-100 text-red-700 rounded-md hover:bg-red-200"
+                      className="flex-1 px-3 py-2 text-sm bg-red-100 text-red-700 rounded-md hover:bg-red-200 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
                     >
                       ❌ Rejeitar
                     </button>

@@ -64,7 +64,8 @@ export default function NotificationsPage() {
             </div>
             <button
               onClick={() => router.back()}
-              className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors"
+              className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
+              aria-label="Voltar"
             >
               Voltar
             </button>
@@ -84,9 +85,10 @@ export default function NotificationsPage() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Ex: Nova funcionalidade disponível!"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-4 focus:ring-pink-400 focus:border-pink-600 text-gray-900 placeholder:text-gray-700"
                 maxLength={100}
                 required
+                aria-label="Título da notificação"
               />
               <p className="mt-1 text-sm text-gray-500">{title.length}/100 caracteres</p>
             </div>
@@ -101,9 +103,10 @@ export default function NotificationsPage() {
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Digite a mensagem da notificação..."
                 rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-4 focus:ring-pink-400 focus:border-pink-600 text-gray-900 placeholder:text-gray-700"
                 maxLength={500}
                 required
+                aria-label="Mensagem da notificação"
               />
               <p className="mt-1 text-sm text-gray-500">{message.length}/500 caracteres</p>
             </div>
@@ -116,7 +119,8 @@ export default function NotificationsPage() {
                 id="targetUsers"
                 value={targetUsers}
                 onChange={(e) => setTargetUsers(e.target.value as any)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-4 focus:ring-pink-400 focus:border-pink-600 text-gray-900 placeholder:text-gray-700"
+                aria-label="Público-alvo"
               >
                 <option value="all">Todos os usuários</option>
                 <option value="premium">Apenas usuários Premium</option>
@@ -151,7 +155,8 @@ export default function NotificationsPage() {
               <button
                 type="submit"
                 disabled={isLoading || !title.trim() || !message.trim()}
-                className="bg-pink-600 hover:bg-pink-700 disabled:bg-gray-400 text-white px-6 py-2 rounded-lg transition-colors flex items-center"
+                className="bg-pink-600 hover:bg-pink-700 disabled:bg-gray-400 text-white px-6 py-2 rounded-lg transition-colors flex items-center focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
+                aria-label="Enviar notificação"
               >
                 {isLoading ? (
                   <>

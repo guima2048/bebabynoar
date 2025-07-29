@@ -1,217 +1,42 @@
 'use client'
 
-import React, { createContext, useEffect, useState } from 'react'
-import { useSession, signIn, signOut } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
-import toast from 'react-hot-toast'
-import bcrypt from 'bcryptjs'
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { signOut } from "next-auth/react";
 
-interface User {
-  id: string
-  email: string
-  name: string
-  age?: number
-  gender?: string
-  location?: string
-  photos?: string[]
-  bio?: string
-  interests?: string[]
-  lookingFor?: string
-  premium?: boolean
-  verified?: boolean
-  createdAt?: Date
-  lastActive?: Date
-  photoURL?: string
-  userType: string
-  isAdmin: boolean
-}
-
-interface AuthContextType {
-  user: User | null
-  loading: boolean
-  signIn: (email: string, password: string) => Promise<void>
-  signUp: (email: string, password: string, userData: Partial<User>) => Promise<void>
-  logout: () => Promise<void>
-  updateUserProfile: (data: Partial<User>) => Promise<void>
-  resetPassword: (email: string) => Promise<void>
-  getAuthToken: () => Promise<string | null>
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+const AuthContext = createContext({
+  user: null,
+  login: (userData: any) => {},
+  logout: () => {},
+});
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const { data: session, status } = useSession()
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
-  const router = useRouter()
+  const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    console.log('[AuthContext] useEffect - Status:', status)
-    console.log('[AuthContext] useEffect - Session:', JSON.stringify(session, null, 2))
-    
-    if (status === 'loading') {
-      console.log('[AuthContext] Status loading - mantendo loading true')
-      setLoading(true)
-      return
-    }
+    const stored = localStorage.getItem('user');
+    if (stored) setUser(JSON.parse(stored));
+  }, []);
 
-    if (session?.user) {
-      console.log('[AuthContext] Session user encontrado:', {
-        id: session.user.id,
-        email: session.user.email,
-        name: session.user.name,
-        userType: session.user.userType,
-        premium: session.user.premium,
-        verified: session.user.verified,
-        isAdmin: session.user.isAdmin
-      })
-      setUser({
-        id: session.user.id,
-        email: session.user.email,
-        name: session.user.name,
-        photoURL: session.user.image || '',
-        premium: session.user.premium,
-        verified: session.user.verified,
-        userType: session.user.userType,
-        isAdmin: session.user.isAdmin,
-      })
-      console.log('[AuthContext] User state definido com sucesso')
-    } else {
-      console.log('[AuthContext] Sem session user - definindo user como null')
-      setUser(null)
-    }
-    
-    console.log('[AuthContext] Definindo loading como false')
-    setLoading(false)
-  }, [session, status])
+  const login = (userData: any) => {
+    setUser(userData);
+    localStorage.setItem('user', JSON.stringify(userData));
+  };
 
-  const handleSignIn = async (email: string, password: string): Promise<void> => {
-    try {
-      const result = await signIn('credentials', {
-        email,
-        password,
-        redirect: false,
-      })
-
-      if (result?.error) {
-        throw new Error(result.error)
-      }
-
-      toast.success('Login realizado com sucesso!')
-    } catch (error: any) {
-      toast.error(error.message || 'Erro ao fazer login')
-      throw error
-    }
-  }
-
-  const handleSignUp = async (email: string, password: string, userData: any): Promise<void> => {
-    try {
-      // Criar usuário via API
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          password,
-          ...userData,
-        }),
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || 'Erro ao cadastrar')
-      }
-
-      // Fazer login automaticamente
-      await handleSignIn(email, password)
-      toast.success('Cadastro realizado com sucesso!')
-    } catch (error: any) {
-      toast.error(error.message || 'Erro ao cadastrar')
-      throw error
-    }
-  }
-
-  const handleLogout = async () => {
-    try {
-      await signOut({ redirect: false })
-      setUser(null)
-      toast.success('Logout realizado com sucesso!')
-      router.push('/')
-    } catch (error) {
-      toast.error('Erro ao fazer logout')
-    }
-  }
-
-  const updateUserProfile = async (data: Partial<User>) => {
-    try {
-      const response = await fetch('/api/user/profile', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      })
-
-      if (!response.ok) {
-        throw new Error('Erro ao atualizar perfil')
-      }
-
-      // Atualizar estado local
-      if (user) {
-        setUser({ ...user, ...data })
-      }
-
-      toast.success('Perfil atualizado com sucesso!')
-    } catch (error: any) {
-      toast.error(error.message || 'Erro ao atualizar perfil')
-      throw error
-    }
-  }
-
-  const resetPassword = async (email: string) => {
-    try {
-      const response = await fetch('/api/auth/reset-password', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Erro ao enviar email de reset')
-      }
-
-      toast.success('Email de recuperação enviado!')
-    } catch (error: any) {
-      toast.error(error.message || 'Erro ao enviar email de reset')
-      throw error
-    }
-  }
-
-  const getAuthToken = async (): Promise<string | null> => {
-    // Para NextAuth, o token é gerenciado automaticamente
-    return null
-  }
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem('user');
+    // Forçar remoção do cookie de sessão do NextAuth
+    document.cookie = 'next-auth.session-token=; Max-Age=0; path=/;';
+    signOut({ callbackUrl: "/login" });
+  };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        loading,
-        signIn: handleSignIn,
-        signUp: handleSignUp,
-        logout: handleLogout,
-        updateUserProfile,
-        resetPassword,
-        getAuthToken,
-      }}
-    >
+    <AuthContext.Provider value={{ user, login, logout }}>
       {children}
     </AuthContext.Provider>
-  )
+  );
 }
 
-export default AuthContext 
+export function useAuth() {
+  return useContext(AuthContext);
+} 

@@ -12,14 +12,14 @@ async function createAdminUsers() {
       {
         email: 'admin@bebaby.app',
         username: 'Admin',
-        password: 'Maria#01',
+        password: process.env.TEST_ADMIN_PASSWORD || 'Maria#01',
         name: 'Administrador Principal',
         isAdmin: true
       },
       {
         email: 'admin2@bebaby.app',
         username: 'Admin2',
-        password: '77330011',
+        password: process.env.TEST_ADMIN2_PASSWORD || '77330011',
         name: 'Administrador Secundário',
         isAdmin: true
       }
@@ -49,7 +49,6 @@ async function createAdminUsers() {
           data: {
             password: hashedPassword,
             isAdmin: true,
-            verified: true,
             emailVerified: true,
             status: 'ACTIVE'
           }
@@ -65,14 +64,12 @@ async function createAdminUsers() {
             email: adminData.email,
             username: adminData.username,
             password: hashedPassword,
-            name: adminData.name,
             birthdate: new Date('1990-01-01'), // Data padrão
             gender: 'OTHER', // Gênero padrão
             userType: 'SUGAR_BABY', // Tipo padrão válido
             state: 'SP', // Estado padrão
             city: 'São Paulo', // Cidade padrão
             isAdmin: true,
-            verified: true,
             emailVerified: true,
             status: 'ACTIVE'
           }

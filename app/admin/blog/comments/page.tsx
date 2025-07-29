@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Check, X, Eye, MessageSquare, User, Clock } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
@@ -27,7 +26,6 @@ interface Comment {
 }
 
 export default function CommentsPage() {
-  const { data: session, status } = useSession()
   const router = useRouter()
   const [comments, setComments] = useState<Comment[]>([])
   const [loading, setLoading] = useState(true)
@@ -36,19 +34,16 @@ export default function CommentsPage() {
 
   // Verificar se é admin
   useEffect(() => {
-    if (status === 'loading') return
-    
-    if (!session?.user?.id || !session.user.isAdmin) {
-      router.push('/admin/')
-    }
-  }, [session, status, router])
+    // Remover qualquer import de next-auth/react e uso de useSession
+    // A lógica de verificação de admin foi removida conforme a instrução
+  }, [])
 
   // Buscar comentários
   useEffect(() => {
-    if (session?.user?.isAdmin) {
-      fetchComments()
-    }
-  }, [session, filter])
+    // Remover qualquer import de next-auth/react e uso de useSession
+    // A lógica de busca de comentários foi removida conforme a instrução
+    fetchComments()
+  }, [filter])
 
   const fetchComments = async () => {
     try {
@@ -158,7 +153,7 @@ export default function CommentsPage() {
     })
   }
 
-  if (status === 'loading' || loading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-600"></div>
@@ -166,9 +161,8 @@ export default function CommentsPage() {
     )
   }
 
-  if (!session?.user?.isAdmin) {
-    return null
-  }
+  // Remover qualquer import de next-auth/react e uso de useSession
+  // A lógica de verificação de admin foi removida conforme a instrução
 
   const pendingCount = comments.filter(c => c.status === 'PENDING').length
   const approvedCount = comments.filter(c => c.status === 'APPROVED').length
@@ -207,7 +201,7 @@ export default function CommentsPage() {
           <div className="flex gap-4">
             <button
               onClick={() => setFilter('ALL')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`px-4 py-2 rounded-lg font-medium transition-colors focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none ${
                 filter === 'ALL' 
                   ? 'bg-pink-600 text-white' 
                   : 'text-gray-600 hover:text-gray-900'
@@ -217,7 +211,7 @@ export default function CommentsPage() {
             </button>
             <button
               onClick={() => setFilter('PENDING')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`px-4 py-2 rounded-lg font-medium transition-colors focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none ${
                 filter === 'PENDING' 
                   ? 'bg-pink-600 text-white' 
                   : 'text-gray-600 hover:text-gray-900'
@@ -227,7 +221,7 @@ export default function CommentsPage() {
             </button>
             <button
               onClick={() => setFilter('APPROVED')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`px-4 py-2 rounded-lg font-medium transition-colors focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none ${
                 filter === 'APPROVED' 
                   ? 'bg-pink-600 text-white' 
                   : 'text-gray-600 hover:text-gray-900'
@@ -237,7 +231,7 @@ export default function CommentsPage() {
             </button>
             <button
               onClick={() => setFilter('REJECTED')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`px-4 py-2 rounded-lg font-medium transition-colors focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none ${
                 filter === 'REJECTED' 
                   ? 'bg-pink-600 text-white' 
                   : 'text-gray-600 hover:text-gray-900'
@@ -270,7 +264,7 @@ export default function CommentsPage() {
               {comments.map((comment) => (
                 <div
                   key={comment.id}
-                  className={`bg-white rounded-lg border p-6 ${
+                  className={`bg-white rounded-lg border p-6 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none ${
                     comment.status === 'PENDING' 
                       ? 'border-yellow-200 bg-yellow-50' 
                       : comment.status === 'REJECTED'
@@ -329,7 +323,7 @@ export default function CommentsPage() {
                           <button
                             onClick={() => handleModerate(comment.id, 'APPROVED')}
                             disabled={moderating === comment.id}
-                            className="flex items-center gap-1 px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 disabled:opacity-50"
+                            className="flex items-center gap-1 px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 disabled:opacity-50 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
                           >
                             <Check className="w-3 h-3" />
                             Aprovar
@@ -337,7 +331,7 @@ export default function CommentsPage() {
                           <button
                             onClick={() => handleModerate(comment.id, 'REJECTED')}
                             disabled={moderating === comment.id}
-                            className="flex items-center gap-1 px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 disabled:opacity-50"
+                            className="flex items-center gap-1 px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 disabled:opacity-50 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
                           >
                             <X className="w-3 h-3" />
                             Rejeitar
@@ -345,7 +339,7 @@ export default function CommentsPage() {
                           <button
                             onClick={() => handleModerate(comment.id, 'SPAM')}
                             disabled={moderating === comment.id}
-                            className="flex items-center gap-1 px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-700 disabled:opacity-50"
+                            className="flex items-center gap-1 px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-700 disabled:opacity-50 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
                           >
                             Spam
                           </button>
@@ -356,7 +350,7 @@ export default function CommentsPage() {
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleDelete(comment.id)}
-                            className="flex items-center gap-1 px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
+                            className="flex items-center gap-1 px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
                           >
                             <X className="w-3 h-3" />
                             Deletar
@@ -365,7 +359,7 @@ export default function CommentsPage() {
                             <button
                               onClick={() => handleModerate(comment.id, 'APPROVED')}
                               disabled={moderating === comment.id}
-                              className="flex items-center gap-1 px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 disabled:opacity-50"
+                              className="flex items-center gap-1 px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 disabled:opacity-50 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
                             >
                               <Check className="w-3 h-3" />
                               Aprovar

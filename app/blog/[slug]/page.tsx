@@ -79,6 +79,14 @@ export default async function PostPage({ params }: PostPageProps) {
     notFound()
   }
 
+  // Função para processar URL da imagem em desenvolvimento
+  const getImageUrl = (url: string) => {
+    if (process.env.NODE_ENV === 'development' && url.startsWith('/uploads/')) {
+      return `/api/uploads${url}`
+    }
+    return url
+  }
+
   const formatDate = (date: Date) => {
     return formatDistanceToNow(new Date(date), { 
       addSuffix: true, 
@@ -103,7 +111,7 @@ export default async function PostPage({ params }: PostPageProps) {
         <div className="flex flex-col items-center mt-8 mb-4">
           <div className="relative w-full max-w-4xl aspect-[16/9] rounded-2xl overflow-hidden shadow-lg border-4 border-pink-100 bg-white flex items-center justify-center">
             <img
-              src={post.featuredImage}
+              src={getImageUrl(post.featuredImage)}
               alt={post.featuredImageAlt || post.title}
               className="object-cover w-full h-full"
               style={{ aspectRatio: '16/9' }}

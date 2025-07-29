@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
 // GET - Buscar notificações do usuário
 export async function GET(_request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    
-    if (!session?.user?.id) {
+    const userId = _request.headers.get('x-user-id')
+
+    if (!userId) {
       return NextResponse.json(
         { error: 'Não autorizado' },
         { status: 401 }
@@ -22,7 +20,7 @@ export async function GET(_request: NextRequest) {
     // Buscar notificações do usuário
     const notifications = await prisma.notification.findMany({
       where: {
-        userId: session.user.id
+        userId: userId
       },
       orderBy: {
         createdAt: 'desc'
@@ -48,9 +46,9 @@ export async function GET(_request: NextRequest) {
 // POST - Criar nova notificação
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const userId = request.headers.get('x-user-id')
     
-    if (!session?.user?.id) {
+    if (!userId) {
       return NextResponse.json(
         { error: 'Não autorizado' },
         { status: 401 }
@@ -58,9 +56,9 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { userId, title, message, type, data } = body
+    const { userId: targetUserId, title, message, type } = body
 
-    if (!userId || !title || !message || !type) {
+    if (!targetUserId || !title || !message || !type) {
       return NextResponse.json(
         { error: 'Dados obrigatórios não fornecidos' },
         { status: 400 }
@@ -70,11 +68,10 @@ export async function POST(request: NextRequest) {
     // Criar notificação
     const notification = await prisma.notification.create({
       data: {
-        userId: userId,
+        userId: targetUserId,
         title: title,
         message: message,
-        type: type,
-        data: data || {}
+        type: type
       }
     })
 

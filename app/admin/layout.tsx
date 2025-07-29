@@ -3,113 +3,64 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import toast from 'react-hot-toast'
-import { useCSRF } from '@/hooks/useCSRF'
+import { 
+  Users, 
+  BarChart3, 
+  Settings, 
+  Mail, 
+  CreditCard, 
+  Shield, 
+  FileText, 
+  Bell,
+  LogOut,
+  Menu,
+  X
+} from 'lucide-react'
 
-interface AdminLayoutProps {
-  children: React.ReactNode
-}
-
-export default function AdminLayout({ children }: AdminLayoutProps) {
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isRedirecting, setIsRedirecting] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
-  const { csrfToken, loading: csrfLoading, error: csrfError, refreshToken } = useCSRF()
 
   useEffect(() => {
-    checkAuth()
-  }, [])
-
-  // Resetar estado de redirecionamento quando autenticado
-  useEffect(() => {
-    if (isAuthenticated && isRedirecting) {
-      setIsRedirecting(false)
-    }
-  }, [isAuthenticated, isRedirecting])
-
-  // Redirecionar para login se não autenticado
-  useEffect(() => {
-    if (!isAuthenticated && !isLoading && pathname !== '/admin' && pathname !== '/admin/' && !isRedirecting) {
-      setIsRedirecting(true)
-      router.push('/admin/')
-    }
-  }, [isAuthenticated, isLoading, pathname, router, isRedirecting])
-
-  const checkAuth = async () => {
-    try {
-      const response = await fetch('/api/admin/check-auth', {
-        credentials: 'include'
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        
-        if (data.authenticated) {
-          setIsAuthenticated(true)
-        } else {
+    if (pathname !== '/admin') {
+      const checkAuth = async () => {
+        try {
+          const response = await fetch('/api/admin/check-auth', { credentials: 'include' })
+          if (response.ok) {
+            const data = await response.json()
+            if (data.authenticated) {
+              setIsAuthenticated(true)
+            } else {
+              setIsAuthenticated(false)
+              router.push('/admin')
+            }
+          } else {
+            setIsAuthenticated(false)
+            router.push('/admin')
+          }
+        } catch (error) {
           setIsAuthenticated(false)
+          router.push('/admin')
+        } finally {
+          setLoading(false)
         }
-      } else {
-        setIsAuthenticated(false)
       }
-    } catch (error) {
-      setIsAuthenticated(false)
-    } finally {
-      setIsLoading(false)
+      checkAuth()
+    } else {
+      setLoading(false)
     }
+  }, [pathname, router])
+
+  if (loading) {
+    return <div className="text-center py-8">Loading...</div>
   }
 
-  const handleLogout = async () => {
-    try {
-      await fetch('/api/admin/logout', { 
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(csrfToken && { 'X-CSRF-Token': csrfToken })
-        },
-        credentials: 'include'
-      })
-      setIsAuthenticated(false)
-      toast.success('Logout realizado com sucesso')
-      router.push('/admin/')
-    } catch (error) {
-      console.error('Erro no logout:', error)
-      toast.error('Erro ao fazer logout')
-    }
+  if (pathname !== '/admin' && !isAuthenticated) {
+    return <div className="text-center py-8">Not authenticated.</div>
   }
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Verificando autenticação...</p>
-        </div>
-      </div>
-    )
-  }
-
-  // Se não autenticado e está na página de login, renderiza o children normalmente
-  if (pathname === '/admin' || pathname === '/admin/') {
-    return <>{children}</>
-  }
-
-  // Se não autenticado e não está na página de login, mostrar loading
-  if (!isAuthenticated && pathname !== '/admin' && pathname !== '/admin/') {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Redirecionando para login...</p>
-        </div>
-      </div>
-    )
-  }
-
-
 
   const menuItems = [
     { href: '/admin/dashboard', label: 'Dashboard', icon: '📊' },
@@ -121,8 +72,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { href: '/admin/pending-content', label: 'Conteúdo Pendente', icon: '⏳' },
     { href: '/admin/blog', label: 'Blog', icon: '📝' },
     { href: '/admin/blog-settings', label: 'Configurações do Blog', icon: '⚙️' },
+    { href: '/admin/landing-settings', label: 'Landing Page', icon: '��' },
     { href: '/admin/emails', label: 'E-mails', icon: '📧' },
     { href: '/admin/emails/logs', label: 'Logs de E-mails', icon: '📋' },
+    { href: '/admin/env-config', label: 'Configurações de Ambiente', icon: '🔧' },
   ]
 
   return (
@@ -143,12 +96,6 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               </button>
               <h1 className="text-xl font-bold text-gray-900">Bebaby Admin</h1>
             </div>
-            <button
-              onClick={handleLogout}
-              className="text-gray-600 hover:text-gray-900 text-sm font-medium px-3 py-2 rounded-md hover:bg-gray-100 transition-colors"
-            >
-              Sair
-            </button>
           </div>
         </div>
       </header>

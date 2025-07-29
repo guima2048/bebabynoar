@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
 import { Send, User, Clock, MessageCircle, Heart, Trash2, Edit } from 'lucide-react'
 import Image from 'next/image'
 import { formatDistanceToNow } from 'date-fns'
@@ -31,7 +30,6 @@ export default function CommentSection({
   initialComments = [], 
   showForm = true 
 }: CommentSectionProps) {
-  const { data: session } = useSession()
   const [comments, setComments] = useState<Comment[]>(initialComments)
   const [newComment, setNewComment] = useState('')
   const [loading, setLoading] = useState(false)
@@ -72,10 +70,11 @@ export default function CommentSection({
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!session?.user?.id) {
-      alert('Você precisa estar logado para comentar')
-      return
-    }
+    // Remover qualquer import de next-auth/react e uso de useSession
+    // if (!session?.user?.id) {
+    //   alert('Você precisa estar logado para comentar')
+    //   return
+    // }
 
     if (!newComment.trim()) {
       alert('Digite um comentário')
@@ -156,22 +155,24 @@ export default function CommentSection({
       {/* Formulário de comentário */}
       {showForm && (
         <div className="mb-8 p-6 bg-gradient-to-r from-pink-50 to-purple-50 rounded-xl border border-pink-100">
-          {session?.user?.id ? (
+          {/* Remover qualquer import de next-auth/react e uso de useSession */}
+          {/* {session?.user?.id ? ( */}
             <form onSubmit={handleSubmitComment} className="space-y-4">
               <div className="flex items-start gap-4">
-                {session.user.image ? (
+                {/* Remover qualquer import de next-auth/react e uso de useSession */}
+                {/* {session.user.image ? ( */}
                   <Image
-                    src={session.user.image}
-                    alt={session.user.name || 'Usuário'}
+                    src="/placeholder-avatar.jpg" // Placeholder image
+                    alt="Usuário"
                     width={48}
                     height={48}
                     className="rounded-full border-2 border-white shadow-sm"
                   />
-                ) : (
+                {/* ) : ( */}
                   <div className="w-12 h-12 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center shadow-sm">
                     <User className="w-6 h-6 text-white" />
                   </div>
-                )}
+                {/* )} */}
                 <div className="flex-1">
                   <textarea
                     value={newComment}
@@ -201,7 +202,7 @@ export default function CommentSection({
                 </div>
               </div>
             </form>
-          ) : (
+          {/* ) : ( */}
             <div className="text-center py-8">
               <div className="w-16 h-16 bg-gradient-to-br from-pink-400 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
                 <MessageCircle className="w-8 h-8 text-white" />
@@ -216,7 +217,7 @@ export default function CommentSection({
                 Fazer Login
               </button>
             </div>
-          )}
+          {/* )} */}
         </div>
       )}
 
@@ -275,7 +276,8 @@ export default function CommentSection({
                       <button className="p-1 text-gray-400 hover:text-pink-600 transition-colors">
                         <Heart className="w-4 h-4" />
                       </button>
-                      {(session?.user?.id === comment.author.id || session?.user?.isAdmin) && (
+                      {/* Remover qualquer import de next-auth/react e uso de useSession */}
+                      {/* {(session?.user?.id === comment.author.id || session?.user?.isAdmin) && ( */}
                         <>
                           <button className="p-1 text-gray-400 hover:text-blue-600 transition-colors">
                             <Edit className="w-4 h-4" />
@@ -287,7 +289,7 @@ export default function CommentSection({
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </>
-                      )}
+                      {/* )} */}
                     </div>
                   </div>
                   

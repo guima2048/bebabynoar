@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { useAuth } from '@/hooks/useAuth'
+import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
@@ -27,6 +27,8 @@ interface Plan {
   popular?: boolean
   stripePriceId: string
 }
+
+interface User { id: string; username?: string; userType?: string; [key: string]: any }
 
 const plans: Plan[] = [
   {
@@ -77,18 +79,18 @@ const plans: Plan[] = [
 ]
 
 export default function PremiumPage() {
-  const { user, loading: authLoading } = useAuth()
+  const { data: session, status } = useSession()
   const router = useRouter()
   const [selectedPlan, setSelectedPlan] = useState<string>('')
   const [loading, setLoading] = useState(false)
   const [showFeatures, setShowFeatures] = useState(false)
 
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (status === 'unauthenticated') {
       router.push('/login')
       return
     }
-  }, [user, authLoading, router])
+  }, [status, router])
 
   useEffect(() => {
     // Garante fundo escuro no body e html apenas nesta página
@@ -101,7 +103,7 @@ export default function PremiumPage() {
   }, []);
 
   const handleSubscribe = async (planId: string) => {
-    if (!user) {
+    if (!session?.user) {
       toast.error('Você precisa estar logado para assinar')
       router.push('/login')
       return
@@ -121,7 +123,7 @@ export default function PremiumPage() {
         body: JSON.stringify({
           planId: plan.id,
           stripePriceId: plan.stripePriceId,
-          userId: user.id
+          userId: session.user.id
         })
       })
 
@@ -144,22 +146,10 @@ export default function PremiumPage() {
     return Math.round(((plan.originalPrice - plan.price) / plan.originalPrice) * 100)
   }
 
-  if (authLoading) {
-    return (
-      <div className="max-w-4xl mx-auto py-12 px-4 bg-[#18181b] min-h-screen">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-700 rounded w-48 mb-8"></div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-96 bg-gray-700 rounded-lg"></div>
-            ))}
-          </div>
-        </div>
-      </div>
-    )
+  if (status === 'loading') {
+    return <div className="max-w-4xl mx-auto py-12 px-4 text-center bg-[#18181b] min-h-screen text-white">Carregando...</div>
   }
-
-  if (!user) {
+  if (status === 'unauthenticated' || !session?.user) {
     return (
       <div className="max-w-4xl mx-auto py-12 px-4 text-center bg-[#18181b] min-h-screen text-white">
         <h2 className="text-2xl font-bold mb-4">Acesso Negado</h2>
@@ -170,6 +160,9 @@ export default function PremiumPage() {
       </div>
     )
   }
+
+  console.log('session', session)
+  console.log('status', status)
 
   return (
     <div className="max-w-4xl mx-auto py-12 px-4 bg-[#18181b] min-h-screen">

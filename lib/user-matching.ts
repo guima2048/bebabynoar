@@ -28,8 +28,8 @@ export const USER_TYPE_GENDER_MAP: Record<UserType, Gender> = {
 
 // Função para determinar se dois usuários podem se ver
 export function canUsersSeeEachOther(user1: User, user2: User): boolean {
-  // Usuários não podem se ver a si mesmos
-  if (user1.id === user2.id) return false
+  // Usuários podem ver a si mesmos
+  if (user1.id === user2.id) return true
 
   const user1Gender = user1.gender || USER_TYPE_GENDER_MAP[user1.userType]
   const user2Gender = user2.gender || USER_TYPE_GENDER_MAP[user2.userType]

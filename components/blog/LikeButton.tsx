@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
 import { Heart } from 'lucide-react'
+import { useAuth } from '@/hooks/useAuth'
 
 interface LikeButtonProps {
   postId: string
@@ -19,7 +19,7 @@ export default function LikeButton({
   size = 'md',
   showCount = true
 }: LikeButtonProps) {
-  const { data: session } = useSession()
+  const { user } = useAuth() as { user: { id: string } | null }
   const [liked, setLiked] = useState(initialLiked)
   const [likesCount, setLikesCount] = useState(initialLikesCount)
   const [loading, setLoading] = useState(false)
@@ -27,10 +27,8 @@ export default function LikeButton({
 
   // Verificar se o usuário deu like ao carregar
   useEffect(() => {
-    if (session?.user?.id) {
-      checkUserLike()
-    }
-  }, [session?.user?.id, postId])
+    checkUserLike()
+  }, [postId])
 
   const checkUserLike = async () => {
     try {
@@ -46,7 +44,7 @@ export default function LikeButton({
   }
 
   const handleLike = async () => {
-    if (!session?.user?.id) {
+    if (!user?.id) {
       alert('Você precisa estar logado para curtir posts')
       return
     }

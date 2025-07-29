@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation'
 interface User {
   id: string
   username: string
-  name: string
   displayName: string
   email: string
   userType: string
@@ -160,7 +159,7 @@ export default function SearchUsersPage() {
                         )}
                         <div>
                           <div className="text-sm font-medium text-gray-900">
-                            {user.name || user.displayName || user.username || 'Sem nome'}
+                            {user.displayName || user.username || 'Sem nome'}
                             {user.isTonyy && (
                               <span className="ml-2 px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
                                 TONYY

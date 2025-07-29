@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
@@ -21,24 +19,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log('📸 Upload iniciado');
-    }
+    const userId = request.headers.get('x-user-id');
     
-    const session = await getServerSession(authOptions);
-    
-    if (!session?.user?.id) {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('❌ Usuário não autorizado');
-      }
+    if (!userId) {
       return NextResponse.json(
         { error: 'Não autorizado' },
         { status: 401 }
       );
-    }
-
-    if (process.env.NODE_ENV === 'development') {
-      console.log('✅ Usuário autorizado:', session.user.id);
     }
     
     const formData = await request.formData();
@@ -46,10 +33,6 @@ export async function POST(request: NextRequest) {
     const type = formData.get('type') as string;
     const isPrivate = formData.get('isPrivate') === 'true';
     
-    if (process.env.NODE_ENV === 'development') {
-      console.log('📁 Arquivo recebido:', file?.name, 'Tamanho:', file?.size);
-    }
-
     if (!file) {
       return NextResponse.json(
         { error: 'Nenhum arquivo enviado' },
@@ -106,30 +89,13 @@ export async function POST(request: NextRequest) {
     const photo = await prisma.photo.create({
       data: {
         url: relativeUrl,
-        fileName: fileName,
         isPrivate: isPrivate ?? false,
-        userId: session.user.id
+        userId: userId
       }
     });
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log('✅ Foto salva:', photo.url);
-    }
-
-    return NextResponse.json({
-      success: true,
-      photo: {
-        id: photo.id,
-        url: photo.url,
-        fileName: photo.fileName,
-        isPrivate: photo.isPrivate
-      }
-    });
+    return NextResponse.json({ success: true, photo });
   } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('❌ Erro no upload:', error);
-    }
-    
     return NextResponse.json(
       { error: 'Erro interno do servidor' },
       { status: 500 }
@@ -139,9 +105,9 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const userId = request.headers.get('x-user-id');
     
-    if (!session?.user?.id) {
+    if (!userId) {
       return NextResponse.json(
         { message: 'Não autorizado' },
         { status: 401 }
@@ -162,7 +128,7 @@ export async function DELETE(request: NextRequest) {
     const photo = await prisma.photo.findFirst({
       where: {
         id: photoId,
-        userId: session.user.id
+        userId: userId
       }
     });
 
@@ -181,9 +147,6 @@ export async function DELETE(request: NextRequest) {
     try {
       await unlink(filePath);
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Erro ao deletar arquivo físico:', error);
-      }
       // Continuar mesmo se não conseguir deletar o arquivo físico
     }
 
@@ -196,10 +159,6 @@ export async function DELETE(request: NextRequest) {
       message: 'Foto deletada com sucesso'
     });
   } catch (error) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Erro ao deletar foto:', error);
-    }
-    
     return NextResponse.json(
       { message: 'Erro interno do servidor' },
       { status: 500 }

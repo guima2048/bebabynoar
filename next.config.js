@@ -97,6 +97,20 @@ const nextConfig = {
           },
         ],
       },
+      // Configuração para uploads funcionar em desenvolvimento
+      {
+        source: '/uploads/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: '*',
+          },
+        ],
+      },
       // Removido configuração de uploads para deixar Nginx servir diretamente
       {
         source: '/landing/(.*)',

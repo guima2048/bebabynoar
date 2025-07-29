@@ -12,7 +12,6 @@ async function checkUserInDB() {
         id: true,
         email: true,
         username: true,
-        name: true,
         userType: true,
         gender: true,
         createdAt: true,
@@ -53,7 +52,6 @@ async function checkUserInDB() {
         id: true,
         email: true,
         username: true,
-        name: true,
         userType: true,
         gender: true
       }

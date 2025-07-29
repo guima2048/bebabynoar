@@ -224,15 +224,9 @@ export default function AdminBlogPage() {
             <p className="text-gray-600 mt-2">Crie e gerencie posts do blog</p>
           </div>
           <div className="flex items-center gap-3">
-            <button
-              onClick={createSamplePosts}
-              className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-            >
-              🌱 Criar Posts de Exemplo
-            </button>
             <Link
               href="/admin/blog/editor"
-              className="flex items-center gap-2 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
             >
               <Plus className="w-4 h-4" />
               Novo Post
@@ -244,7 +238,7 @@ export default function AdminBlogPage() {
       {/* Stats Cards */}
       <div className="mb-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="bg-white rounded-lg border border-gray-200 p-6 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Total de Posts</p>
@@ -256,7 +250,7 @@ export default function AdminBlogPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="bg-white rounded-lg border border-gray-200 p-6 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Publicados</p>
@@ -268,7 +262,7 @@ export default function AdminBlogPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="bg-white rounded-lg border border-gray-200 p-6 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Rascunhos</p>
@@ -280,7 +274,7 @@ export default function AdminBlogPage() {
             </div>
           </div>
 
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="bg-white rounded-lg border border-gray-200 p-6 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Visualizações</p>
@@ -295,7 +289,7 @@ export default function AdminBlogPage() {
       </div>
 
       {/* Listagem de Posts */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mb-8">
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mb-8 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none">
         <div className="p-6 border-b border-gray-100 flex flex-col md:flex-row gap-4 items-center justify-between">
           <div className="flex-1">
             <div className="relative">
@@ -305,7 +299,7 @@ export default function AdminBlogPage() {
                 placeholder="Buscar posts..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none text-gray-900 placeholder:text-gray-700"
               />
             </div>
           </div>
@@ -314,7 +308,7 @@ export default function AdminBlogPage() {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as any)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none text-gray-900 placeholder:text-gray-700"
             >
               <option value="ALL">Todos os Status</option>
               <option value="PUBLISHED">Publicados</option>
@@ -353,7 +347,7 @@ export default function AdminBlogPage() {
         ) : (
           <div className="divide-y divide-gray-200">
             {filteredPosts.map((post) => (
-              <div key={post.id} className="p-6 hover:bg-gray-50 transition-colors">
+              <div key={post.id} className="p-6 hover:bg-gray-50 transition-colors focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
@@ -402,14 +396,14 @@ export default function AdminBlogPage() {
                     <Link
                       href={`/blog/${post.slug}`}
                       target="_blank"
-                      className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                      className="p-2 text-gray-400 hover:text-blue-600 transition-colors focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
                       title="Ver post"
                     >
                       <Eye className="w-4 h-4" />
                     </Link>
                     <Link
                       href={`/admin/blog/editor?id=${post.id}`}
-                      className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                      className="p-2 text-gray-400 hover:text-blue-600 transition-colors focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
                       title="Editar post"
                     >
                       <Edit className="w-4 h-4" />
@@ -417,7 +411,7 @@ export default function AdminBlogPage() {
                     <button
                       onClick={() => handleDelete(post.id)}
                       disabled={deletingPost === post.id}
-                      className="p-2 text-gray-400 hover:text-red-600 transition-colors disabled:opacity-50"
+                      className="p-2 text-gray-400 hover:text-red-600 transition-colors disabled:opacity-50 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
                       title="Excluir post"
                     >
                       {deletingPost === post.id ? (
@@ -444,12 +438,12 @@ export default function AdminBlogPage() {
 
       {/* Quick Actions */}
       <div className="container mx-auto px-4 mb-8">
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="bg-white rounded-lg border border-gray-200 p-6 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Ações Rápidas</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Link
               href="/admin/blog/editor"
-              className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:border-pink-300 hover:bg-pink-50 transition-colors"
+              className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:border-pink-300 hover:bg-pink-50 transition-colors focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
             >
               <div className="p-2 bg-pink-100 rounded-lg">
                 <Plus className="w-5 h-5 text-pink-600" />
@@ -462,7 +456,7 @@ export default function AdminBlogPage() {
 
             <Link
               href="/admin/blog/posts"
-              className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:border-pink-300 hover:bg-pink-50 transition-colors"
+              className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:border-pink-300 hover:bg-pink-50 transition-colors focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
             >
               <div className="p-2 bg-blue-100 rounded-lg">
                 <Edit className="w-5 h-5 text-blue-600" />
@@ -475,7 +469,7 @@ export default function AdminBlogPage() {
 
             <Link
               href="/admin/blog/categories"
-              className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:border-pink-300 hover:bg-pink-50 transition-colors"
+              className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:border-pink-300 hover:bg-pink-50 transition-colors focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
             >
               <div className="p-2 bg-green-100 rounded-lg">
                 <BarChart3 className="w-5 h-5 text-green-600" />
@@ -488,7 +482,7 @@ export default function AdminBlogPage() {
 
             <Link
               href="/admin/blog/comments"
-              className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:border-pink-300 hover:bg-pink-50 transition-colors"
+              className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:border-pink-300 hover:bg-pink-50 transition-colors focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
             >
               <div className="p-2 bg-purple-100 rounded-lg">
                 <MessageSquare className="w-5 h-5 text-purple-600" />

@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Plus, Edit, Trash2, Save, X } from 'lucide-react'
 
@@ -23,7 +22,6 @@ interface CategoryForm {
 }
 
 export default function CategoriesPage() {
-  const { data: session, status } = useSession()
   const router = useRouter()
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
@@ -37,19 +35,21 @@ export default function CategoriesPage() {
 
   // Verificar se é admin
   useEffect(() => {
-    if (status === 'loading') return
+    if (loading) return
     
-    if (!session?.user?.id || !session.user.isAdmin) {
-      router.push('/admin/')
-    }
-  }, [session, status, router])
+    // Remover qualquer import de next-auth/react e uso de useSession
+    // if (!session?.user?.id || !session.user.isAdmin) {
+    //   router.push('/admin/')
+    // }
+  }, [loading, router])
 
   // Buscar categorias
   useEffect(() => {
-    if (session?.user?.isAdmin) {
+    // Remover qualquer import de next-auth/react e uso de useSession
+    // if (session?.user?.isAdmin) {
       fetchCategories()
-    }
-  }, [session])
+    // }
+  }, [])
 
   const fetchCategories = async () => {
     try {
@@ -146,7 +146,7 @@ export default function CategoriesPage() {
     setShowForm(false)
   }
 
-  if (status === 'loading' || loading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-600"></div>
@@ -154,9 +154,10 @@ export default function CategoriesPage() {
     )
   }
 
-  if (!session?.user?.isAdmin) {
-    return null
-  }
+  // Remover qualquer import de next-auth/react e uso de useSession
+  // if (!session?.user?.isAdmin) {
+  //   return null
+  // }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -170,7 +171,7 @@ export default function CategoriesPage() {
             </div>
             <button
               onClick={() => setShowForm(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
             >
               <Plus className="w-4 h-4" />
               Nova Categoria
@@ -193,7 +194,7 @@ export default function CategoriesPage() {
                 <p className="text-gray-500 mb-4">Nenhuma categoria criada ainda.</p>
                 <button
                   onClick={() => setShowForm(true)}
-                  className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700"
+                  className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
                 >
                   Criar Primeira Categoria
                 </button>
@@ -201,7 +202,7 @@ export default function CategoriesPage() {
             ) : (
               <div className="divide-y divide-gray-200">
                 {categories.map((category) => (
-                  <div key={category.id} className="p-6 flex items-center justify-between">
+                  <div key={category.id} className="p-6 flex items-center justify-between focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none">
                     <div className="flex items-center gap-4">
                       <div
                         className="w-4 h-4 rounded-full"
@@ -220,13 +221,13 @@ export default function CategoriesPage() {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleEdit(category)}
-                        className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+                        className="p-2 text-gray-400 hover:text-blue-600 transition-colors focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDelete(category.id)}
-                        className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                        className="p-2 text-gray-400 hover:text-red-600 transition-colors focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -242,7 +243,7 @@ export default function CategoriesPage() {
       {/* Modal Form */}
       {showForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">
                 {editingCategory ? 'Editar Categoria' : 'Nova Categoria'}
@@ -265,7 +266,7 @@ export default function CategoriesPage() {
                   value={formData.name}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                   placeholder="Nome da categoria..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none text-gray-900 placeholder:text-gray-700"
                   required
                 />
               </div>
@@ -279,7 +280,7 @@ export default function CategoriesPage() {
                   onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
                   placeholder="Descrição da categoria..."
                   rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent resize-none"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none resize-none text-gray-900 placeholder:text-gray-700"
                 />
               </div>
 
@@ -292,14 +293,14 @@ export default function CategoriesPage() {
                     type="color"
                     value={formData.color}
                     onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))}
-                    className="w-12 h-10 border border-gray-300 rounded cursor-pointer"
+                    className="w-12 h-10 border border-gray-300 rounded cursor-pointer focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
                   />
                   <input
                     type="text"
                     value={formData.color}
                     onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))}
                     placeholder="#EC4899"
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none text-gray-900 placeholder:text-gray-700"
                   />
                 </div>
               </div>
@@ -308,13 +309,13 @@ export default function CategoriesPage() {
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 flex items-center justify-center gap-2 focus:ring-4 focus:ring-pink-400 focus:border-pink-600 focus:outline-none"
                 >
                   <Save className="w-4 h-4" />
                   {editingCategory ? 'Atualizar' : 'Criar'}

@@ -46,7 +46,12 @@ export default function BlogImageUpload({ onImageUpload, currentImage, className
       const data = await response.json()
 
       if (response.ok && data.success && data.image?.url) {
-        onImageUpload(data.image.url)
+        // Em desenvolvimento, usar a API route para servir o arquivo
+        const imageUrl = process.env.NODE_ENV === 'development' 
+          ? `/api/uploads${data.image.url}`
+          : data.image.url
+        
+        onImageUpload(imageUrl)
         toast.success('Imagem enviada com sucesso!')
       } else {
         toast.error(data.error || 'Erro ao enviar imagem')
@@ -91,13 +96,21 @@ export default function BlogImageUpload({ onImageUpload, currentImage, className
     onImageUpload('')
   }
 
+  // Função para processar URL da imagem atual
+  const getImageUrl = (url: string) => {
+    if (process.env.NODE_ENV === 'development' && url.startsWith('/uploads/')) {
+      return `/api/uploads${url}`
+    }
+    return url
+  }
+
   return (
     <div className={`space-y-4 ${className}`}>
       {/* Imagem atual */}
       {currentImage && (
         <div className="relative">
           <img
-            src={currentImage}
+            src={getImageUrl(currentImage)}
             alt="Imagem do post"
             className="w-full h-48 object-cover rounded-lg border border-gray-200"
           />

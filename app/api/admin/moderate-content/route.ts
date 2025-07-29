@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
+import { prisma } from '@/lib/prisma'
 
 export async function PUT(req: NextRequest) {
   try {
@@ -31,12 +32,49 @@ export async function PUT(req: NextRequest) {
       }, { status: 400 })
     }
 
-    // Por enquanto, retornar sucesso sem processar
-    // TODO: Implementar sistema de moderação quando os modelos forem criados
-    return NextResponse.json({
-      success: true,
-      message: `Conteúdo ${action === 'approve' ? 'aprovado' : 'rejeitado'} com sucesso`
-    })
+    if (contentType === 'photo') {
+      // Atualizar status da foto
+      const photo = await prisma.photo.findUnique({ where: { id: contentId } })
+      if (!photo) {
+        return NextResponse.json({ error: 'Foto não encontrada' }, { status: 404 })
+      }
+      await prisma.photo.update({
+        where: { id: contentId },
+        data: { status: action === 'approve' ? 'APPROVED' : 'REJECTED' }
+      })
+      return NextResponse.json({
+        success: true,
+        message: `Foto ${action === 'approve' ? 'aprovada' : 'rejeitada'} com sucesso`
+      })
+    }
+
+    if (contentType === 'text') {
+      // Atualizar status do texto pendente
+      const pendingText = await prisma.pendingText.findUnique({ where: { id: contentId }, include: { user: true } })
+      if (!pendingText) {
+        return NextResponse.json({ error: 'Texto pendente não encontrado' }, { status: 404 })
+      }
+      await prisma.pendingText.update({
+        where: { id: contentId },
+        data: { status: action === 'approve' ? 'APPROVED' : 'REJECTED' }
+      })
+      // Se aprovado, copiar conteúdo para o campo do usuário
+      if (action === 'approve') {
+        const field = pendingText.field
+        if (['about', 'lookingFor'].includes(field)) {
+          await prisma.user.update({
+            where: { id: pendingText.userId },
+            data: { [field]: pendingText.content }
+          })
+        }
+      }
+      return NextResponse.json({
+        success: true,
+        message: `Texto ${action === 'approve' ? 'aprovado' : 'rejeitado'} com sucesso`
+      })
+    }
+
+    return NextResponse.json({ error: 'Tipo de conteúdo não suportado' }, { status: 400 })
 
   } catch (error) {
     console.error('Erro na moderação de conteúdo:', error)
